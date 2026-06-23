@@ -143,7 +143,7 @@ export default function ImageCompareSlider({
     }
   }
 
-  const afterClip = isActive ? `inset(0 ${100 - position}% 0 0)` : 'inset(0 0 0 0)';
+  const beforeClip = isActive ? `inset(0 ${100 - position}% 0 0)` : 'inset(0 100% 0 0)';
 
   return (
     <div
@@ -159,23 +159,23 @@ export default function ImageCompareSlider({
       aria-label={t('preview.compareAria')}
     >
       <img
-        src={beforeSrc}
-        alt={beforeAlt}
-        className="absolute inset-0 h-full w-full object-cover brightness-[0.88] saturate-[0.75] contrast-[0.95]"
+        src={afterSrc}
+        alt={afterAlt}
+        className="absolute inset-0 h-full w-full object-cover"
         draggable={false}
       />
 
       <div
         className="absolute inset-0 overflow-hidden"
         style={{
-          clipPath: afterClip,
+          clipPath: beforeClip,
           transition: isActive ? 'none' : 'clip-path 0.55s cubic-bezier(0.4, 0, 0.2, 1)',
         }}
       >
         <img
-          src={afterSrc}
-          alt={afterAlt}
-          className="h-full w-full object-cover"
+          src={beforeSrc}
+          alt={beforeAlt}
+          className="h-full w-full object-cover brightness-[0.88] saturate-[0.75] contrast-[0.95]"
           draggable={false}
         />
       </div>

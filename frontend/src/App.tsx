@@ -48,6 +48,7 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState<AlertState | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [originalImageUrl, setOriginalImageUrl] = useState<string | null>(null);
   const [hashtags, setHashtags] = useState<string[]>([]);
   const [isFlashing, setIsFlashing] = useState(false);
   const promptTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -95,6 +96,7 @@ export default function App() {
     setExtractText(false);
     setExtractedText(null);
     setImageUrl(null);
+    setOriginalImageUrl(null);
     setHashtags([]);
 
     if (next === 'text') {
@@ -107,12 +109,18 @@ export default function App() {
     setBase64Image(base64);
     setImagePreviewUrl(previewUrl);
     setProductFileError(null);
+    setImageUrl(null);
+    setOriginalImageUrl(null);
+    setHashtags([]);
   }
 
   function handleProductImageClear() {
     setBase64Image(null);
     setImagePreviewUrl(null);
     setProductFileError(null);
+    setImageUrl(null);
+    setOriginalImageUrl(null);
+    setHashtags([]);
   }
 
   function handleProductFileError(message: string) {
@@ -142,6 +150,7 @@ export default function App() {
     setFormat('square');
     setFormatManuallySet(false);
     setImageUrl(null);
+    setOriginalImageUrl(null);
     setHashtags([]);
     setAlert(null);
   }
@@ -179,6 +188,10 @@ export default function App() {
     setImageUrl(null);
     setHashtags([]);
     setExtractedText(null);
+
+    if (mode === 'product' && imagePreviewUrl && !extractText) {
+      setOriginalImageUrl(imagePreviewUrl);
+    }
 
     const currentLanguage = (i18n.language || 'ru').split('-')[0];
 
@@ -225,7 +238,7 @@ export default function App() {
     } finally {
       setLoading(false);
     }
-  }, [canGenerate, mode, userPrompt, base64Image, userWish, platform, format, extractText, includeText, t, i18n.language]);
+  }, [canGenerate, mode, userPrompt, base64Image, userWish, platform, format, extractText, includeText, imagePreviewUrl, t, i18n.language]);
 
   const charCounterClass =
     atCharLimit ? 'text-red-400' : promptLength > PROMPT_MAX_LENGTH * 0.9 ? 'text-amber-400' : 'text-slate-500';
@@ -585,7 +598,7 @@ export default function App() {
             loading={loading}
             format={format}
             imageUrl={imageUrl}
-            originalImageUrl={mode === 'product' ? imagePreviewUrl : null}
+            originalImageUrl={mode === 'product' ? originalImageUrl : null}
             hashtags={hashtags}
             extractedText={extractedText}
             ocrOnly={isProductOcrMode}
