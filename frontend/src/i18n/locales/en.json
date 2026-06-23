@@ -1,0 +1,144 @@
+{
+  "header": {
+    "subtitle": "AI Social Media Visual Generator",
+    "poweredBy": "Powered by DALL·E 3"
+  },
+  "language": {
+    "label": "Language",
+    "en": "English",
+    "ru": "Русский",
+    "uz": "O'zbek",
+    "tg": "Тоҷикӣ"
+  },
+  "mode": {
+    "label": "Generation mode",
+    "text": "Post text / Blog",
+    "product": "Product Photo (E-commerce)"
+  },
+  "ecommerce": {
+    "description": "Upload a product photo and we'll create a scroll-stopping commercial visual optimized for your platform.",
+    "uploadTitle": "Upload or drag & drop a product photo",
+    "uploadHint": "JPEG, PNG or WebP — up to 5 MB",
+    "uploadAria": "Upload product photo",
+    "previewAlt": "Uploaded product preview",
+    "uploaded": "Product photo uploaded",
+    "uploadedHint": "Ready for commercial visual generation",
+    "replace": "Replace photo",
+    "remove": "Remove",
+    "wishLabel": "Background/style preferences (optional)",
+    "wishPlaceholder": "e.g. marble podium, warm studio light, pastel gradient…",
+    "invalidType": "Please upload a JPEG, PNG, or WebP image.",
+    "fileTooLarge": "File size must not exceed 5 MB.",
+    "readFailed": "Could not read the image file. Please try again.",
+    "extractTextLabel": "Extract text from image (Content Remix mode)"
+  },
+  "form": {
+    "title": "Create your visual",
+    "description": "Create engaging content for your brand or blog in seconds with artificial intelligence.",
+    "promptLabel": "Post text or prompt",
+    "promptPlaceholder": "e.g. New clothing collection launch, stylist tips post, or a gym promotion…",
+    "tryExample": "Try an example:",
+    "platform": "Platform",
+    "format": "Format",
+    "autoStory": "Auto-selected for Stories",
+    "reset": "Reset",
+    "resetAria": "Reset form and clear results",
+    "generate": "Generate Visual",
+    "generating": "Generating…",
+    "extractTextOnly": "Extract Text Only",
+    "extracting": "Extracting…",
+    "includeTextLabel": "Add text overlay to image"
+  },
+  "platform": {
+    "instagram": "Instagram",
+    "instagramHint": "Feed & Stories",
+    "facebook": "Facebook",
+    "facebookHint": "Posts & Pages"
+  },
+  "format": {
+    "square": "Square",
+    "story": "Story",
+    "recommended": "Recommended"
+  },
+  "examples": [
+    "New summer collection drop — bold typography, warm sunset tones, square 1:1",
+    "Fitness club promo: energetic layout, neon accents, Instagram Story 9:16",
+    "Stylist tips carousel cover: clean magazine aesthetic, minimal negative space"
+  ],
+  "loading": {
+    "overlay": "Generating your visual…",
+    "hint": "This may take up to a minute",
+    "composing": "AI is composing your visual…",
+    "layoutAdapts": "Layout adapts to {{ratio}}",
+    "extractingText": "Extracting text from image…"
+  },
+  "preview": {
+    "title": "Preview",
+    "generatingLayout": "Generating {{ratio}} layout…",
+    "readyToPost": "Ready to post",
+    "waiting": "Waiting for your first generation",
+    "complete": "Complete",
+    "emptyTitle": "Your image will appear here",
+    "emptyDescription": "Enter a post idea and generate a scroll-stopping visual for Instagram or Facebook.",
+    "optimizedPrompt": "Optimized prompt",
+    "copyPrompt": "Copy Prompt",
+    "promptCopied": "Copied!",
+    "copyPromptAria": "Copy optimized prompt",
+    "promptCopiedAria": "Prompt copied",
+    "hashtags": "Hashtags",
+    "copyHashtagAria": "Copy {{tag}} to clipboard",
+    "hashtagCopiedAria": "{{tag}} copied to clipboard",
+    "clickToEnlarge": "Click to enlarge",
+    "openEnlargedAria": "Open enlarged image preview",
+    "imageAlt": "Generated social media visual",
+    "imageAltEnlarged": "Generated social media visual — enlarged",
+    "download": "Download image",
+    "downloading": "Downloading…",
+    "downloadAria": "Download generated image",
+    "imageSaved": "Image saved!",
+    "extractedText": "Extracted text",
+    "copyExtractedText": "Copy text",
+    "extractedTextCopied": "Copied!",
+    "copyExtractedTextAria": "Copy extracted text to clipboard",
+    "textExtractedReady": "Text extracted — ready to copy",
+    "extractingText": "Extracting text from image…",
+    "textComplete": "Text ready",
+    "hoverToCompare": "Hover to compare",
+    "beforeLabel": "Before",
+    "afterLabel": "After",
+    "beforeImageAlt": "Original uploaded photo",
+    "compareAria": "Before and after image comparison"
+  },
+  "lightbox": {
+    "dialogAria": "Enlarged image preview",
+    "closeOverlayAria": "Close enlarged preview",
+    "closeAria": "Close"
+  },
+  "alerts": {
+    "dismissAria": "Dismiss alert",
+    "success": "Visual generated successfully!",
+    "error": "Something went wrong. Please try again.",
+    "downloadSuccess": "Image saved!",
+    "downloadWarning": "Could not download the image. Right-click the image and choose \"Save image as…\".",
+    "textExtractSuccess": "Text extracted successfully!"
+  },
+  "api": {
+    "serverUnreachable": "Unable to reach the server. Make sure the backend is running on port 5000.",
+    "invalidResponse": "Received an invalid response from the server.",
+    "backendHint": " Make sure the backend is running on port 5000 (npm run dev:backend).",
+    "generateFailed": "Failed to generate image.",
+    "incompleteData": "Server returned incomplete image data.",
+    "promptFailed": "Failed to generate prompt.",
+    "incompletePrompt": "Server returned an incomplete prompt."
+  },
+  "chat": {
+    "title": "✨ AI Assistant (Write in your language)",
+    "placeholder": "Tell AI what kind of image you want (e.g., 'fashion promo, warm tones')...",
+    "button": "Generate Prompt",
+    "loading": "AI is thinking...",
+    "inputAria": "Describe the image you want",
+    "promptInserted": "Prompt inserted into the field above — you can edit it or click Generate.",
+    "hybridHint": "The scene description stays in English (for AI quality); the on-image text and hashtags use your selected language.",
+    "error": "Could not generate a prompt. Please try again."
+  }
+}

@@ -1,0 +1,37 @@
+# Tech Stack Configuration
+You are an expert full-stack developer working with Node.js (Express), React (Vite), Tailwind CSS, OpenAI SDK, MongoDB, and JWT authentication.
+
+# General Coding Principles
+- Write clean, modular, and maintainable code.
+- Avoid placeholders, comments like "// code goes here", or truncated snippets. Always provide full, functional code implementations.
+- Use modern JavaScript (ES6+), async/await for asynchronous operations, and proper try/catch blocks for error handling.
+- Keep frontend and backend strictly separated in their respective folders ('frontend' and 'backend').
+
+# Authentication & Security Rules
+- Implement user authentication using JSON Web Tokens (JWT) stored securely.
+- Create a reusable `protect` or `auth` middleware for backend routes that require authentication.
+- Hash passwords using bcryptjs before saving them to the database.
+- On the frontend, properly handle authenticated states, protect private routes, and include the Bearer token in the Authorization header for API calls.
+
+# Database (MongoDB) Guidelines
+- Use Mongoose or Prisma for object modeling and database interactions.
+- Always define clear schemas with validation (e.g., email validation, unique fields).
+- Ensure all database connection logic handles errors gracefully and uses environment variables (MONGODB_URI).
+
+# Backend (Node.js & Express) Guidelines
+- Use Express framework with proper middleware setup (cors, express.json()).
+- Always implement a centralized error-handling middleware.
+- Keep routing modular (use express.Router() for different API versions or resources).
+- Secure sensitive keys by using dotenv and process.env. Never hardcode API keys, JWT secrets, or DB URIs.
+- When interacting with OpenAI API, use the official modern SDK syntax (`new OpenAI()`, `openai.chat.completions.create`).
+
+# Frontend (React & Tailwind) Guidelines
+- Use functional components with hooks. Keep global state (like auth) in a Context Provider.
+- Use Tailwind CSS for all styling. Keep interfaces modern, minimalist, and responsive.
+- Implement proper loading and disabled states for forms and buttons during API calls (e.g., loading spinners, blocking multi-clicks).
+- Use native fetch or axios with absolute clarity on request headers ('Content-Type': 'application/json').
+- Ensure graceful UI error states if the backend fails (show a user-friendly alert or banner).
+
+# Prompt Engineering & Formatting Rules
+- Do not explain obvious things. Be concise and focus entirely on delivering the code.
+- When generating system prompts for OpenAI inside the backend, make sure they are strictly enclosed as clear multi-line strings and enforce structured outputs from the model.

@@ -1,0 +1,15 @@
+{
+  "name": "snapfeed-ai",
+  "private": true,
+  "scripts": {
+    "start": "npm start --prefix backend",
+    "predev": "npx --yes kill-port 5000 5173",
+    "dev": "concurrently -n backend,frontend -c blue,green \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "npm run dev --prefix backend",
+    "dev:frontend": "npm run dev --prefix frontend"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.3",
+    "kill-port": "^2.0.1"
+  }
+}

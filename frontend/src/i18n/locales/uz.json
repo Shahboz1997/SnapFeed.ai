@@ -1,0 +1,144 @@
+{
+  "header": {
+    "subtitle": "Ijtimoiy tarmoqlar uchun AI vizual generatori",
+    "poweredBy": "DALL·E 3 asosida"
+  },
+  "language": {
+    "label": "Til",
+    "en": "English",
+    "ru": "Русский",
+    "uz": "O'zbek",
+    "tg": "Тоҷикӣ"
+  },
+  "mode": {
+    "label": "Generatsiya rejimi",
+    "text": "Post matni / Blog",
+    "product": "Mahsulot fotosi (E-commerce)"
+  },
+  "ecommerce": {
+    "description": "Mahsulot fotosini yuklang — platformangiz uchun sotuvga yo'naltirilgan vizual yaratamiz.",
+    "uploadTitle": "Mahsulot fotosini yuklang yoki sudrab tashlang",
+    "uploadHint": "JPEG, PNG yoki WebP — 5 MB gacha",
+    "uploadAria": "Mahsulot fotosini yuklash",
+    "previewAlt": "Yuklangan mahsulot previewi",
+    "uploaded": "Mahsulot fotosi yuklandi",
+    "uploadedHint": "Sotuv vizualini yaratishga tayyor",
+    "replace": "Fotoni almashtirish",
+    "remove": "O'chirish",
+    "wishLabel": "Fon/uslub bo'yicha istaklar (ixtiyoriy)",
+    "wishPlaceholder": "Masalan: marmar podiums, iliq studiya yorug'ligi, pastel gradient…",
+    "invalidType": "JPEG, PNG yoki WebP formatidagi rasm yuklang.",
+    "fileTooLarge": "Fayl hajmi 5 MB dan oshmasligi kerak.",
+    "readFailed": "Faylni o'qib bo'lmadi. Qayta urinib ko'ring.",
+    "extractTextLabel": "Rasm ichidagi matnni aniqlash (Remiks rejimi)"
+  },
+  "form": {
+    "title": "Vizualingizni yarating",
+    "description": "Sun'iy intellekt yordamida brendingiz yoki bloggingiz uchun jalb qiluvchi kontentni soniyalar ichida yarating.",
+    "promptLabel": "Post matni yoki prompt",
+    "promptPlaceholder": "Masalan: yangi kiyim kolleksiyasi e'loni, stilist maslahatlari posti yoki fitnes klub aksiyasi…",
+    "tryExample": "Namunani sinab ko'ring:",
+    "platform": "Platforma",
+    "format": "Format",
+    "autoStory": "Stories uchun avtomatik",
+    "reset": "Tozalash",
+    "resetAria": "Formani tozalash va natijalarni o'chirish",
+    "generate": "Vizual yaratish",
+    "generating": "Yaratilmoqda…",
+    "extractTextOnly": "Matnni ajratib olish",
+    "extracting": "Ajratilmoqda…",
+    "includeTextLabel": "Rasmga matn qo'shish"
+  },
+  "platform": {
+    "instagram": "Instagram",
+    "instagramHint": "Lenta va Stories",
+    "facebook": "Facebook",
+    "facebookHint": "Postlar va sahifalar"
+  },
+  "format": {
+    "square": "Kvadrat",
+    "story": "Story",
+    "recommended": "Tavsiya etiladi"
+  },
+  "examples": [
+    "Yangi yozgi kolleksiya e'loni — jirriy tipografiya, iliq quyosh botishi ranglari, 1:1",
+    "Fitnes klub aksiyasi: energik maket, neon aksentlar, Instagram Story 9:16",
+    "Stilist maslahatlari karusel muqovasi: jurnal estetikasi, minimalizm"
+  ],
+  "loading": {
+    "overlay": "Vizualingiz yaratilmoqda…",
+    "hint": "Bu bir daqiqagacha vaqt olishi mumkin",
+    "composing": "AI vizualingizni yaratmoqda…",
+    "layoutAdapts": "Maket {{ratio}} ga moslashtiriladi",
+    "extractingText": "Rasmdan matn ajratilmoqda…"
+  },
+  "preview": {
+    "title": "Ko'rish",
+    "generatingLayout": "{{ratio}} maketi yaratilmoqda…",
+    "readyToPost": "Joylashga tayyor",
+    "waiting": "Birinchi yaratish kutilmoqda",
+    "complete": "Tayyor",
+    "emptyTitle": "Rasm shu yerda paydo bo'ladi",
+    "emptyDescription": "Post g'oyasini kiriting va Instagram yoki Facebook uchun jozibali vizual yarating.",
+    "optimizedPrompt": "Optimallashtirilgan prompt",
+    "copyPrompt": "Nusxa olish",
+    "promptCopied": "Nusxa olindi!",
+    "copyPromptAria": "Optimallashtirilgan promptni nusxalash",
+    "promptCopiedAria": "Prompt nusxalandi",
+    "hashtags": "Xeshteglar",
+    "copyHashtagAria": "{{tag}} ni nusxalash",
+    "hashtagCopiedAria": "{{tag}} nusxalandi",
+    "clickToEnlarge": "Kattalashtirish uchun bosing",
+    "openEnlargedAria": "Kattalashtirilgan rasm ko'rinishini ochish",
+    "imageAlt": "Yaratilgan ijtimoiy tarmoq vizuali",
+    "imageAltEnlarged": "Yaratilgan vizual — kattalashtirilgan",
+    "download": "Rasmni yuklab olish",
+    "downloading": "Yuklanmoqda…",
+    "downloadAria": "Yaratilgan rasmni yuklab olish",
+    "imageSaved": "Rasm saqlandi!",
+    "extractedText": "Aniqlangan matn",
+    "copyExtractedText": "Matnni nusxalash",
+    "extractedTextCopied": "Nusxalandi!",
+    "copyExtractedTextAria": "Aniqlangan matnni nusxalash",
+    "textExtractedReady": "Matn ajratildi — nusxalashga tayyor",
+    "extractingText": "Rasmdan matn ajratilmoqda…",
+    "textComplete": "Matn tayyor",
+    "hoverToCompare": "Taqqoslash uchun sichqonchani olib keling",
+    "beforeLabel": "Oldin",
+    "afterLabel": "Keyin",
+    "beforeImageAlt": "Yuklangan asl rasm",
+    "compareAria": "Oldin va keyin taqqoslash"
+  },
+  "lightbox": {
+    "dialogAria": "Kattalashtirilgan rasm ko'rinishi",
+    "closeOverlayAria": "Kattalashtirilgan ko'rinishni yopish",
+    "closeAria": "Yopish"
+  },
+  "alerts": {
+    "dismissAria": "Bildirishnomani yopish",
+    "success": "Vizual muvaffaqiyatli yaratildi!",
+    "error": "Nimadir noto'g'ri ketdi. Qayta urinib ko'ring.",
+    "downloadSuccess": "Rasm saqlandi!",
+    "downloadWarning": "Rasmni yuklab bo'lmadi. Rasmga o'ng tugma bilan bosing va \"Rasmni saqlash…\" ni tanlang.",
+    "textExtractSuccess": "Matn muvaffaqiyatli ajratildi!"
+  },
+  "api": {
+    "serverUnreachable": "Serverga ulanib bo'lmadi. Backend 5000-portda ishlayotganiga ishonch hosil qiling.",
+    "invalidResponse": "Serverdan noto'g'ri javob olindi.",
+    "backendHint": " Backend 5000-portda ishlayotganiga ishonch hosil qiling (npm run dev:backend).",
+    "generateFailed": "Rasm yaratib bo'lmadi.",
+    "incompleteData": "Server to'liq bo'lmagan rasm ma'lumotlarini qaytardi.",
+    "promptFailed": "Prompt yaratib bo'lmadi.",
+    "incompletePrompt": "Server to'liq bo'lmagan prompt qaytardi."
+  },
+  "chat": {
+    "title": "✨ AI Yordamchi (O'z tilingizda yozing)",
+    "placeholder": "Qanday rasm xohlayotganingizni yozing (masalan, 'moda promosi, iliq ranglar')...",
+    "button": "Prompt yaratish",
+    "loading": "AI o'ylamoqda...",
+    "inputAria": "Kerakli rasmni tasvirlang",
+    "promptInserted": "Prompt yuqoridagi maydonga qo'yildi — tahrirlang yoki «Vizual yaratish»ni bosing.",
+    "hybridHint": "Sahna tavsifi ingliz tilida (AI sifati uchun), rasm ustidagi yozuv va xeshteglar — siz tanlagan tilde.",
+    "error": "Prompt yaratib bo'lmadi. Qayta urinib ko'ring."
+  }
+}

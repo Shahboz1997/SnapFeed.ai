@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: snapfeed-api
+    runtime: docker
+    plan: starter
+    region: frankfurt
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_PROJECT_ID
+        sync: false
+      - key: OPENAI_IMAGE_MODEL
+        value: gpt-image-1.5
+      - key: CORS_ORIGIN
+        sync: false
+      - key: OPENAI_TIMEOUT_MS
+        value: "300000"
+      - key: PRODUCT_BG_REMOVAL_ENABLED
+        value: "true"
+      - key: PRODUCT_BG_REMOVAL_MODEL
+        value: small
+      - key: IMAGE_UPSCALE_ENABLED
+        value: "true"
+      - key: IMAGE_UPSCALE_FACTOR
+        value: "2"

@@ -1,0 +1,580 @@
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import { generateImage, ApiError, type AspectRatio, type Platform } from './api/generateImage';
+import { generateProductImage } from './api/generateProductImage';
+import AlertBanner, { type AlertType } from './components/AlertBanner';
+import GeneratedImagePreview from './components/GeneratedImagePreview';
+import LanguageSwitcher from './components/LanguageSwitcher';
+import LoadingOverlay from './components/LoadingOverlay';
+import Spinner from './components/Spinner';
+import ChatAssistant from './components/ChatAssistant';
+import ProductImageUpload from './components/ProductImageUpload';
+import VisualOptionCard from './components/VisualOptionCard';
+import {
+  InstagramIcon,
+  FacebookIcon,
+  SquareFormatIcon,
+  StoryFormatIcon,
+  SparklesIcon,
+  DocumentTextIcon,
+  ShoppingBagIcon,
+} from './components/icons';
+
+const PROMPT_MAX_LENGTH = 2000;
+const USER_WISH_MAX_LENGTH = 300;
+
+type Format = AspectRatio;
+type AppMode = 'text' | 'product';
+
+interface AlertState {
+  message: string;
+  type: AlertType;
+}
+
+export default function App() {
+  const { t, i18n } = useTranslation();
+  const [mode, setMode] = useState<AppMode>('text');
+  const [userPrompt, setUserPrompt] = useState('');
+  const [base64Image, setBase64Image] = useState<string | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const [productFileError, setProductFileError] = useState<string | null>(null);
+  const [extractText, setExtractText] = useState(false);
+  const [includeText, setIncludeText] = useState(true);
+  const [extractedText, setExtractedText] = useState<string | null>(null);
+  const [userWish, setUserWish] = useState('');
+  const [platform, setPlatform] = useState<Platform>('instagram');
+  const [format, setFormat] = useState<Format>('square');
+  const [formatManuallySet, setFormatManuallySet] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [alert, setAlert] = useState<AlertState | null>(null);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [hashtags, setHashtags] = useState<string[]>([]);
+  const [isFlashing, setIsFlashing] = useState(false);
+  const promptTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const examplePrompts = t('examples', { returnObjects: true }) as string[];
+
+  const promptLength = userPrompt.length;
+  const promptIsEmpty = !userPrompt.trim();
+  const productImageReady = Boolean(base64Image) && !productFileError;
+  const atCharLimit = promptLength >= PROMPT_MAX_LENGTH;
+  const canGenerate =
+    !loading && (mode === 'text' ? !promptIsEmpty : productImageReady);
+
+  useEffect(() => {
+    if (platform === 'instagram' && !formatManuallySet) {
+      setFormat('story');
+    }
+  }, [platform, formatManuallySet]);
+
+  function handlePlatformChange(next: Platform) {
+    setPlatform(next);
+    if (next === 'instagram') {
+      setFormatManuallySet(false);
+    }
+  }
+
+  function handleFormatChange(next: Format) {
+    setFormat(next);
+    setFormatManuallySet(true);
+  }
+
+  function handlePromptChange(value: string) {
+    setUserPrompt(value.slice(0, PROMPT_MAX_LENGTH));
+  }
+
+  function handleUserWishChange(value: string) {
+    setUserWish(value.slice(0, USER_WISH_MAX_LENGTH));
+  }
+
+  function handleModeChange(next: AppMode) {
+    if (loading || next === mode) return;
+    setMode(next);
+    setAlert(null);
+    setProductFileError(null);
+    setExtractText(false);
+    setExtractedText(null);
+    setImageUrl(null);
+    setHashtags([]);
+
+    if (next === 'text') {
+      setBase64Image(null);
+      setImagePreviewUrl(null);
+    }
+  }
+
+  function handleProductImageLoaded(base64: string, previewUrl: string) {
+    setBase64Image(base64);
+    setImagePreviewUrl(previewUrl);
+    setProductFileError(null);
+  }
+
+  function handleProductImageClear() {
+    setBase64Image(null);
+    setImagePreviewUrl(null);
+    setProductFileError(null);
+  }
+
+  function handleProductFileError(message: string) {
+    setProductFileError(message);
+  }
+
+  const handleChatPromptGenerated = useCallback((prompt: string) => {
+    handlePromptChange(prompt);
+    setIsFlashing(true);
+    promptTextareaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    promptTextareaRef.current?.focus();
+    showAlert(t('chat.promptInserted'), 'success');
+
+    window.setTimeout(() => setIsFlashing(false), 1000);
+  }, [t]);
+
+  function handleReset() {
+    setUserPrompt('');
+    setBase64Image(null);
+    setImagePreviewUrl(null);
+    setProductFileError(null);
+    setExtractText(false);
+    setExtractedText(null);
+    setIncludeText(true);
+    setUserWish('');
+    setPlatform('instagram');
+    setFormat('square');
+    setFormatManuallySet(false);
+    setImageUrl(null);
+    setHashtags([]);
+    setAlert(null);
+  }
+
+  function showAlert(message: string, type: AlertType = 'error') {
+    setAlert({ message, type });
+  }
+
+  function resolveApiError(err: unknown): string {
+    if (err instanceof ApiError) {
+      if (err.messageKey === 'api.generateFailed' && err.message) {
+        return err.message;
+      }
+      if (err.messageKey) {
+        const hint =
+          err.messageKey === 'api.invalidResponse' && err.statusCode
+            ? t('api.backendHint')
+            : '';
+        return t(err.messageKey) + hint;
+      }
+    }
+    if (err instanceof Error && err.message) {
+      return err.message;
+    }
+    return t('alerts.error');
+  }
+
+  const isProductOcrMode = mode === 'product' && extractText;
+
+  const handleGenerate = useCallback(async () => {
+    if (!canGenerate) return;
+
+    setLoading(true);
+    setAlert(null);
+    setImageUrl(null);
+    setHashtags([]);
+    setExtractedText(null);
+
+    const currentLanguage = (i18n.language || 'ru').split('-')[0];
+
+    try {
+      if (mode === 'text') {
+        const data = await generateImage({
+          userPrompt,
+          platform,
+          aspectRatio: format,
+          lang: currentLanguage,
+          includeText,
+        });
+
+        setImageUrl(data.imageUrl);
+        setHashtags(data.hashtags);
+      } else {
+        const data = await generateProductImage({
+          base64Image: base64Image!,
+          userWish,
+          platform,
+          format,
+          extractText,
+          includeText,
+          lang: currentLanguage,
+        });
+
+        if (extractText) {
+          setImageUrl(null);
+          setHashtags(data.hashtags);
+          setExtractedText(data.extractedText?.trim() ? data.extractedText : null);
+        } else {
+          setImageUrl(data.imageUrl);
+          setHashtags(data.hashtags);
+          setExtractedText(null);
+        }
+      }
+
+      showAlert(
+        extractText && mode === 'product' ? t('alerts.textExtractSuccess') : t('alerts.success'),
+        'success',
+      );
+    } catch (err) {
+      showAlert(resolveApiError(err), 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [canGenerate, mode, userPrompt, base64Image, userWish, platform, format, extractText, includeText, t, i18n.language]);
+
+  const charCounterClass =
+    atCharLimit ? 'text-red-400' : promptLength > PROMPT_MAX_LENGTH * 0.9 ? 'text-amber-400' : 'text-slate-500';
+
+  return (
+    <div className="relative min-h-screen overflow-hidden bg-white text-slate-900">
+      <LoadingOverlay
+        visible={loading}
+        message={
+          isProductOcrMode
+            ? t('loading.extractingText')
+            : undefined
+        }
+      />
+
+      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden="true">
+        <div className="absolute -right-24 -top-24 h-[560px] w-[560px] rounded-full bg-indigo-200/30 blur-[150px] backdrop-blur-3xl" />
+        <div className="absolute -bottom-32 -left-24 h-[520px] w-[520px] rounded-full bg-purple-200/20 blur-[150px] backdrop-blur-3xl" />
+        <div className="absolute bottom-1/3 right-1/3 h-[400px] w-[400px] rounded-full bg-pink-200/15 blur-[120px] backdrop-blur-3xl" />
+      </div>
+
+      <div className="relative z-10 mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-8 md:px-8 md:py-10">
+        <header className="mb-8 flex flex-col gap-4 sm:mb-10 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+          <div className="flex items-center gap-4">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-900 text-lg font-bold text-white shadow-md">
+              S
+            </div>
+            <div>
+              <h1 className="text-xl font-bold tracking-tight text-slate-900">SnapFeed.ai</h1>
+              <p className="text-sm font-normal text-slate-500">{t('header.subtitle')}</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-4">
+            <LanguageSwitcher />
+            <div className="flex w-fit items-center gap-2 rounded-full border border-slate-200/80 bg-slate-50 px-4 py-2 text-xs font-normal text-slate-500 shadow-sm">
+              <span className="h-2 w-2 rounded-full bg-emerald-500" aria-hidden="true" />
+              {t('header.poweredBy')}
+            </div>
+          </div>
+        </header>
+
+        {alert && (
+          <AlertBanner
+            message={alert.message}
+            type={alert.type}
+            onDismiss={() => setAlert(null)}
+            autoDismissMs={alert.type === 'success' ? 5000 : undefined}
+          />
+        )}
+
+        <div className="flex flex-col gap-6 lg:flex-row lg:gap-10">
+          <section
+            aria-labelledby="create-heading"
+            className="relative z-10 w-full min-w-0 rounded-2xl border border-white/70 bg-slate-50/75 p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-md sm:p-8 lg:flex-1 lg:p-10"
+          >
+            <div
+              role="tablist"
+              aria-label={t('mode.label')}
+              className="mb-6 flex w-full rounded-xl bg-slate-200/50 p-1 sm:mb-8"
+            >
+              <button
+                type="button"
+                role="tab"
+                id="mode-tab-text"
+                aria-selected={mode === 'text'}
+                aria-controls="mode-panel"
+                disabled={loading}
+                onClick={() => handleModeChange('text')}
+                className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-3 text-xs font-medium transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 disabled:cursor-not-allowed disabled:opacity-50 sm:gap-2 sm:px-4 sm:text-sm ${
+                  mode === 'text'
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                <DocumentTextIcon className="h-4 w-4 shrink-0" />
+                <span className="truncate">{t('mode.text')}</span>
+              </button>
+              <button
+                type="button"
+                role="tab"
+                id="mode-tab-product"
+                aria-selected={mode === 'product'}
+                aria-controls="mode-panel"
+                disabled={loading}
+                onClick={() => handleModeChange('product')}
+                className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-3 text-xs font-medium transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 disabled:cursor-not-allowed disabled:opacity-50 sm:gap-2 sm:px-4 sm:text-sm ${
+                  mode === 'product'
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                <ShoppingBagIcon className="h-4 w-4 shrink-0" />
+                <span className="truncate">{t('mode.product')}</span>
+              </button>
+            </div>
+
+            <h2 id="create-heading" className="mb-2 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
+              {t('form.title')}
+            </h2>
+            <p className="mb-6 text-sm font-normal text-slate-500 sm:mb-8">
+              {mode === 'text' ? t('form.description') : t('ecommerce.description')}
+            </p>
+
+            <div id="mode-panel" role="tabpanel" aria-labelledby={mode === 'text' ? 'mode-tab-text' : 'mode-tab-product'} className="space-y-4 sm:space-y-6">
+              <fieldset disabled={loading} className="space-y-4 border-0 p-0 disabled:opacity-60 sm:space-y-6">
+                {mode === 'text' ? (
+                  <div>
+                    <div className="mb-4 flex items-center justify-between gap-2">
+                      <label htmlFor="prompt" className="text-sm font-medium text-slate-700">
+                        {t('form.promptLabel')}
+                      </label>
+                      <span
+                        id="char-count"
+                        className={`text-xs tabular-nums ${charCounterClass}`}
+                        aria-live="polite"
+                      >
+                        {promptLength} / {PROMPT_MAX_LENGTH}
+                      </span>
+                    </div>
+
+                    <textarea
+                      ref={promptTextareaRef}
+                      id="prompt"
+                      value={userPrompt}
+                      onChange={(e) => handlePromptChange(e.target.value)}
+                      disabled={loading}
+                      maxLength={PROMPT_MAX_LENGTH}
+                      aria-describedby="char-count prompt-hints"
+                      placeholder={t('form.promptPlaceholder')}
+                      rows={6}
+                      className={`w-full resize-y rounded-xl border border-slate-200/80 bg-white px-4 py-4 text-sm text-slate-900 placeholder:font-light placeholder:text-slate-400 outline-none transition-all duration-300 focus:border-slate-400 focus:ring-2 focus:ring-slate-100 disabled:cursor-not-allowed disabled:opacity-50 ${
+                        isFlashing ? 'prompt-textarea-flash' : ''
+                      }`}
+                    />
+
+                    <div id="prompt-hints" className="mt-4">
+                      <div className="space-y-3">
+                        <p className="text-sm font-normal text-slate-500">{t('form.tryExample')}</p>
+                        <div className="flex flex-wrap gap-2">
+                          {examplePrompts.map((example) => (
+                            <button
+                              key={example}
+                              type="button"
+                              disabled={loading}
+                              onClick={() => handlePromptChange(example)}
+                              className="rounded-lg border border-slate-200/80 bg-white px-3 py-2 text-left text-xs font-normal text-slate-500 shadow-sm transition-all duration-300 hover:border-slate-300 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 disabled:opacity-50"
+                            >
+                              {example.length > 52 ? `${example.slice(0, 52)}…` : example}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <ChatAssistant
+                        disabled={loading}
+                        onPromptGenerated={handleChatPromptGenerated}
+                        onError={(message) => showAlert(message, 'error')}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4 sm:space-y-6">
+                    <ProductImageUpload
+                      disabled={loading}
+                      base64Image={base64Image}
+                      previewUrl={imagePreviewUrl}
+                      error={productFileError}
+                      onImageLoaded={handleProductImageLoaded}
+                      onClear={handleProductImageClear}
+                      onValidationError={handleProductFileError}
+                    />
+
+                    <div>
+                      <label htmlFor="user-wish" className="mb-4 block text-sm font-medium text-slate-700">
+                        {t('ecommerce.wishLabel')}
+                      </label>
+                      <input
+                        id="user-wish"
+                        type="text"
+                        value={userWish}
+                        onChange={(e) => handleUserWishChange(e.target.value)}
+                        disabled={loading}
+                        maxLength={USER_WISH_MAX_LENGTH}
+                        placeholder={t('ecommerce.wishPlaceholder')}
+                        className="w-full rounded-xl border border-slate-200/80 bg-white px-4 py-4 text-sm text-slate-900 placeholder:font-light placeholder:text-slate-400 outline-none transition-all duration-300 focus:border-slate-400 focus:ring-2 focus:ring-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between gap-4 rounded-xl border border-slate-200/80 bg-white px-5 py-4 shadow-sm">
+                      <label htmlFor="extract-text" className="cursor-pointer text-sm font-normal text-slate-700">
+                        {t('ecommerce.extractTextLabel')}
+                      </label>
+                      <button
+                        id="extract-text"
+                        type="button"
+                        role="switch"
+                        aria-checked={extractText}
+                        disabled={loading}
+                        onClick={() => setExtractText((current) => !current)}
+                        className={`relative h-6 w-11 shrink-0 rounded-full transition-colors duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 disabled:cursor-not-allowed disabled:opacity-50 ${
+                          extractText ? 'bg-slate-900' : 'bg-slate-300'
+                        }`}
+                      >
+                        <span
+                          aria-hidden="true"
+                          className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                            extractText ? 'translate-x-5' : 'translate-x-0'
+                          }`}
+                        />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <div role="radiogroup" aria-labelledby="platform-label">
+                  <p id="platform-label" className="mb-4 text-sm font-medium text-slate-700">
+                    {t('form.platform')}
+                  </p>
+                  <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                    <VisualOptionCard
+                      id="platform-instagram"
+                      label={t('platform.instagram')}
+                      hint={t('platform.instagramHint')}
+                      icon={<InstagramIcon className="h-6 w-6" />}
+                      selected={platform === 'instagram'}
+                      disabled={loading}
+                      onSelect={() => handlePlatformChange('instagram')}
+                    />
+                    <VisualOptionCard
+                      id="platform-facebook"
+                      label={t('platform.facebook')}
+                      hint={t('platform.facebookHint')}
+                      icon={<FacebookIcon className="h-6 w-6" />}
+                      selected={platform === 'facebook'}
+                      disabled={loading}
+                      onSelect={() => handlePlatformChange('facebook')}
+                    />
+                  </div>
+                </div>
+
+                <div role="radiogroup" aria-labelledby="format-label">
+                  <div className="mb-4 flex flex-wrap items-center gap-2">
+                    <p id="format-label" className="text-sm font-medium text-slate-700">
+                      {t('form.format')}
+                    </p>
+                    {platform === 'instagram' && format === 'story' && !formatManuallySet && (
+                      <span className="rounded-full border border-slate-200 bg-white px-2.5 py-0.5 text-[10px] font-medium text-slate-600 shadow-sm">
+                        {t('form.autoStory')}
+                      </span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                    <VisualOptionCard
+                      id="format-square"
+                      label={t('format.square')}
+                      hint="1:1"
+                      icon={<SquareFormatIcon className="h-6 w-6" />}
+                      selected={format === 'square'}
+                      disabled={loading}
+                      onSelect={() => handleFormatChange('square')}
+                    />
+                    <VisualOptionCard
+                      id="format-story"
+                      label={t('format.story')}
+                      hint="9:16"
+                      icon={<StoryFormatIcon className="h-6 w-6" />}
+                      selected={format === 'story'}
+                      disabled={loading}
+                      recommended={platform === 'instagram'}
+                      recommendedLabel={t('format.recommended')}
+                      onSelect={() => handleFormatChange('story')}
+                    />
+                  </div>
+                </div>
+
+                {!isProductOcrMode && (
+                  <div className="flex items-center justify-between gap-4 rounded-xl border border-slate-200/80 bg-white px-5 py-4 shadow-sm">
+                    <label htmlFor="include-text" className="cursor-pointer text-sm font-normal text-slate-700">
+                      {t('form.includeTextLabel')}
+                    </label>
+                    <button
+                      id="include-text"
+                      type="button"
+                      role="switch"
+                      aria-checked={includeText}
+                      disabled={loading}
+                      onClick={() => setIncludeText((current) => !current)}
+                      className={`relative h-6 w-11 shrink-0 rounded-full transition-colors duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 disabled:cursor-not-allowed disabled:opacity-50 ${
+                        includeText ? 'bg-slate-900' : 'bg-slate-300'
+                      }`}
+                    >
+                      <span
+                        aria-hidden="true"
+                        className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                          includeText ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                )}
+              </fieldset>
+
+              <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:gap-4">
+                <button
+                  type="button"
+                  onClick={handleReset}
+                  disabled={loading}
+                  aria-label={t('form.resetAria')}
+                  className="order-2 rounded-xl border border-slate-200/80 bg-white px-5 py-4 text-sm font-medium text-slate-600 shadow-sm transition-all duration-300 hover:border-slate-300 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 disabled:cursor-not-allowed disabled:opacity-50 sm:order-1 sm:flex-none"
+                >
+                  {t('form.reset')}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleGenerate}
+                  disabled={!canGenerate}
+                  aria-busy={loading}
+                  aria-disabled={!canGenerate}
+                  className="order-1 flex flex-1 items-center justify-center gap-2.5 rounded-xl bg-slate-900 px-6 py-4 text-sm font-semibold text-white shadow-md transition-all duration-300 hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none sm:order-2"
+                >
+                  {loading ? (
+                    <>
+                      <Spinner />
+                      {isProductOcrMode ? t('form.extracting') : t('form.generating')}
+                    </>
+                  ) : (
+                    <>
+                      <SparklesIcon />
+                      {isProductOcrMode ? t('form.extractTextOnly') : t('form.generate')}
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <GeneratedImagePreview
+            loading={loading}
+            format={format}
+            imageUrl={imageUrl}
+            originalImageUrl={mode === 'product' ? imagePreviewUrl : null}
+            hashtags={hashtags}
+            extractedText={extractedText}
+            ocrOnly={isProductOcrMode}
+            onNotify={showAlert}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
