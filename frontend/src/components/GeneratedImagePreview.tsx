@@ -69,10 +69,10 @@ function EmptyState() {
   const { t } = useTranslation();
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-10 text-center sm:px-6 sm:py-12">
-      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200/80 bg-slate-50 sm:mb-5 sm:h-14 sm:w-14 lg:h-16 lg:w-16">
+    <div className="flex flex-1 flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-8 text-center sm:px-6 sm:py-10 lg:py-12">
+      <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200/80 bg-slate-50 sm:mb-4 sm:h-14 sm:w-14 lg:h-16 lg:w-16">
         <svg
-          className="h-7 w-7 text-slate-400 sm:h-8 sm:w-8"
+          className="h-6 w-6 text-slate-400 sm:h-8 sm:w-8"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -217,11 +217,11 @@ export default function GeneratedImagePreview({
     <>
       <section
         aria-labelledby="preview-heading"
-        className="relative z-10 flex w-full min-h-[360px] flex-col rounded-2xl border border-white/70 bg-slate-50/75 p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-md sm:min-h-[480px] sm:p-8 lg:w-[420px] lg:shrink-0 lg:p-10"
+        className="relative z-10 flex h-full w-full min-h-[240px] min-w-0 flex-col overflow-hidden rounded-2xl border border-white/70 bg-slate-50/75 p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-md sm:min-h-[360px] md:p-8 lg:min-h-0"
       >
-        <div className="mb-6 flex items-start justify-between gap-3 sm:mb-8 sm:items-center sm:gap-4">
-          <div className="min-w-0">
-            <h2 id="preview-heading" className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
+        <div className="mb-4 flex items-start justify-between gap-2 sm:mb-6 lg:mb-8 lg:items-center lg:gap-4">
+          <div className="min-w-0 flex-1">
+            <h2 id="preview-heading" className="text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl lg:text-3xl">
               {t('preview.title')}
             </h2>
             <p className="mt-1 text-sm font-normal text-slate-500">{renderSubtitle()}</p>
@@ -247,7 +247,7 @@ export default function GeneratedImagePreview({
                   <p className="mb-3 text-xs font-medium uppercase tracking-wider text-slate-500">
                     {t('preview.hashtags')}
                   </p>
-                  <div className="flex flex-wrap gap-2" role="list">
+                  <div className="flex w-full flex-wrap gap-2.5" role="list">
                     {hashtags.map((tag) => {
                       const isCopied = copiedTag === tag;
                       return (
@@ -261,7 +261,7 @@ export default function GeneratedImagePreview({
                               ? t('preview.hashtagCopiedAria', { tag })
                               : t('preview.copyHashtagAria', { tag })
                           }
-                          className={`rounded-full border px-3.5 py-1.5 text-sm font-medium shadow-sm transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 ${hashtagButtonClass(isCopied)}`}
+                          className={`rounded-full border px-4 py-2 text-sm font-medium shadow-sm transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 ${hashtagButtonClass(isCopied)}`}
                         >
                           {tag}
                           {isCopied && (
@@ -281,14 +281,14 @@ export default function GeneratedImagePreview({
           )}
 
           {!loading && hasImage && (
-            <div className="flex flex-1 flex-col gap-4 sm:gap-6">
+            <div className="flex w-full flex-1 flex-col gap-5 sm:gap-6">
               <div className="flex w-full flex-1 flex-col items-center justify-center gap-3 sm:gap-4">
                 <FormatBadge ratio={frame.ratio} label={formatLabel} />
                 <button
                   type="button"
                   onClick={() => setLightboxOpen(true)}
                   aria-label={t('preview.openEnlargedAria')}
-                  className={`group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_8px_30px_rgb(0,0,0,0.06)] transition-all duration-300 ease-out hover:border-slate-300 hover:shadow-[0_12px_40px_rgb(0,0,0,0.08)] focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 ${frame.frameClass}`}
+                  className={`group relative w-full overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_8px_30px_rgb(0,0,0,0.06)] transition-all duration-300 ease-out hover:border-slate-300 hover:shadow-[0_12px_40px_rgb(0,0,0,0.08)] focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 ${frame.frameClass}`}
                 >
                   {hasCompare ? (
                     <ImageCompareSlider
@@ -299,7 +299,7 @@ export default function GeneratedImagePreview({
                       aspectClass={frame.aspectClass}
                     />
                   ) : (
-                    <div className={`${frame.aspectClass} w-full`}>
+                    <div className={`${frame.aspectClass} h-full w-full`}>
                       <img
                         src={imageUrl!}
                         alt={t('preview.imageAlt')}
@@ -317,11 +317,11 @@ export default function GeneratedImagePreview({
               </div>
 
               {hashtags.length > 0 && (
-                <div>
+                <div className="w-full">
                   <p className="mb-3 text-xs font-medium uppercase tracking-wider text-slate-500">
                     {t('preview.hashtags')}
                   </p>
-                  <div className="flex flex-wrap gap-2" role="list">
+                  <div className="flex w-full flex-wrap gap-2.5" role="list">
                     {hashtags.map((tag) => {
                       const isCopied = copiedTag === tag;
                       return (
@@ -335,7 +335,7 @@ export default function GeneratedImagePreview({
                               ? t('preview.hashtagCopiedAria', { tag })
                               : t('preview.copyHashtagAria', { tag })
                           }
-                          className={`rounded-full border px-3.5 py-1.5 text-sm font-medium shadow-sm transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 ${hashtagButtonClass(isCopied)}`}
+                          className={`rounded-full border px-4 py-2 text-sm font-medium shadow-sm transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 ${hashtagButtonClass(isCopied)}`}
                         >
                           {tag}
                           {isCopied && (
@@ -350,13 +350,13 @@ export default function GeneratedImagePreview({
                 </div>
               )}
 
-              <div className="space-y-3">
+              <div className="w-full space-y-3">
                 <button
                   type="button"
                   onClick={handleDownload}
                   disabled={downloading}
                   aria-label={t('preview.downloadAria')}
-                  className="flex w-full items-center justify-center gap-2.5 rounded-xl bg-slate-900 px-6 py-4 text-base font-semibold text-white shadow-md transition-all duration-300 hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="touch-target flex w-full items-center justify-center gap-2.5 rounded-xl bg-slate-900 px-8 py-4 text-base font-semibold text-white shadow-md transition-all duration-300 hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {downloading ? (
                     <>

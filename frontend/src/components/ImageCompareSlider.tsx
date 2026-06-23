@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef, useState, type TouchEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 
 interface ImageCompareSliderProps {
@@ -34,11 +34,40 @@ export default function ImageCompareSlider({
     setPosition(pct);
   }, []);
 
-  function handlePointerEnter(e: React.PointerEvent<HTMLDivElement>) {
-    e.currentTarget.setPointerCapture(e.pointerId);
+  function activateAt(clientX: number) {
     isActiveRef.current = true;
     setIsActive(true);
-    updatePosition(e.clientX);
+    updatePosition(clientX);
+  }
+
+  function deactivate() {
+    isActiveRef.current = false;
+    setIsActive(false);
+    setPosition(100);
+  }
+
+  function activate(e: React.PointerEvent<HTMLDivElement>) {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    activateAt(e.clientX);
+  }
+
+  function deactivatePointer(e: React.PointerEvent<HTMLDivElement>) {
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+    deactivate();
+  }
+
+  function handlePointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    if (e.pointerType === 'touch') {
+      activate(e);
+    }
+  }
+
+  function handlePointerEnter(e: React.PointerEvent<HTMLDivElement>) {
+    if (e.pointerType === 'mouse') {
+      activate(e);
+    }
   }
 
   function handlePointerMove(e: React.PointerEvent<HTMLDivElement>) {
@@ -46,13 +75,33 @@ export default function ImageCompareSlider({
     updatePosition(e.clientX);
   }
 
-  function handlePointerLeave(e: React.PointerEvent<HTMLDivElement>) {
-    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
-      e.currentTarget.releasePointerCapture(e.pointerId);
+  function handlePointerUp(e: React.PointerEvent<HTMLDivElement>) {
+    if (e.pointerType === 'touch') {
+      deactivatePointer(e);
     }
-    isActiveRef.current = false;
-    setIsActive(false);
-    setPosition(100);
+  }
+
+  function handlePointerLeave(e: React.PointerEvent<HTMLDivElement>) {
+    if (e.pointerType === 'mouse') {
+      deactivatePointer(e);
+    }
+  }
+
+  function handleTouchStart(e: TouchEvent<HTMLDivElement>) {
+    const touch = e.touches[0];
+    if (!touch) return;
+    activateAt(touch.clientX);
+  }
+
+  function handleTouchMove(e: TouchEvent<HTMLDivElement>) {
+    if (!isActiveRef.current) return;
+    const touch = e.touches[0];
+    if (!touch) return;
+    updatePosition(touch.clientX);
+  }
+
+  function handleTouchEnd() {
+    deactivate();
   }
 
   const afterClip = isActive ? `inset(0 ${100 - position}% 0 0)` : 'inset(0 0 0 0)';
@@ -60,11 +109,18 @@ export default function ImageCompareSlider({
   return (
     <div
       ref={containerRef}
+      onPointerDown={handlePointerDown}
       onPointerEnter={handlePointerEnter}
       onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerLeave}
-      onPointerCancel={handlePointerLeave}
-      className={`relative select-none touch-none ${aspectClass} w-full ${className}`}
+      onPointerCancel={deactivatePointer}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchEnd}
+      style={{ touchAction: isActive ? 'none' : 'pan-y' }}
+      className={`relative w-full select-none ${aspectClass} ${className}`}
       aria-label={t('preview.compareAria')}
     >
       <img
@@ -97,8 +153,8 @@ export default function ImageCompareSlider({
         }}
         aria-hidden="true"
       >
-        <div className="absolute left-1/2 top-1/2 flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white bg-white/90 shadow-md backdrop-blur-sm">
-          <svg className="h-3.5 w-3.5 text-slate-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} aria-hidden="true">
+        <div className="absolute left-1/2 top-1/2 flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white bg-white/90 shadow-md backdrop-blur-sm sm:h-9 sm:w-9">
+          <svg className="h-4 w-4 text-slate-600 sm:h-3.5 sm:w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" d="M8 9l4-4 4 4M16 15l-4 4-4-4" />
           </svg>
         </div>
@@ -110,7 +166,8 @@ export default function ImageCompareSlider({
         }`}
       >
         <span className="rounded-full border border-white/25 bg-white/90 px-3 py-1 text-xs font-medium text-slate-700 shadow-sm backdrop-blur-sm">
-          {t('preview.hoverToCompare')}
+          <span className="lg:hidden">{t('preview.touchToCompare')}</span>
+          <span className="hidden lg:inline">{t('preview.hoverToCompare')}</span>
         </span>
       </div>
 

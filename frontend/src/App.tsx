@@ -230,8 +230,19 @@ export default function App() {
   const charCounterClass =
     atCharLimit ? 'text-red-400' : promptLength > PROMPT_MAX_LENGTH * 0.9 ? 'text-amber-400' : 'text-slate-500';
 
+  const generateButtonLabel = loading
+    ? isProductOcrMode
+      ? t('form.extracting')
+      : t('form.generating')
+    : isProductOcrMode
+      ? t('form.extractTextOnly')
+      : t('form.generate');
+
+  const generateButtonClass =
+    'flex w-full items-center justify-center gap-2.5 rounded-xl bg-slate-900 px-6 text-sm font-semibold text-white shadow-md transition-all duration-300 hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none';
+
   return (
-    <div className="relative min-h-screen overflow-hidden bg-white text-slate-900">
+    <div className="relative min-h-[100dvh] overflow-x-hidden bg-white text-slate-900">
       <LoadingOverlay
         visible={loading}
         message={
@@ -242,27 +253,27 @@ export default function App() {
       />
 
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden="true">
-        <div className="absolute -right-24 -top-24 h-[560px] w-[560px] rounded-full bg-indigo-200/30 blur-[150px] backdrop-blur-3xl" />
-        <div className="absolute -bottom-32 -left-24 h-[520px] w-[520px] rounded-full bg-purple-200/20 blur-[150px] backdrop-blur-3xl" />
-        <div className="absolute bottom-1/3 right-1/3 h-[400px] w-[400px] rounded-full bg-pink-200/15 blur-[120px] backdrop-blur-3xl" />
+        <div className="absolute -right-16 -top-16 h-[280px] w-[280px] rounded-full bg-indigo-200/30 blur-[100px] backdrop-blur-3xl sm:-right-24 sm:-top-24 sm:h-[560px] sm:w-[560px] sm:blur-[150px]" />
+        <div className="absolute -bottom-20 -left-16 h-[260px] w-[260px] rounded-full bg-purple-200/20 blur-[100px] backdrop-blur-3xl sm:-bottom-32 sm:-left-24 sm:h-[520px] sm:w-[520px] sm:blur-[150px]" />
+        <div className="absolute bottom-1/3 right-1/3 hidden h-[400px] w-[400px] rounded-full bg-pink-200/15 blur-[120px] backdrop-blur-3xl sm:block" />
       </div>
 
-      <div className="relative z-10 mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-8 md:px-8 md:py-10">
-        <header className="mb-8 flex flex-col gap-4 sm:mb-10 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
-          <div className="flex items-center gap-4">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-900 text-lg font-bold text-white shadow-md">
+      <div className="safe-area-top contain-width mobile-sticky-offset relative z-10 flex min-h-[100dvh] w-full max-w-[100vw] flex-col justify-center px-4 py-6 pb-safe sm:px-6 md:px-8 xl:px-12 lg:pb-6">
+        <header className="mb-4 flex w-full flex-col gap-3 sm:mb-8 lg:mb-10 lg:flex-row lg:items-center lg:justify-between lg:gap-6">
+          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-base font-bold text-white shadow-md sm:h-11 sm:w-11 sm:text-lg">
               S
             </div>
-            <div>
-              <h1 className="text-xl font-bold tracking-tight text-slate-900">SnapFeed.ai</h1>
-              <p className="text-sm font-normal text-slate-500">{t('header.subtitle')}</p>
+            <div className="min-w-0">
+              <h1 className="truncate text-lg font-bold tracking-tight text-slate-900 sm:text-xl">SnapFeed.ai</h1>
+              <p className="truncate text-xs font-normal text-slate-500 sm:text-sm">{t('header.subtitle')}</p>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-4">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4">
             <LanguageSwitcher />
-            <div className="flex w-fit items-center gap-2 rounded-full border border-slate-200/80 bg-slate-50 px-4 py-2 text-xs font-normal text-slate-500 shadow-sm">
-              <span className="h-2 w-2 rounded-full bg-emerald-500" aria-hidden="true" />
-              {t('header.poweredBy')}
+            <div className="flex w-full min-w-0 max-w-full items-center gap-2 rounded-full border border-slate-200/80 bg-slate-50 px-3 py-1.5 text-[11px] font-normal text-slate-500 shadow-sm sm:px-4 sm:py-2 sm:text-xs">
+              <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-500" aria-hidden="true" />
+              <span className="min-w-0 truncate">{t('header.poweredBy')}</span>
             </div>
           </div>
         </header>
@@ -276,15 +287,15 @@ export default function App() {
           />
         )}
 
-        <div className="flex flex-col gap-6 lg:flex-row lg:gap-10">
+        <div className="contain-width grid w-full min-w-0 grid-cols-1 items-stretch gap-6 lg:grid-cols-12 xl:gap-8">
           <section
             aria-labelledby="create-heading"
-            className="relative z-10 w-full min-w-0 rounded-2xl border border-white/70 bg-slate-50/75 p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-md sm:p-8 lg:flex-1 lg:p-10"
+            className="contain-width relative z-10 w-full min-w-0 overflow-hidden rounded-2xl border border-white/70 bg-slate-50/75 p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-md sm:p-6 lg:col-span-7 lg:p-10"
           >
             <div
               role="tablist"
               aria-label={t('mode.label')}
-              className="mb-6 flex w-full rounded-xl bg-slate-200/50 p-1 sm:mb-8"
+              className="mb-5 grid w-full grid-cols-2 gap-1 rounded-xl bg-slate-200/50 p-1 sm:mb-6 lg:mb-8"
             >
               <button
                 type="button"
@@ -294,14 +305,15 @@ export default function App() {
                 aria-controls="mode-panel"
                 disabled={loading}
                 onClick={() => handleModeChange('text')}
-                className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-3 text-xs font-medium transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 disabled:cursor-not-allowed disabled:opacity-50 sm:gap-2 sm:px-4 sm:text-sm ${
+                className={`flex h-12 min-w-0 items-center justify-center gap-1.5 rounded-lg px-2 text-xs font-medium transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 disabled:cursor-not-allowed disabled:opacity-50 sm:gap-2 sm:px-3 sm:text-sm ${
                   mode === 'text'
                     ? 'bg-white text-slate-900 shadow-sm'
                     : 'text-slate-500 hover:text-slate-700'
                 }`}
               >
                 <DocumentTextIcon className="h-4 w-4 shrink-0" />
-                <span className="truncate">{t('mode.text')}</span>
+                <span className="min-w-0 truncate lg:hidden">{t('mode.textShort')}</span>
+                <span className="hidden min-w-0 truncate lg:inline">{t('mode.text')}</span>
               </button>
               <button
                 type="button"
@@ -311,57 +323,60 @@ export default function App() {
                 aria-controls="mode-panel"
                 disabled={loading}
                 onClick={() => handleModeChange('product')}
-                className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-3 text-xs font-medium transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 disabled:cursor-not-allowed disabled:opacity-50 sm:gap-2 sm:px-4 sm:text-sm ${
+                className={`flex h-12 min-w-0 items-center justify-center gap-1.5 rounded-lg px-2 text-xs font-medium transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 disabled:cursor-not-allowed disabled:opacity-50 sm:gap-2 sm:px-3 sm:text-sm ${
                   mode === 'product'
                     ? 'bg-white text-slate-900 shadow-sm'
                     : 'text-slate-500 hover:text-slate-700'
                 }`}
               >
                 <ShoppingBagIcon className="h-4 w-4 shrink-0" />
-                <span className="truncate">{t('mode.product')}</span>
+                <span className="min-w-0 truncate lg:hidden">{t('mode.productShort')}</span>
+                <span className="hidden min-w-0 truncate lg:inline">{t('mode.product')}</span>
               </button>
             </div>
 
-            <h2 id="create-heading" className="mb-2 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
+            <h2 id="create-heading" className="mb-2 break-words text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl lg:text-3xl">
               {t('form.title')}
             </h2>
-            <p className="mb-6 text-sm font-normal text-slate-500 sm:mb-8">
+            <p className="mb-6 break-words text-sm font-normal text-slate-500 sm:mb-8">
               {mode === 'text' ? t('form.description') : t('ecommerce.description')}
             </p>
 
-            <div id="mode-panel" role="tabpanel" aria-labelledby={mode === 'text' ? 'mode-tab-text' : 'mode-tab-product'} className="space-y-4 sm:space-y-6">
-              <fieldset disabled={loading} className="space-y-4 border-0 p-0 disabled:opacity-60 sm:space-y-6">
+            <div id="mode-panel" role="tabpanel" aria-labelledby={mode === 'text' ? 'mode-tab-text' : 'mode-tab-product'} className="contain-width min-w-0 space-y-6">
+              <fieldset disabled={loading} className="contain-width min-w-0 space-y-6 border-0 p-0 disabled:opacity-60">
                 {mode === 'text' ? (
-                  <div>
-                    <div className="mb-4 flex items-center justify-between gap-2">
-                      <label htmlFor="prompt" className="text-sm font-medium text-slate-700">
-                        {t('form.promptLabel')}
-                      </label>
-                      <span
-                        id="char-count"
-                        className={`text-xs tabular-nums ${charCounterClass}`}
-                        aria-live="polite"
-                      >
-                        {promptLength} / {PROMPT_MAX_LENGTH}
-                      </span>
+                  <div className="space-y-6">
+                    <div>
+                      <div className="mb-4 flex items-center justify-between gap-2">
+                        <label htmlFor="prompt" className="text-sm font-medium text-slate-700">
+                          {t('form.promptLabel')}
+                        </label>
+                        <span
+                          id="char-count"
+                          className={`text-xs tabular-nums ${charCounterClass}`}
+                          aria-live="polite"
+                        >
+                          {promptLength} / {PROMPT_MAX_LENGTH}
+                        </span>
+                      </div>
+
+                      <textarea
+                        ref={promptTextareaRef}
+                        id="prompt"
+                        value={userPrompt}
+                        onChange={(e) => handlePromptChange(e.target.value)}
+                        disabled={loading}
+                        maxLength={PROMPT_MAX_LENGTH}
+                        aria-describedby="char-count prompt-hints"
+                        placeholder={t('form.promptPlaceholder')}
+                        rows={6}
+                        className={`w-full max-w-full resize-y rounded-2xl border border-slate-200/80 bg-slate-50/50 px-4 py-3 text-base text-slate-900 shadow-inner placeholder:font-light placeholder:text-slate-400 outline-none transition-all duration-300 focus:border-slate-400 focus:bg-white focus:ring-1 focus:ring-slate-400/20 disabled:cursor-not-allowed disabled:opacity-50 lg:py-4 lg:text-sm ${
+                          isFlashing ? 'prompt-textarea-flash' : ''
+                        }`}
+                      />
                     </div>
 
-                    <textarea
-                      ref={promptTextareaRef}
-                      id="prompt"
-                      value={userPrompt}
-                      onChange={(e) => handlePromptChange(e.target.value)}
-                      disabled={loading}
-                      maxLength={PROMPT_MAX_LENGTH}
-                      aria-describedby="char-count prompt-hints"
-                      placeholder={t('form.promptPlaceholder')}
-                      rows={6}
-                      className={`w-full resize-y rounded-xl border border-slate-200/80 bg-white px-4 py-4 text-sm text-slate-900 placeholder:font-light placeholder:text-slate-400 outline-none transition-all duration-300 focus:border-slate-400 focus:ring-2 focus:ring-slate-100 disabled:cursor-not-allowed disabled:opacity-50 ${
-                        isFlashing ? 'prompt-textarea-flash' : ''
-                      }`}
-                    />
-
-                    <div id="prompt-hints" className="mt-4">
+                    <div id="prompt-hints" className="space-y-6">
                       <div className="space-y-3">
                         <p className="text-sm font-normal text-slate-500">{t('form.tryExample')}</p>
                         <div className="flex flex-wrap gap-2">
@@ -371,7 +386,7 @@ export default function App() {
                               type="button"
                               disabled={loading}
                               onClick={() => handlePromptChange(example)}
-                              className="rounded-lg border border-slate-200/80 bg-white px-3 py-2 text-left text-xs font-normal text-slate-500 shadow-sm transition-all duration-300 hover:border-slate-300 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 disabled:opacity-50"
+                              className="max-w-full rounded-xl border border-slate-200/80 bg-white px-3 py-2.5 text-left text-xs font-normal text-slate-500 shadow-sm transition-all duration-300 hover:border-slate-300 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 disabled:opacity-50 sm:py-2"
                             >
                               {example.length > 52 ? `${example.slice(0, 52)}…` : example}
                             </button>
@@ -387,7 +402,7 @@ export default function App() {
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-4 sm:space-y-6">
+                  <div className="space-y-6">
                     <ProductImageUpload
                       disabled={loading}
                       base64Image={base64Image}
@@ -410,12 +425,12 @@ export default function App() {
                         disabled={loading}
                         maxLength={USER_WISH_MAX_LENGTH}
                         placeholder={t('ecommerce.wishPlaceholder')}
-                        className="w-full rounded-xl border border-slate-200/80 bg-white px-4 py-4 text-sm text-slate-900 placeholder:font-light placeholder:text-slate-400 outline-none transition-all duration-300 focus:border-slate-400 focus:ring-2 focus:ring-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="w-full rounded-xl border border-slate-200/80 bg-white px-4 py-3 text-base text-slate-900 placeholder:font-light placeholder:text-slate-400 outline-none transition-all duration-300 focus:border-slate-400 focus:ring-2 focus:ring-slate-100 disabled:cursor-not-allowed disabled:opacity-50 lg:py-4 lg:text-sm"
                       />
                     </div>
 
-                    <div className="flex items-center justify-between gap-4 rounded-xl border border-slate-200/80 bg-white px-5 py-4 shadow-sm">
-                      <label htmlFor="extract-text" className="cursor-pointer text-sm font-normal text-slate-700">
+                    <div className="flex min-w-0 items-center justify-between gap-3 rounded-xl border border-slate-200/80 bg-white px-4 py-3.5 shadow-sm sm:gap-4 sm:px-5 sm:py-4">
+                      <label htmlFor="extract-text" className="min-w-0 flex-1 cursor-pointer text-sm font-normal leading-snug text-slate-700">
                         {t('ecommerce.extractTextLabel')}
                       </label>
                       <button
@@ -440,70 +455,72 @@ export default function App() {
                   </div>
                 )}
 
-                <div role="radiogroup" aria-labelledby="platform-label">
-                  <p id="platform-label" className="mb-4 text-sm font-medium text-slate-700">
-                    {t('form.platform')}
-                  </p>
-                  <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                    <VisualOptionCard
-                      id="platform-instagram"
-                      label={t('platform.instagram')}
-                      hint={t('platform.instagramHint')}
-                      icon={<InstagramIcon className="h-6 w-6" />}
-                      selected={platform === 'instagram'}
-                      disabled={loading}
-                      onSelect={() => handlePlatformChange('instagram')}
-                    />
-                    <VisualOptionCard
-                      id="platform-facebook"
-                      label={t('platform.facebook')}
-                      hint={t('platform.facebookHint')}
-                      icon={<FacebookIcon className="h-6 w-6" />}
-                      selected={platform === 'facebook'}
-                      disabled={loading}
-                      onSelect={() => handlePlatformChange('facebook')}
-                    />
-                  </div>
-                </div>
-
-                <div role="radiogroup" aria-labelledby="format-label">
-                  <div className="mb-4 flex flex-wrap items-center gap-2">
-                    <p id="format-label" className="text-sm font-medium text-slate-700">
-                      {t('form.format')}
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                  <div role="radiogroup" aria-labelledby="platform-label" className="min-w-0">
+                    <p id="platform-label" className="mb-4 text-sm font-medium text-slate-700">
+                      {t('form.platform')}
                     </p>
-                    {platform === 'instagram' && format === 'story' && !formatManuallySet && (
-                      <span className="rounded-full border border-slate-200 bg-white px-2.5 py-0.5 text-[10px] font-medium text-slate-600 shadow-sm">
-                        {t('form.autoStory')}
-                      </span>
-                    )}
+                    <div className="grid min-w-0 grid-cols-2 gap-2 sm:gap-4">
+                      <VisualOptionCard
+                        id="platform-instagram"
+                        label={t('platform.instagram')}
+                        hint={t('platform.instagramHint')}
+                        icon={<InstagramIcon className="h-5 w-5 sm:h-6 sm:w-6" />}
+                        selected={platform === 'instagram'}
+                        disabled={loading}
+                        onSelect={() => handlePlatformChange('instagram')}
+                      />
+                      <VisualOptionCard
+                        id="platform-facebook"
+                        label={t('platform.facebook')}
+                        hint={t('platform.facebookHint')}
+                        icon={<FacebookIcon className="h-5 w-5 sm:h-6 sm:w-6" />}
+                        selected={platform === 'facebook'}
+                        disabled={loading}
+                        onSelect={() => handlePlatformChange('facebook')}
+                      />
+                    </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                    <VisualOptionCard
-                      id="format-square"
-                      label={t('format.square')}
-                      hint="1:1"
-                      icon={<SquareFormatIcon className="h-6 w-6" />}
-                      selected={format === 'square'}
-                      disabled={loading}
-                      onSelect={() => handleFormatChange('square')}
-                    />
-                    <VisualOptionCard
-                      id="format-story"
-                      label={t('format.story')}
-                      hint="9:16"
-                      icon={<StoryFormatIcon className="h-6 w-6" />}
-                      selected={format === 'story'}
-                      disabled={loading}
-                      recommended={platform === 'instagram'}
-                      recommendedLabel={t('format.recommended')}
-                      onSelect={() => handleFormatChange('story')}
-                    />
+
+                  <div role="radiogroup" aria-labelledby="format-label" className="min-w-0">
+                    <div className="mb-4 flex min-w-0 flex-wrap items-center gap-2">
+                      <p id="format-label" className="text-sm font-medium text-slate-700">
+                        {t('form.format')}
+                      </p>
+                      {platform === 'instagram' && format === 'story' && !formatManuallySet && (
+                        <span className="rounded-full border border-slate-200 bg-white px-2.5 py-0.5 text-[10px] font-medium text-slate-600 shadow-sm">
+                          {t('form.autoStory')}
+                        </span>
+                      )}
+                    </div>
+                    <div className="grid min-w-0 grid-cols-2 gap-2 sm:gap-4">
+                      <VisualOptionCard
+                        id="format-square"
+                        label={t('format.square')}
+                        hint="1:1"
+                        icon={<SquareFormatIcon className="h-5 w-5 sm:h-6 sm:w-6" />}
+                        selected={format === 'square'}
+                        disabled={loading}
+                        onSelect={() => handleFormatChange('square')}
+                      />
+                      <VisualOptionCard
+                        id="format-story"
+                        label={t('format.story')}
+                        hint="9:16"
+                        icon={<StoryFormatIcon className="h-5 w-5 sm:h-6 sm:w-6" />}
+                        selected={format === 'story'}
+                        disabled={loading}
+                        recommended={platform === 'instagram'}
+                        recommendedLabel={t('format.recommended')}
+                        onSelect={() => handleFormatChange('story')}
+                      />
+                    </div>
                   </div>
                 </div>
 
                 {!isProductOcrMode && (
-                  <div className="flex items-center justify-between gap-4 rounded-xl border border-slate-200/80 bg-white px-5 py-4 shadow-sm">
-                    <label htmlFor="include-text" className="cursor-pointer text-sm font-normal text-slate-700">
+                  <div className="flex min-w-0 items-center justify-between gap-3 rounded-xl border border-slate-200/80 bg-white px-4 py-3.5 shadow-sm sm:gap-4 sm:px-5 sm:py-4">
+                    <label htmlFor="include-text" className="min-w-0 flex-1 cursor-pointer text-sm font-normal leading-snug text-slate-700">
                       {t('form.includeTextLabel')}
                     </label>
                     <button
@@ -528,13 +545,13 @@ export default function App() {
                 )}
               </fieldset>
 
-              <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:gap-4">
+              <div className="flex flex-col gap-3 pt-2 lg:flex-row lg:gap-4">
                 <button
                   type="button"
                   onClick={handleReset}
                   disabled={loading}
                   aria-label={t('form.resetAria')}
-                  className="order-2 rounded-xl border border-slate-200/80 bg-white px-5 py-4 text-sm font-medium text-slate-600 shadow-sm transition-all duration-300 hover:border-slate-300 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 disabled:cursor-not-allowed disabled:opacity-50 sm:order-1 sm:flex-none"
+                  className="touch-target flex w-full items-center justify-center rounded-xl border border-slate-200/80 bg-white px-5 py-3.5 text-sm font-medium text-slate-600 shadow-sm transition-all duration-300 hover:border-slate-300 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 disabled:cursor-not-allowed disabled:opacity-50 lg:w-auto lg:flex-none lg:py-4"
                 >
                   {t('form.reset')}
                 </button>
@@ -545,17 +562,17 @@ export default function App() {
                   disabled={!canGenerate}
                   aria-busy={loading}
                   aria-disabled={!canGenerate}
-                  className="order-1 flex flex-1 items-center justify-center gap-2.5 rounded-xl bg-slate-900 px-6 py-4 text-sm font-semibold text-white shadow-md transition-all duration-300 hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none sm:order-2"
+                  className={`${generateButtonClass} touch-target hidden py-4 lg:flex lg:flex-1`}
                 >
                   {loading ? (
                     <>
                       <Spinner />
-                      {isProductOcrMode ? t('form.extracting') : t('form.generating')}
+                      {generateButtonLabel}
                     </>
                   ) : (
                     <>
                       <SparklesIcon />
-                      {isProductOcrMode ? t('form.extractTextOnly') : t('form.generate')}
+                      {generateButtonLabel}
                     </>
                   )}
                 </button>
@@ -563,7 +580,8 @@ export default function App() {
             </div>
           </section>
 
-          <GeneratedImagePreview
+          <div className="flex min-h-0 w-full min-w-0 lg:col-span-5">
+            <GeneratedImagePreview
             loading={loading}
             format={format}
             imageUrl={imageUrl}
@@ -573,7 +591,31 @@ export default function App() {
             ocrOnly={isProductOcrMode}
             onNotify={showAlert}
           />
+          </div>
         </div>
+      </div>
+
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200/70 bg-white/90 px-4 pt-3 backdrop-blur-xl lg:hidden pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <button
+          type="button"
+          onClick={handleGenerate}
+          disabled={!canGenerate}
+          aria-busy={loading}
+          aria-disabled={!canGenerate}
+          className={`${generateButtonClass} touch-target py-4`}
+        >
+          {loading ? (
+            <>
+              <Spinner />
+              {generateButtonLabel}
+            </>
+          ) : (
+            <>
+              <SparklesIcon />
+              {generateButtonLabel}
+            </>
+          )}
+        </button>
       </div>
     </div>
   );

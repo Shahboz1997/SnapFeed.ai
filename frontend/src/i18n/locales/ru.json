@@ -13,7 +13,9 @@
   "mode": {
     "label": "Режим генерации",
     "text": "Текст поста / Блог",
-    "product": "Фото товара (E-commerce)"
+    "textShort": "Текст / Блог",
+    "product": "Фото товара (E-commerce)",
+    "productShort": "Фото товара"
   },
   "ecommerce": {
     "description": "Загрузите фото товара — мы создадим продающий визуал, оптимизированный для вашей платформы.",
@@ -104,6 +106,7 @@
     "extractingText": "Извлекаем текст с изображения…",
     "textComplete": "Текст готов",
     "hoverToCompare": "Наведите для сравнения",
+    "touchToCompare": "Коснитесь и проведите для сравнения",
     "beforeLabel": "До",
     "afterLabel": "После",
     "beforeImageAlt": "Исходное загруженное фото",

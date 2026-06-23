@@ -13,7 +13,9 @@
   "mode": {
     "label": "Generatsiya rejimi",
     "text": "Post matni / Blog",
-    "product": "Mahsulot fotosi (E-commerce)"
+    "textShort": "Post / Blog",
+    "product": "Mahsulot fotosi (E-commerce)",
+    "productShort": "Mahsulot fotosi"
   },
   "ecommerce": {
     "description": "Mahsulot fotosini yuklang — platformangiz uchun sotuvga yo'naltirilgan vizual yaratamiz.",
@@ -104,6 +106,7 @@
     "extractingText": "Rasmdan matn ajratilmoqda…",
     "textComplete": "Matn tayyor",
     "hoverToCompare": "Taqqoslash uchun sichqonchani olib keling",
+    "touchToCompare": "Taqqoslash uchun bosing va suring",
     "beforeLabel": "Oldin",
     "afterLabel": "Keyin",
     "beforeImageAlt": "Yuklangan asl rasm",

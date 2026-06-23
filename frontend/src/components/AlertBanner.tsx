@@ -74,12 +74,12 @@ export default function AlertBanner({
   return (
     <div
       role="alert"
-      className={`alert-slide-in mb-6 flex items-start gap-3 rounded-xl border px-4 py-3 shadow-sm sm:mb-8 sm:px-5 sm:py-4 ${styles.container}`}
+      className={`alert-slide-in mb-6 flex min-w-0 max-w-full items-start gap-3 rounded-xl border px-4 py-3 shadow-sm sm:mb-8 sm:px-5 sm:py-4 ${styles.container}`}
     >
       <span className={`mt-0.5 shrink-0 ${styles.icon}`}>
         <AlertIcon type={type} />
       </span>
-      <p className={`flex-1 text-sm ${styles.text}`}>{message}</p>
+      <p className={`min-w-0 flex-1 break-words text-sm ${styles.text}`}>{message}</p>
       <button
         type="button"
         onClick={onDismiss}

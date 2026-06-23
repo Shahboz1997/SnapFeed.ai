@@ -13,7 +13,9 @@
   "mode": {
     "label": "Generation mode",
     "text": "Post text / Blog",
-    "product": "Product Photo (E-commerce)"
+    "textShort": "Post / Blog",
+    "product": "Product Photo (E-commerce)",
+    "productShort": "Product photo"
   },
   "ecommerce": {
     "description": "Upload a product photo and we'll create a scroll-stopping commercial visual optimized for your platform.",
@@ -104,6 +106,7 @@
     "extractingText": "Extracting text from image…",
     "textComplete": "Text ready",
     "hoverToCompare": "Hover to compare",
+    "touchToCompare": "Touch & slide to compare",
     "beforeLabel": "Before",
     "afterLabel": "After",
     "beforeImageAlt": "Original uploaded photo",

@@ -13,7 +13,9 @@
   "mode": {
     "label": "Режими генератсия",
     "text": "Матни пост / Блог",
-    "product": "Акси маҳсулот (E-commerce)"
+    "textShort": "Матн / Блог",
+    "product": "Акси маҳсулот (E-commerce)",
+    "productShort": "Акси маҳсулот"
   },
   "ecommerce": {
     "description": "Акси маҳсулотро бор кунед — мо визуали фурӯшро барои платформаи шумо оптимизатсия мекунем.",
@@ -104,6 +106,7 @@
     "extractingText": "Матн аз акс муайян карда мешавад…",
     "textComplete": "Матн омода аст",
     "hoverToCompare": "Барои муқоиса курсорро биёред",
+    "touchToCompare": "Барои муқоиса ламс кунед ва кашед",
     "beforeLabel": "Пеш",
     "afterLabel": "Баъд",
     "beforeImageAlt": "Акси аслӣи боргардида",

@@ -11,7 +11,7 @@ export default function LanguageSwitcher() {
         value={i18n.language.split('-')[0]}
         onChange={(e) => i18n.changeLanguage(e.target.value)}
         aria-label={t('language.label')}
-        className="cursor-pointer rounded-lg border border-slate-200/80 bg-white px-3 py-2 text-xs font-medium text-slate-600 shadow-sm transition-all duration-300 hover:border-slate-300 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
+        className="touch-target cursor-pointer rounded-lg border border-slate-200/80 bg-white px-3 py-2.5 text-xs font-medium text-slate-600 shadow-sm transition-all duration-300 hover:border-slate-300 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 sm:py-2"
       >
         {SUPPORTED_LANGS.map((code) => (
           <option key={code} value={code}>

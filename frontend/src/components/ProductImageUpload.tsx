@@ -115,7 +115,7 @@ export default function ProductImageUpload({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="contain-width min-w-0 space-y-3">
       <input
         ref={inputRef}
         type="file"
@@ -140,31 +140,35 @@ export default function ProductImageUpload({
           aria-disabled={disabled}
           aria-invalid={Boolean(error)}
           aria-describedby={error ? 'product-upload-error' : undefined}
-          className={`flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed px-4 py-10 text-center transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 sm:px-8 sm:py-12 ${
+          className={`group flex min-h-[260px] w-full min-w-0 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed px-4 py-16 text-center transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 sm:px-8 sm:py-20 ${
             disabled
               ? 'cursor-not-allowed border-slate-200 bg-white opacity-50'
               : error
                 ? 'border-red-300 bg-red-50'
                 : isDragging
-                  ? 'border-slate-400 bg-slate-50 shadow-sm'
-                  : 'border-slate-300 bg-white hover:border-slate-400 hover:bg-slate-50'
+                  ? 'border-indigo-400/80 bg-slate-100/50 shadow-sm'
+                  : 'border-slate-300/80 bg-slate-50/60 hover:border-indigo-400/80 hover:bg-slate-100/50'
           }`}
         >
-          <UploadIcon className={`mb-4 h-10 w-10 ${error ? 'text-red-400' : 'text-slate-400'}`} />
-          <p className="text-sm font-medium text-slate-700">{t('ecommerce.uploadTitle')}</p>
-          <p className="mt-2 text-sm font-normal text-slate-500">{t('ecommerce.uploadHint')}</p>
+          <UploadIcon
+            className={`h-12 w-12 transition-colors duration-300 ${
+              error ? 'text-red-400' : 'text-slate-400 group-hover:text-indigo-500'
+            } ${isDragging && !error ? 'text-indigo-500' : ''}`}
+          />
+          <p className="mt-4 break-words text-base font-medium text-slate-700">{t('ecommerce.uploadTitle')}</p>
+          <p className="mt-1 break-words text-xs text-slate-400">{t('ecommerce.uploadHint')}</p>
         </div>
       ) : (
-        <div className="rounded-xl border border-slate-200/80 bg-white p-5 shadow-sm">
-          <div className="flex items-start gap-5">
+        <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm sm:p-5">
+          <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:gap-5">
             {previewUrl && (
               <img
                 src={previewUrl}
                 alt={t('ecommerce.previewAlt')}
-                className="h-20 w-20 shrink-0 rounded-lg border border-slate-200 object-cover"
+                className="h-24 w-24 shrink-0 rounded-lg border border-slate-200 object-cover sm:h-20 sm:w-20"
               />
             )}
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0 flex-1 text-center sm:text-left">
               <p className="text-sm font-medium text-emerald-600">{t('ecommerce.uploaded')}</p>
               <p className="mt-1 text-sm font-normal text-slate-500">{t('ecommerce.uploadedHint')}</p>
               <div className="mt-4 flex flex-wrap gap-2">
