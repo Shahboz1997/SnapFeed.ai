@@ -284,13 +284,10 @@ export default function GeneratedImagePreview({
             <div className="flex w-full flex-1 flex-col gap-5 sm:gap-6">
               <div className="flex w-full flex-1 flex-col items-center justify-center gap-3 sm:gap-4">
                 <FormatBadge ratio={frame.ratio} label={formatLabel} />
-                <button
-                  type="button"
-                  onClick={() => setLightboxOpen(true)}
-                  aria-label={t('preview.openEnlargedAria')}
-                  className={`group relative w-full overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_8px_30px_rgb(0,0,0,0.06)] transition-all duration-300 ease-out hover:border-slate-300 hover:shadow-[0_12px_40px_rgb(0,0,0,0.08)] focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 ${frame.frameClass}`}
-                >
-                  {hasCompare ? (
+                {hasCompare ? (
+                  <div
+                    className={`group relative w-full overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_8px_30px_rgb(0,0,0,0.06)] ${frame.frameClass}`}
+                  >
                     <ImageCompareSlider
                       beforeSrc={originalImageUrl!}
                       afterSrc={imageUrl!}
@@ -298,7 +295,14 @@ export default function GeneratedImagePreview({
                       afterAlt={t('preview.imageAlt')}
                       aspectClass={frame.aspectClass}
                     />
-                  ) : (
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setLightboxOpen(true)}
+                    aria-label={t('preview.openEnlargedAria')}
+                    className={`group relative w-full overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_8px_30px_rgb(0,0,0,0.06)] transition-all duration-300 ease-out hover:border-slate-300 hover:shadow-[0_12px_40px_rgb(0,0,0,0.08)] focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 ${frame.frameClass}`}
+                  >
                     <div className={`${frame.aspectClass} h-full w-full`}>
                       <img
                         src={imageUrl!}
@@ -312,8 +316,8 @@ export default function GeneratedImagePreview({
                         </span>
                       </div>
                     </div>
-                  )}
-                </button>
+                  </button>
+                )}
               </div>
 
               {hashtags.length > 0 && (

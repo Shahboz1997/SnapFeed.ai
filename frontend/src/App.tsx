@@ -258,7 +258,7 @@ export default function App() {
         <div className="absolute bottom-1/3 right-1/3 hidden h-[400px] w-[400px] rounded-full bg-pink-200/15 blur-[120px] backdrop-blur-3xl sm:block" />
       </div>
 
-      <div className="safe-area-top contain-width mobile-sticky-offset relative z-10 flex min-h-[100dvh] w-full max-w-[100vw] flex-col justify-center px-4 py-6 pb-safe sm:px-6 md:px-8 xl:px-12 lg:pb-6">
+      <div className="safe-area-top contain-width mobile-sticky-offset relative z-10 flex w-full max-w-[100vw] flex-col px-4 py-6 pb-safe sm:px-6 md:px-8 xl:px-12 lg:pb-6">
         <header className="mb-4 flex w-full flex-col gap-3 sm:mb-8 lg:mb-10 lg:flex-row lg:items-center lg:justify-between lg:gap-6">
           <div className="flex min-w-0 items-center gap-3 sm:gap-4">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-base font-bold text-white shadow-md sm:h-11 sm:w-11 sm:text-lg">

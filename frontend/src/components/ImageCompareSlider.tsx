@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState, type TouchEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 
 interface ImageCompareSliderProps {
@@ -9,6 +9,8 @@ interface ImageCompareSliderProps {
   aspectClass: string;
   className?: string;
 }
+
+const TOUCH_INTENT_THRESHOLD = 10;
 
 export default function ImageCompareSlider({
   beforeSrc,
@@ -21,7 +23,10 @@ export default function ImageCompareSlider({
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const isActiveRef = useRef(false);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const isSliderDragRef = useRef(false);
   const [isActive, setIsActive] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const [position, setPosition] = useState(100);
 
   const updatePosition = useCallback((clientX: number) => {
@@ -34,74 +39,108 @@ export default function ImageCompareSlider({
     setPosition(pct);
   }, []);
 
-  function activateAt(clientX: number) {
-    isActiveRef.current = true;
-    setIsActive(true);
-    updatePosition(clientX);
-  }
+  const activateAt = useCallback(
+    (clientX: number) => {
+      isActiveRef.current = true;
+      setIsActive(true);
+      updatePosition(clientX);
+    },
+    [updatePosition],
+  );
 
-  function deactivate() {
+  const deactivate = useCallback(() => {
     isActiveRef.current = false;
+    isSliderDragRef.current = false;
+    touchStartRef.current = null;
+    setIsDragging(false);
     setIsActive(false);
     setPosition(100);
-  }
+  }, []);
 
-  function activate(e: React.PointerEvent<HTMLDivElement>) {
-    e.currentTarget.setPointerCapture(e.pointerId);
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    function handleTouchStart(e: TouchEvent) {
+      const touch = e.touches[0];
+      if (!touch) return;
+      touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+      isSliderDragRef.current = false;
+    }
+
+    function handleTouchMove(e: TouchEvent) {
+      const touch = e.touches[0];
+      if (!touch) return;
+
+      if (!isSliderDragRef.current && !isActiveRef.current && touchStartRef.current) {
+        const dx = Math.abs(touch.clientX - touchStartRef.current.x);
+        const dy = Math.abs(touch.clientY - touchStartRef.current.y);
+
+        if (dy > dx && dy > TOUCH_INTENT_THRESHOLD) {
+          touchStartRef.current = null;
+          return;
+        }
+
+        if (dx > TOUCH_INTENT_THRESHOLD && dx >= dy) {
+          isSliderDragRef.current = true;
+          setIsDragging(true);
+          activateAt(touch.clientX);
+        } else {
+          return;
+        }
+      }
+
+      if (!isActiveRef.current) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+      updatePosition(touch.clientX);
+    }
+
+    function handleTouchEnd(e: TouchEvent) {
+      if (isActiveRef.current) {
+        e.stopPropagation();
+      }
+      deactivate();
+    }
+
+    el.addEventListener('touchstart', handleTouchStart, { passive: true });
+    el.addEventListener('touchmove', handleTouchMove, { passive: false });
+    el.addEventListener('touchend', handleTouchEnd);
+    el.addEventListener('touchcancel', handleTouchEnd);
+
+    return () => {
+      el.removeEventListener('touchstart', handleTouchStart);
+      el.removeEventListener('touchmove', handleTouchMove);
+      el.removeEventListener('touchend', handleTouchEnd);
+      el.removeEventListener('touchcancel', handleTouchEnd);
+    };
+  }, [activateAt, deactivate, updatePosition]);
+
+  function handleMouseDown(e: MouseEvent<HTMLDivElement>) {
+    e.preventDefault();
+    e.stopPropagation();
     activateAt(e.clientX);
   }
 
-  function deactivatePointer(e: React.PointerEvent<HTMLDivElement>) {
-    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
-      e.currentTarget.releasePointerCapture(e.pointerId);
-    }
-    deactivate();
-  }
-
-  function handlePointerDown(e: React.PointerEvent<HTMLDivElement>) {
-    if (e.pointerType === 'touch') {
-      activate(e);
-    }
-  }
-
-  function handlePointerEnter(e: React.PointerEvent<HTMLDivElement>) {
-    if (e.pointerType === 'mouse') {
-      activate(e);
-    }
-  }
-
-  function handlePointerMove(e: React.PointerEvent<HTMLDivElement>) {
+  function handleMouseMove(e: MouseEvent<HTMLDivElement>) {
     if (!isActiveRef.current) return;
     updatePosition(e.clientX);
   }
 
-  function handlePointerUp(e: React.PointerEvent<HTMLDivElement>) {
-    if (e.pointerType === 'touch') {
-      deactivatePointer(e);
-    }
-  }
-
-  function handlePointerLeave(e: React.PointerEvent<HTMLDivElement>) {
-    if (e.pointerType === 'mouse') {
-      deactivatePointer(e);
-    }
-  }
-
-  function handleTouchStart(e: TouchEvent<HTMLDivElement>) {
-    const touch = e.touches[0];
-    if (!touch) return;
-    activateAt(touch.clientX);
-  }
-
-  function handleTouchMove(e: TouchEvent<HTMLDivElement>) {
-    if (!isActiveRef.current) return;
-    const touch = e.touches[0];
-    if (!touch) return;
-    updatePosition(touch.clientX);
-  }
-
-  function handleTouchEnd() {
+  function handleMouseUp(e: MouseEvent<HTMLDivElement>) {
+    e.stopPropagation();
     deactivate();
+  }
+
+  function handleMouseEnter(e: MouseEvent<HTMLDivElement>) {
+    activateAt(e.clientX);
+  }
+
+  function handleMouseLeave() {
+    if (isActiveRef.current) {
+      deactivate();
+    }
   }
 
   const afterClip = isActive ? `inset(0 ${100 - position}% 0 0)` : 'inset(0 0 0 0)';
@@ -109,17 +148,13 @@ export default function ImageCompareSlider({
   return (
     <div
       ref={containerRef}
-      onPointerDown={handlePointerDown}
-      onPointerEnter={handlePointerEnter}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-      onPointerLeave={handlePointerLeave}
-      onPointerCancel={deactivatePointer}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-      onTouchCancel={handleTouchEnd}
-      style={{ touchAction: isActive ? 'none' : 'pan-y' }}
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseLeave}
+      onMouseEnter={handleMouseEnter}
+      onClick={(e) => e.stopPropagation()}
+      style={{ touchAction: isDragging ? 'none' : 'pan-y' }}
       className={`relative w-full select-none ${aspectClass} ${className}`}
       aria-label={t('preview.compareAria')}
     >
@@ -146,15 +181,15 @@ export default function ImageCompareSlider({
       </div>
 
       <div
-        className="pointer-events-none absolute inset-y-0 z-10 w-0.5 -translate-x-1/2 bg-white shadow-[0_0_12px_rgba(0,0,0,0.35)] transition-opacity duration-300"
+        className="pointer-events-none absolute inset-y-0 z-10 w-1 -translate-x-1/2 bg-white shadow-[0_0_14px_rgba(0,0,0,0.4)] transition-opacity duration-300 md:w-0.5"
         style={{
           left: `${position}%`,
           opacity: isActive ? 1 : 0,
         }}
         aria-hidden="true"
       >
-        <div className="absolute left-1/2 top-1/2 flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white bg-white/90 shadow-md backdrop-blur-sm sm:h-9 sm:w-9">
-          <svg className="h-4 w-4 text-slate-600 sm:h-3.5 sm:w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} aria-hidden="true">
+        <div className="absolute left-1/2 top-1/2 flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-[3px] border-white bg-white/95 shadow-lg backdrop-blur-sm md:h-9 md:w-9 md:border-2">
+          <svg className="h-5 w-5 text-slate-600 md:h-3.5 md:w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" d="M8 9l4-4 4 4M16 15l-4 4-4-4" />
           </svg>
         </div>
