@@ -29,6 +29,8 @@
     "remove": "O'chirish",
     "wishLabel": "Fon/uslub bo'yicha istaklar (ixtiyoriy)",
     "wishPlaceholder": "Masalan: marmar podiums, iliq studiya yorug'ligi, pastel gradient…",
+    "wishHintProduct": "Har qanday mahsulot (velosiped, poyabzal, texnika): maydonni bo'sh qoldiring — chiroyli studiya fonini olasiz. Yoki kerakli uslubni yozing.",
+    "wishHintTryOn": "Modelga kiydirish: «qizga kiydir», «erkakka kostyum». Chiroyli rus qizi uchun: «chiroyli rus qizi, studiya yorug'ligi» deb yozing.",
     "invalidType": "JPEG, PNG yoki WebP formatidagi rasm yuklang.",
     "fileTooLarge": "Fayl hajmi 5 MB dan oshmasligi kerak.",
     "readFailed": "Faylni o'qib bo'lmadi. Qayta urinib ko'ring.",

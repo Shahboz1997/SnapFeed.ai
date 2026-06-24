@@ -35,6 +35,10 @@ async function persistRemoteImage(url) {
   return persistImageBuffer(buffer);
 }
 
+export async function persistRemoteImageUrl(url) {
+  return persistRemoteImage(url);
+}
+
 async function extractImageResult(image) {
   if (image?.b64_json) {
     const filename = await saveBase64Image(image.b64_json);

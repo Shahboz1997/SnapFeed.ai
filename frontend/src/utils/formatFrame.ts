@@ -13,8 +13,8 @@ export function getFormatFrame(format: AspectRatio): FormatFrameMeta {
     return {
       ratio: '9:16',
       label: 'Story',
-      aspectClass: 'aspect-[9/16] max-h-[min(70dvh,650px)] w-full',
-      frameClass: 'mx-auto w-full',
+      aspectClass: 'aspect-[9/16] max-h-[min(88dvh,920px)] w-full',
+      frameClass: 'mx-auto w-full max-w-[min(100%,540px)]',
       filenameSuffix: 'story',
     };
   }

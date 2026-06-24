@@ -161,7 +161,7 @@ export default function ImageCompareSlider({
       <img
         src={afterSrc}
         alt={afterAlt}
-        className="absolute inset-0 h-full w-full object-cover"
+        className="absolute inset-0 h-full w-full bg-slate-100 object-contain"
         draggable={false}
       />
 
@@ -175,7 +175,7 @@ export default function ImageCompareSlider({
         <img
           src={beforeSrc}
           alt={beforeAlt}
-          className="h-full w-full object-cover brightness-[0.88] saturate-[0.75] contrast-[0.95]"
+          className="h-full w-full bg-slate-100 object-contain brightness-[0.88] saturate-[0.75] contrast-[0.95]"
           draggable={false}
         />
       </div>

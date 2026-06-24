@@ -58,4 +58,12 @@ app.use(errorHandler);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+}).on('error', (error) => {
+  if (error.code === 'EADDRINUSE') {
+    console.error(`Port ${PORT} is already in use. Stop the other process or run: npx kill-port ${PORT}`);
+    process.exit(1);
+  }
+
+  console.error('Failed to start server:', error.message);
+  process.exit(1);
 });

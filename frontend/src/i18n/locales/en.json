@@ -29,6 +29,8 @@
     "remove": "Remove",
     "wishLabel": "Background/style preferences (optional)",
     "wishPlaceholder": "e.g. marble podium, warm studio light, pastel gradient…",
+    "wishHintProduct": "Any product (bike, shoes, gadgets): leave empty for a premium studio background, or describe the style you want.",
+    "wishHintTryOn": "Try-on on a model: \"try on a female model\", \"suit on a man\". For a beautiful European look add: \"beautiful Russian girl, studio lighting\".",
     "invalidType": "Please upload a JPEG, PNG, or WebP image.",
     "fileTooLarge": "File size must not exceed 5 MB.",
     "readFailed": "Could not read the image file. Please try again.",

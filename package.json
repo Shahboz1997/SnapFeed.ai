@@ -11,5 +11,8 @@
   "devDependencies": {
     "concurrently": "^10.0.3",
     "kill-port": "^2.0.1"
+  },
+  "dependencies": {
+    "replicate": "^1.4.0"
   }
 }

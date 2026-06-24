@@ -7,6 +7,7 @@ import Lightbox from './Lightbox';
 import ImageCompareSlider from './ImageCompareSlider';
 import Spinner from './Spinner';
 import { getFormatFrame } from '../utils/formatFrame';
+import { resolveImageUrl } from '../utils/resolveImageUrl';
 
 type Format = AspectRatio;
 
@@ -164,6 +165,7 @@ export default function GeneratedImagePreview({
 
   const frame = getFormatFrame(format);
   const formatLabel = t(`format.${format}`);
+  const displayImageUrl = resolveImageUrl(imageUrl);
   const hasImage = Boolean(imageUrl);
   const hasCompare = hasImage && Boolean(originalImageUrl);
   const hasExtractedText = Boolean(extractedText?.trim());
@@ -217,7 +219,7 @@ export default function GeneratedImagePreview({
     <>
       <section
         aria-labelledby="preview-heading"
-        className="relative z-10 flex h-full w-full min-h-[240px] min-w-0 flex-col overflow-hidden rounded-2xl border border-white/70 bg-slate-50/75 p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-md sm:min-h-[360px] md:p-8 lg:min-h-0"
+        className="relative z-10 flex h-full w-full min-h-[240px] min-w-0 flex-col overflow-x-hidden overflow-y-auto rounded-2xl border border-white/70 bg-slate-50/75 p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-md sm:min-h-[360px] md:p-8 lg:min-h-0"
       >
         <div className="mb-4 flex items-start justify-between gap-2 sm:mb-6 lg:mb-8 lg:items-center lg:gap-4">
           <div className="min-w-0 flex-1">
@@ -282,15 +284,17 @@ export default function GeneratedImagePreview({
 
           {!loading && hasImage && (
             <div className="flex w-full flex-1 flex-col gap-5 sm:gap-6">
-              <div className="flex w-full flex-1 flex-col items-center justify-center gap-3 sm:gap-4">
-                <FormatBadge ratio={frame.ratio} label={formatLabel} />
+              <div className="flex w-full flex-1 flex-col items-stretch justify-start gap-3 sm:gap-5 min-h-0 py-1">
+                <div className="flex justify-center">
+                  <FormatBadge ratio={frame.ratio} label={formatLabel} />
+                </div>
                 {hasCompare ? (
                   <div
-                    className={`group relative w-full overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_8px_30px_rgb(0,0,0,0.06)] ${frame.frameClass}`}
+                    className={`group relative w-full shrink-0 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_8px_30px_rgb(0,0,0,0.06)] ${frame.frameClass}`}
                   >
                     <ImageCompareSlider
                       beforeSrc={originalImageUrl!}
-                      afterSrc={imageUrl!}
+                      afterSrc={displayImageUrl}
                       beforeAlt={t('preview.beforeImageAlt')}
                       afterAlt={t('preview.imageAlt')}
                       aspectClass={frame.aspectClass}
@@ -305,9 +309,9 @@ export default function GeneratedImagePreview({
                   >
                     <div className={`${frame.aspectClass} h-full w-full`}>
                       <img
-                        src={imageUrl!}
+                        src={displayImageUrl}
                         alt={t('preview.imageAlt')}
-                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+                        className="h-full w-full bg-slate-100 object-contain transition-transform duration-500 group-hover:scale-[1.02]"
                         draggable={false}
                       />
                       <div className="pointer-events-none absolute inset-0 flex items-end justify-center bg-gradient-to-t from-slate-900/30 to-transparent pb-3 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
@@ -407,7 +411,7 @@ export default function GeneratedImagePreview({
 
       {lightboxOpen && imageUrl && (
         <Lightbox
-          imageUrl={imageUrl}
+          imageUrl={displayImageUrl}
           alt={t('preview.imageAltEnlarged')}
           onClose={() => setLightboxOpen(false)}
         />

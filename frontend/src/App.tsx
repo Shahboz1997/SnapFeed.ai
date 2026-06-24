@@ -39,7 +39,7 @@ export default function App() {
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const [productFileError, setProductFileError] = useState<string | null>(null);
   const [extractText, setExtractText] = useState(false);
-  const [includeText, setIncludeText] = useState(true);
+  const [includeText, setIncludeText] = useState(false);
   const [extractedText, setExtractedText] = useState<string | null>(null);
   const [userWish, setUserWish] = useState('');
   const [platform, setPlatform] = useState<Platform>('instagram');
@@ -144,7 +144,7 @@ export default function App() {
     setProductFileError(null);
     setExtractText(false);
     setExtractedText(null);
-    setIncludeText(true);
+    setIncludeText(false);
     setUserWish('');
     setPlatform('instagram');
     setFormat('square');
@@ -303,7 +303,7 @@ export default function App() {
         <div className="contain-width grid w-full min-w-0 grid-cols-1 items-stretch gap-6 lg:grid-cols-12 xl:gap-8">
           <section
             aria-labelledby="create-heading"
-            className="contain-width relative z-10 w-full min-w-0 overflow-hidden rounded-2xl border border-white/70 bg-slate-50/75 p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-md sm:p-6 lg:col-span-7 lg:p-10"
+            className="contain-width relative z-10 w-full min-w-0 overflow-hidden rounded-2xl border border-white/70 bg-slate-50/75 p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-md sm:p-6 lg:col-span-6 lg:p-10"
           >
             <div
               role="tablist"
@@ -435,11 +435,17 @@ export default function App() {
                         type="text"
                         value={userWish}
                         onChange={(e) => handleUserWishChange(e.target.value)}
-                        disabled={loading}
+                        disabled={loading || extractText}
                         maxLength={USER_WISH_MAX_LENGTH}
                         placeholder={t('ecommerce.wishPlaceholder')}
                         className="w-full rounded-xl border border-slate-200/80 bg-white px-4 py-3 text-base text-slate-900 placeholder:font-light placeholder:text-slate-400 outline-none transition-all duration-300 focus:border-slate-400 focus:ring-2 focus:ring-slate-100 disabled:cursor-not-allowed disabled:opacity-50 lg:py-4 lg:text-sm"
                       />
+                      {!extractText && (
+                        <div className="mt-2 space-y-1 text-xs font-normal leading-relaxed text-slate-500">
+                          <p>{t('ecommerce.wishHintProduct')}</p>
+                          <p>{t('ecommerce.wishHintTryOn')}</p>
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex min-w-0 items-center justify-between gap-3 rounded-xl border border-slate-200/80 bg-white px-4 py-3.5 shadow-sm sm:gap-4 sm:px-5 sm:py-4">
@@ -593,7 +599,7 @@ export default function App() {
             </div>
           </section>
 
-          <div className="flex min-h-0 w-full min-w-0 lg:col-span-5">
+          <div className="flex min-h-0 w-full min-w-0 lg:col-span-6">
             <GeneratedImagePreview
             loading={loading}
             format={format}

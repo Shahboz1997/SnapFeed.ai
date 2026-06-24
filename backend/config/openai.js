@@ -15,7 +15,7 @@ export function getOpenAI() {
   const openaiConfig = {
     apiKey,
     timeout: Number(process.env.OPENAI_TIMEOUT_MS) || 300_000,
-    maxRetries: 1,
+    maxRetries: 2,
   };
 
   if (process.env.OPENAI_PROJECT_ID) {

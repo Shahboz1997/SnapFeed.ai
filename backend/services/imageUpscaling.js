@@ -20,6 +20,20 @@ export function getUpscaleFactor() {
   return UPSCALE_FACTOR;
 }
 
+export async function fetchAndUpscaleRemoteImage(remoteUrl) {
+  if (!remoteUrl || typeof remoteUrl !== 'string') {
+    throw new Error('A valid remote image URL is required for upscaling.');
+  }
+
+  const response = await fetch(remoteUrl);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch remote image for upscaling: ${response.status}`);
+  }
+
+  const buffer = Buffer.from(await response.arrayBuffer());
+  return upscaleImageBuffer(buffer);
+}
+
 export async function upscaleImageBuffer(inputBuffer) {
   if (!UPSCALE_ENABLED || !inputBuffer?.length) {
     return inputBuffer;
