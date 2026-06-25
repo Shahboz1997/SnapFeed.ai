@@ -1,4 +1,6 @@
-const API_BASE = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '');
+import { getApiBaseUrl } from './apiBaseUrl';
+
+const API_BASE = getApiBaseUrl();
 
 export function resolveImageUrl(url: string | null | undefined): string {
   if (!url) return '';

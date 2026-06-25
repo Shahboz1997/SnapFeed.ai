@@ -8,9 +8,21 @@ import { errorHandler } from './utils/errors.js';
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173,http://localhost:5174')
-  .split(',')
-  .map((origin) => origin.trim());
+const productionOrigins = [
+  'https://snap-feed-ai.vercel.app',
+  'https://snap-feed-ai-stratums-projects-053e839b.vercel.app',
+  'https://snap-feed-ai-supportstratum-1005-stratums-projects-053e839b.vercel.app',
+];
+
+const allowedOrigins = [
+  ...new Set([
+    ...(process.env.CORS_ORIGIN || 'http://localhost:5173,http://localhost:5174')
+      .split(',')
+      .map((origin) => origin.trim())
+      .filter(Boolean),
+    ...productionOrigins,
+  ]),
+];
 
 app.use(cors({
   origin(origin, callback) {

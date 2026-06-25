@@ -1,6 +1,7 @@
 import { ApiError } from './generateImage';
+import { getApiBaseUrl } from '../utils/apiBaseUrl';
 
-const API_URL = import.meta.env.VITE_API_URL ?? '';
+const API_URL = getApiBaseUrl();
 
 export async function downloadImageBlob(imageUrl: string): Promise<Blob> {
   let response: Response;

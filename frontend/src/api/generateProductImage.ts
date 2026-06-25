@@ -1,5 +1,6 @@
 import { ApiError } from './generateImage';
 import type { AspectRatio, Platform } from './generateImage';
+import { getApiBaseUrl } from '../utils/apiBaseUrl';
 
 export interface GenerateProductImageRequest {
   base64Image: string;
@@ -19,7 +20,7 @@ export interface GenerateProductImageResponse {
   extractedText: string | null;
 }
 
-const API_URL = import.meta.env.VITE_API_URL ?? '';
+const API_URL = getApiBaseUrl();
 
 export async function generateProductImage(
   request: GenerateProductImageRequest,

@@ -27,7 +27,9 @@ export class ApiError extends Error {
   }
 }
 
-const API_URL = import.meta.env.VITE_API_URL ?? '';
+import { getApiBaseUrl } from '../utils/apiBaseUrl';
+
+const API_URL = getApiBaseUrl();
 
 export async function generateImage(
   request: GenerateImageRequest,
