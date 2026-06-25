@@ -1,4 +1,5 @@
 const PRODUCTION_API_URL = 'https://snapfeed-ai.onrender.com';
+const LOCAL_API_URL = 'http://127.0.0.1:5000';
 
 const DEPRECATED_API_HOSTS = new Set(['snapfeed-api.onrender.com']);
 
@@ -48,5 +49,5 @@ export function getApiBaseUrl(): string {
     return configured;
   }
 
-  return '';
+  return LOCAL_API_URL;
 }
