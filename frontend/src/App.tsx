@@ -165,8 +165,11 @@ export default function App() {
         return err.message;
       }
       if (err.messageKey) {
+        if (err.message && err.messageKey === 'api.invalidResponse') {
+          return err.message;
+        }
         const hint =
-          err.messageKey === 'api.invalidResponse' && err.statusCode
+          err.messageKey === 'api.invalidResponse' && err.statusCode && !import.meta.env.PROD
             ? t('api.backendHint')
             : '';
         return t(err.messageKey) + hint;

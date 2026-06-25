@@ -22,7 +22,7 @@ services:
       - key: OPENAI_TIMEOUT_MS
         value: "300000"
       - key: PRODUCT_BG_REMOVAL_ENABLED
-        value: "true"
+        value: "false"
       - key: PRODUCT_BG_REMOVAL_MODEL
         value: small
       - key: IMAGE_UPSCALE_ENABLED

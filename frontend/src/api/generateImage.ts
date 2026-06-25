@@ -28,16 +28,16 @@ export class ApiError extends Error {
 }
 
 import { getApiBaseUrl } from '../utils/apiBaseUrl';
-
-const API_URL = getApiBaseUrl();
+import { parseApiResponse } from './parseApiResponse';
 
 export async function generateImage(
   request: GenerateImageRequest,
 ): Promise<GenerateImageResponse> {
+  const apiUrl = getApiBaseUrl();
   let response: Response;
 
   try {
-    response = await fetch(`${API_URL}/api/generate-image`, {
+    response = await fetch(`${apiUrl}/api/generate-image`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -55,8 +55,9 @@ export async function generateImage(
   let data: GenerateImageResponse & { error?: string };
 
   try {
-    data = await response.json();
-  } catch {
+    data = await parseApiResponse(response);
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
     throw new ApiError('Invalid response.', response.status, 'api.invalidResponse');
   }
 

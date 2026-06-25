@@ -10,6 +10,7 @@ const PORT = process.env.PORT || 5000;
 
 const productionOrigins = [
   'https://snap-feed-ai.vercel.app',
+  'https://snap-feed-nu.vercel.app',
   'https://snap-feed-ai-stratums-projects-053e839b.vercel.app',
   'https://snap-feed-ai-supportstratum-1005-stratums-projects-053e839b.vercel.app',
 ];
@@ -24,9 +25,22 @@ const allowedOrigins = [
   ]),
 ];
 
+function isAllowedOrigin(origin) {
+  if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+    return true;
+  }
+
+  try {
+    const { hostname } = new URL(origin);
+    return hostname.endsWith('.vercel.app');
+  } catch {
+    return false;
+  }
+}
+
 app.use(cors({
   origin(origin, callback) {
-    if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+    if (isAllowedOrigin(origin)) {
       callback(null, true);
       return;
     }

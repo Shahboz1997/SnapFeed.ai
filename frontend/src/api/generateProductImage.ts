@@ -1,6 +1,7 @@
 import { ApiError } from './generateImage';
 import type { AspectRatio, Platform } from './generateImage';
 import { getApiBaseUrl } from '../utils/apiBaseUrl';
+import { parseApiResponse } from './parseApiResponse';
 
 export interface GenerateProductImageRequest {
   base64Image: string;
@@ -20,15 +21,14 @@ export interface GenerateProductImageResponse {
   extractedText: string | null;
 }
 
-const API_URL = getApiBaseUrl();
-
 export async function generateProductImage(
   request: GenerateProductImageRequest,
 ): Promise<GenerateProductImageResponse> {
+  const apiUrl = getApiBaseUrl();
   let response: Response;
 
   try {
-    response = await fetch(`${API_URL}/api/generate-product-image`, {
+    response = await fetch(`${apiUrl}/api/generate-product-image`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -48,8 +48,9 @@ export async function generateProductImage(
   let data: GenerateProductImageResponse & { error?: string };
 
   try {
-    data = await response.json();
-  } catch {
+    data = await parseApiResponse(response);
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
     throw new ApiError('Invalid response.', response.status, 'api.invalidResponse');
   }
 

@@ -1,13 +1,12 @@
 import { ApiError } from './generateImage';
 import { getApiBaseUrl } from '../utils/apiBaseUrl';
 
-const API_URL = getApiBaseUrl();
-
 export async function downloadImageBlob(imageUrl: string): Promise<Blob> {
+  const apiUrl = getApiBaseUrl();
   let response: Response;
 
   try {
-    response = await fetch(`${API_URL}/api/download-image`, {
+    response = await fetch(`${apiUrl}/api/download-image`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ imageUrl }),

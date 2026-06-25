@@ -1,5 +1,6 @@
 import { ApiError } from './generateImage';
 import { getApiBaseUrl } from '../utils/apiBaseUrl';
+import { parseApiResponse } from './parseApiResponse';
 
 export interface ChatMessage {
   role: 'user' | 'assistant';
@@ -17,15 +18,14 @@ export interface GeneratePromptResponse {
   prompt: string;
 }
 
-const API_URL = getApiBaseUrl();
-
 export async function generatePrompt(
   request: GeneratePromptRequest,
 ): Promise<{ prompt: string }> {
+  const apiUrl = getApiBaseUrl();
   let response: Response;
 
   try {
-    response = await fetch(`${API_URL}/api/chat/generate-prompt`, {
+    response = await fetch(`${apiUrl}/api/chat/generate-prompt`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -41,8 +41,9 @@ export async function generatePrompt(
   let data: GeneratePromptResponse & { error?: string };
 
   try {
-    data = await response.json();
-  } catch {
+    data = await parseApiResponse(response);
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
     throw new ApiError('Invalid response.', response.status, 'api.invalidResponse');
   }
 
