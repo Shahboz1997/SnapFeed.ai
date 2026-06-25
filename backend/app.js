@@ -51,8 +51,8 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 // Настройка лимитов для приема тяжелых Base64 строк с фронтенда
-app.use(express.json({ limit: '7mb' }));
-app.use(express.urlencoded({ limit: '7mb', extended: true }));
+app.use(express.json({ limit: '15mb' }));
+app.use(express.urlencoded({ limit: '15mb', extended: true }));
 
 app.get('/api/health', (_req, res) => {
   const apiKey = process.env.OPENAI_API_KEY || '';

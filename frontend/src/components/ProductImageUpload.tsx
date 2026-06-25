@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState, type ChangeEvent, type DragEvent, type KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { UploadIcon } from './icons';
+import { compressImageForUpload } from '../utils/compressImageForUpload';
 
 const ACCEPTED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const ACCEPTED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp'];
@@ -52,13 +53,19 @@ export default function ProductImageUpload({
 
       const reader = new FileReader();
 
-      reader.onload = () => {
+      reader.onload = async () => {
         const result = reader.result;
         if (typeof result !== 'string') {
           onValidationError(t('ecommerce.readFailed'));
           return;
         }
-        onImageLoaded(result, result);
+
+        try {
+          const compressed = await compressImageForUpload(result);
+          onImageLoaded(compressed, compressed);
+        } catch {
+          onValidationError(t('ecommerce.readFailed'));
+        }
       };
 
       reader.onerror = () => {

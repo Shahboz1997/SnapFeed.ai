@@ -164,12 +164,14 @@ export default function App() {
       if (err.messageKey === 'api.generateFailed' && err.message) {
         return err.message;
       }
+
+      if (err.message && err.messageKey !== 'api.serverUnreachable') {
+        return err.message;
+      }
+
       if (err.messageKey) {
-        if (err.message && err.messageKey === 'api.invalidResponse') {
-          return err.message;
-        }
         const hint =
-          err.messageKey === 'api.invalidResponse' && err.statusCode && !import.meta.env.PROD
+          !import.meta.env.PROD && err.messageKey === 'api.serverUnreachable'
             ? t('api.backendHint')
             : '';
         return t(err.messageKey) + hint;

@@ -50,6 +50,10 @@ export function errorHandler(err, req, res, _next) {
     return res.status(400).json({ error: 'Invalid JSON in request body.' });
   }
 
+  if (err.type === 'entity.too.large') {
+    return res.status(413).json({ error: 'Image is too large. Try a smaller photo.' });
+  }
+
   console.error(err);
 
   const statusCode = err.statusCode || 500;

@@ -128,7 +128,7 @@
     "textExtractSuccess": "Text extracted successfully!"
   },
   "api": {
-    "serverUnreachable": "Unable to reach the server. Make sure the backend is running on port 5000.",
+    "serverUnreachable": "Unable to reach the server. Please try again in a moment.",
     "invalidResponse": "Received an invalid response from the server.",
     "backendHint": " Make sure the backend is running on port 5000 (npm run dev:backend).",
     "generateFailed": "Failed to generate image.",
