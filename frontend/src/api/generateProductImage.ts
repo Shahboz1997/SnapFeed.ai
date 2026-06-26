@@ -1,11 +1,19 @@
+import type { ProductGenerationMode } from '../constants/productGenerationPresets';
+import type { TryOnCategory, TryOnGender } from '../constants/tryOnOptions';
 import { ApiError } from './generateImage';
 import type { AspectRatio, Platform } from './generateImage';
 import { getApiBaseUrl } from '../utils/apiBaseUrl';
 import { parseApiResponse } from './parseApiResponse';
 
+export type { TryOnCategory, TryOnGender } from '../constants/tryOnOptions';
+
 export interface GenerateProductImageRequest {
   base64Image: string;
   userWish?: string;
+  mode?: ProductGenerationMode;
+  gender?: TryOnGender;
+  category?: TryOnCategory;
+  humanImage?: string;
   platform: Platform;
   format: AspectRatio;
   extractText?: boolean;
@@ -13,12 +21,18 @@ export interface GenerateProductImageRequest {
   lang?: string;
 }
 
+export type ProductBranchUsed = 'product' | 'tryon';
+export type ProductFallbackReason = 'not_clothing' | 'verification_failed';
+
 export interface GenerateProductImageResponse {
   success: boolean;
   imageUrl: string | null;
   optimizedPrompt: string | null;
   hashtags: string[];
   extractedText: string | null;
+  branchUsed: ProductBranchUsed;
+  fallbackReason: ProductFallbackReason | null;
+  requestedMode?: ProductGenerationMode;
 }
 
 export async function generateProductImage(
@@ -32,8 +46,13 @@ export async function generateProductImage(
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        image: request.base64Image,
         base64Image: request.base64Image,
         userWish: request.userWish?.trim() ?? '',
+        mode: request.mode,
+        gender: request.mode === 'tryon' ? request.gender : undefined,
+        category: request.mode === 'tryon' ? request.category : undefined,
+        humanImage: request.mode === 'tryon' ? request.humanImage : undefined,
         platform: request.platform,
         format: request.format,
         extractText: request.extractText === true,
@@ -75,10 +94,16 @@ export async function generateProductImage(
       optimizedPrompt: null,
       hashtags: data.hashtags,
       extractedText: data.extractedText,
+      branchUsed: 'product',
+      fallbackReason: null,
     };
   }
 
   if (!data.imageUrl || !data.optimizedPrompt) {
+    throw new ApiError('Incomplete data.', response.status, 'api.incompleteData');
+  }
+
+  if (data.branchUsed !== 'product' && data.branchUsed !== 'tryon') {
     throw new ApiError('Incomplete data.', response.status, 'api.incompleteData');
   }
 
@@ -88,5 +113,8 @@ export async function generateProductImage(
     optimizedPrompt: data.optimizedPrompt,
     hashtags: data.hashtags,
     extractedText: null,
+    branchUsed: data.branchUsed,
+    fallbackReason: data.fallbackReason ?? null,
+    requestedMode: data.requestedMode,
   };
 }

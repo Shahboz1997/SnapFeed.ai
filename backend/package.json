@@ -8,7 +8,9 @@
     "dev": "node app.js",
     "dev:backend": "node app.js",
     "dev:api": "node app.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "test:tryon": "node scripts/test-idm-vton.js",
+    "test:dress-tryon": "node scripts/test-dress-tryon.js"
   },
   "keywords": [],
   "author": "",

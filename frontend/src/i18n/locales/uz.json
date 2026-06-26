@@ -1,7 +1,6 @@
 {
   "header": {
-    "subtitle": "Ijtimoiy tarmoqlar uchun AI vizual generatori",
-    "poweredBy": "DALL·E 3 asosida"
+    "subtitle": "Ijtimoiy tarmoqlar uchun AI vizual generatori"
   },
   "language": {
     "label": "Til",
@@ -29,8 +28,61 @@
     "remove": "O'chirish",
     "wishLabel": "Fon/uslub bo'yicha istaklar (ixtiyoriy)",
     "wishPlaceholder": "Masalan: marmar podiums, iliq studiya yorug'ligi, pastel gradient…",
-    "wishHintProduct": "Har qanday mahsulot (velosiped, poyabzal, texnika): maydonni bo'sh qoldiring — chiroyli studiya fonini olasiz. Yoki kerakli uslubni yozing.",
-    "wishHintTryOn": "Modelga kiydirish: «qizga kiydir», «erkakka kostyum». Chiroyli rus qizi uchun: «chiroyli rus qizi, studiya yorug'ligi» deb yozing.",
+    "wishTags": {
+      "studioLabel": "Studiya:",
+      "studio": {
+        "marble": "marmar podiums",
+        "warmLight": "iliq studiya yorug'ligi",
+        "pastel": "pastel gradient",
+        "concrete": "beton platforma"
+      },
+      "tryOnLabel": "Kiydirish:",
+      "tryOn": {
+        "female": "ayol modelda",
+        "male": "erkak modelda",
+        "lookbook": "lookbook uslubi"
+      },
+      "ageLabel": "Yosh:",
+      "age": {
+        "young": "yosh model",
+        "adult": "kattalar modeli",
+        "mature": "tajribali model"
+      }
+    },
+    "generateButton": "🚀 Generatsiya qilish",
+    "generationMode": {
+      "label": "Rejim",
+      "product": "✨ Chiroyli mahsulot fotosi",
+      "tryon": "🧍‍♂️ Kiyim kiydirish"
+    },
+    "tryOnFallbackBanner": "⚠️ Diqqat: Yuklangan rasmda kiyim aniqlanmadi, shuning uchun biz «Mahsulot fotosi» rejimiga o'tdik. Kiydirish faqat garderob buyumlari uchun mavjud.",
+    "tryOnFallbackVerificationBanner": "⚠️ Mahsulot turini tekshirib bo'lmadi. Biz «Mahsulot fotosi» rejimiga o'tdik va kiydirish o'rniga oddiy rasm yaratdik.",
+    "tryOnSelectors": {
+      "genderLabel": "Model jinsi",
+      "genderMale": "Erkak",
+      "genderFemale": "Ayol",
+      "categoryLabel": "Kiyim turi",
+      "categoryTop": "Ustki kiyim (Top)",
+      "categoryBottom": "Shim/Yubka (Bottom)",
+      "categoryDress": "Ko'ylak/Kostyum (Dress)"
+    },
+    "tryOnUpload": {
+      "garmentTitle": "1. Kiyim rasmini yuklang",
+      "garmentAria": "Kiyim rasmini yuklash",
+      "garmentPreviewAlt": "Yuklangan kiyim preview",
+      "garmentUploaded": "Kiyim rasmi yuklandi",
+      "garmentUploadedHint": "Virtual kiyinishga tayyor",
+      "humanTitle": "2. Odam/model rasmini yuklang",
+      "humanAria": "Odam yoki model rasmini yuklash",
+      "humanPreviewAlt": "Yuklangan odam preview",
+      "humanUploaded": "Odam rasmi yuklandi",
+      "humanUploadedHint": "Sizning rasmingiz kiyinish uchun ishlatiladi",
+      "modelSelected": "Tayyor model tanlandi",
+      "modelSelectedHint": "Galereyamizdagi model ishlatilmoqda",
+      "showModelGallery": "Yoki tayyor modelni tanlang",
+      "hideModelGallery": "Model galereyasini yashirish",
+      "modelGalleryAria": "Tayyor modellar galereyasi"
+    },
     "invalidType": "JPEG, PNG yoki WebP formatidagi rasm yuklang.",
     "fileTooLarge": "Fayl hajmi 5 MB dan oshmasligi kerak.",
     "readFailed": "Faylni o'qib bo'lmadi. Qayta urinib ko'ring.",
@@ -125,7 +177,9 @@
     "error": "Nimadir noto'g'ri ketdi. Qayta urinib ko'ring.",
     "downloadSuccess": "Rasm saqlandi!",
     "downloadWarning": "Rasmni yuklab bo'lmadi. Rasmga o'ng tugma bilan bosing va \"Rasmni saqlash…\" ni tanlang.",
-    "textExtractSuccess": "Matn muvaffaqiyatli ajratildi!"
+    "textExtractSuccess": "Matn muvaffaqiyatli ajratildi!",
+    "tryOnFallbackNotClothing": "Bu mahsulot uchun kiydirish mavjud emas (kiyim emas). Oddiy mahsulot fotosi yaratildi.",
+    "tryOnFallbackVerification": "Mahsulot turini tekshirib bo'lmadi. Kiydirish o'rniga oddiy mahsulot fotosi yaratildi."
   },
   "api": {
     "serverUnreachable": "Serverga ulanib bo'lmadi. Backend 5000-portda ishlayotganiga ishonch hosil qiling.",

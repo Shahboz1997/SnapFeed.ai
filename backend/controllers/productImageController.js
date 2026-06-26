@@ -1,95 +1,201 @@
 import crypto from 'crypto';
-import Replicate from 'replicate';
 import {
+  IDM_VTON_SEED,
   VALID_ASPECT_RATIOS,
   VALID_PLATFORMS,
 } from '../constants/image.js';
 import { getOpenAI } from '../config/openai.js';
+import { isReplicateConfigured } from '../config/replicate.js';
 import { createError, mapOpenAIError } from '../utils/errors.js';
-import { analyzeProductImage, detectMimeType, normalizeBase64Image } from '../services/productImageAnalysis.js';
-import { generateProductImageWithReference } from '../services/imageGeneration.js';
+import {
+  analyzeProductImage,
+  analyzeClothingProductForTryOn,
+  buildFallbackProductFluxPrompt,
+  buildProductVisionSystemPrompt,
+  buildTryOnRefinedPrompt,
+  detectMimeType,
+  normalizeClothingCategoryFromVision,
+  normalizeBase64Image,
+  resolveGarmentDescription,
+  sanitizeUserWish,
+} from '../services/productImageAnalysis.js';
+import { generateProductImageWithFlux, runIdmVtonTryOn } from '../services/imageGeneration.js';
 import { fetchAndUpscaleRemoteImage } from '../services/imageUpscaling.js';
 import { getDefaultHashtags, getLanguageName, normalizeLangCode } from '../utils/languages.js';
 import cache from '../utils/cache.js';
-import { NO_TEXT_OVERLAY_RULE, parseIncludeText } from '../utils/textOverlay.js';
-import { compressImageForVision, isTallGarmentPhoto, prepareTryOnGarmentImage } from '../services/tryOnImagePrep.js';
+import { saveImageBuffer } from '../utils/imageStorage.js';
+import { parseIncludeText, extractQuotedOverlayText } from '../utils/textOverlay.js';
+import { isTallGarmentPhoto, prepareTryOnGarmentImage } from '../services/tryOnImagePrep.js';
+import {
+  DEFAULT_FEMALE_FULLBODY_MODEL,
+  getTryOnModelPool,
+} from '../constants/tryOnModels.js';
 
-const replicate = new Replicate({
-  auth: process.env.REPLICATE_API_TOKEN,
-});
+const TRYON_CACHE_VERSION = 'v23-fullbody';
+const PRODUCT_FILL_CACHE_VERSION = 'fill-v4-style';
 
-const IDM_VTON_MODEL =
-  'cuuupid/idm-vton:0513734a452173b8173e907e3a59d19a36266e55b48528559432bd21c7d7e985';
+const VALID_UI_TRYON_GENDERS = new Set(['male', 'female']);
+const VALID_UI_TRYON_CATEGORIES = new Set(['top', 'bottom', 'dress']);
 
-const TRYON_CACHE_VERSION = 'v12';
-const IDM_VTON_STEPS = 40;
-const IDM_VTON_SEED = 42;
+const MODE_PRESETS = {
+  product:
+    'High-end commercial product photography, professional studio lighting, hyper-realistic, 8k, sharp focus, clean minimalist background',
+};
 
-const DEFAULT_FEMALE_FULLBODY_MODEL =
-  'https://raw.githubusercontent.com/yisol/IDM-VTON/main/gradio_demo/example/human/00121_00.jpg';
+const TRYON_MALE_MANUAL_KEYWORDS = ['мужской', 'мужская', 'парень', 'мужчина', 'male', 'man'];
 
-const FEMALE_TRYON_MODELS = [
-  {
-    url: 'https://raw.githubusercontent.com/yisol/IDM-VTON/main/gradio_demo/example/human/00034_00.jpg',
-    tags: ['female', 'european', 'slavic', 'studio'],
-  },
-  {
-    url: 'https://raw.githubusercontent.com/yisol/IDM-VTON/main/gradio_demo/example/human/00121_00.jpg',
-    tags: ['female', 'european', 'elegant', 'studio'],
-  },
-  {
-    url: 'https://raw.githubusercontent.com/yisol/IDM-VTON/main/gradio_demo/example/human/01992_00.jpg',
-    tags: ['female', 'european', 'slavic', 'natural'],
-  },
-  {
-    url: 'https://raw.githubusercontent.com/yisol/IDM-VTON/main/gradio_demo/example/human/00055_00.jpg',
-    tags: ['female', 'european', 'studio'],
-  },
-];
+function manualWishImpliesMaleModel(manualWish) {
+  const normalized = (manualWish || '').trim().toLowerCase();
+  if (!normalized) {
+    return false;
+  }
 
-const FEMALE_FULLBODY_TRYON_MODELS = [
-  {
-    url: DEFAULT_FEMALE_FULLBODY_MODEL,
-    tags: ['female', 'fullbody', 'elegant', 'studio'],
-  },
-  {
-    url: 'https://raw.githubusercontent.com/yisol/IDM-VTON/main/gradio_demo/example/human/taylor-.jpg',
-    tags: ['female', 'fullbody', 'elegant', 'studio'],
-  },
-  {
-    url: 'https://raw.githubusercontent.com/yisol/IDM-VTON/main/gradio_demo/example/human/00034_00.jpg',
-    tags: ['female', 'fullbody', 'european', 'studio'],
-  },
-  {
-    url: 'https://segmind-sd-models.s3.amazonaws.com/display_images/idm-ip.png',
-    tags: ['female', 'fullbody', 'studio'],
-  },
-];
+  const padded = ` ${normalized} `;
 
-const MALE_TRYON_MODELS = [
-  {
-    url: 'https://raw.githubusercontent.com/yisol/IDM-VTON/main/gradio_demo/example/human/will1%20(1).jpg',
-    tags: ['male', 'studio'],
-  },
-  {
-    url: 'https://raw.githubusercontent.com/yisol/IDM-VTON/main/gradio_demo/example/human/Jensen.jpeg',
-    tags: ['male', 'studio'],
-  },
-];
+  return TRYON_MALE_MANUAL_KEYWORDS.some((keyword) => {
+    if (keyword === 'man' || keyword === 'male') {
+      return new RegExp(`\\s${keyword}\\s`, 'i').test(padded);
+    }
+    return normalized.includes(keyword);
+  });
+}
 
-const EXPLICIT_JOKE_GENDER_OVERRIDE_HINTS = [
-  'шутк', 'прикол', 'мем', 'ради смеха', 'joke', 'funny', 'meme', 'for fun', 'crossdress', 'drag',
-];
+function resolveModelGender(manualWish, gptGender = null, uiGender = null) {
+  if (uiGender === 'male' || uiGender === 'female') {
+    return uiGender;
+  }
 
-const FEMALE_GARMENT_HINTS = [
-  'dress', 'skirt', 'blouse', 'crop top', 'maxi', 'midi', 'mini dress', 'gown', 'romper',
-  'jumpsuit', 'co-ord', 'two-piece', 'off-shoulder', 'платье', 'юбк', 'блуз', 'сарафан', 'комплект',
-];
+  if (manualWishImpliesMaleModel(manualWish)) {
+    return 'male';
+  }
 
-const MALE_GARMENT_HINTS = [
-  'men\'s suit', 'men suit', 'dress shirt', 'men\'s shirt', 'men shirt', 'necktie', 'tie and',
-  'мужск', 'костюм муж', 'рубашк', 'пиджак муж', 'галстук',
-];
+  const normalizedGptGender = typeof gptGender === 'string'
+    ? gptGender.trim().toLowerCase()
+    : null;
+
+  if (normalizedGptGender === 'male' || normalizedGptGender === 'female') {
+    return normalizedGptGender;
+  }
+
+  return 'female';
+}
+
+function buildTryOnPreset(resolvedGender) {
+  const modelPhrase = resolvedGender === 'male'
+    ? 'professional male model'
+    : 'professional female model';
+
+  return (
+    `Fashion lookbook photography, ${modelPhrase}, lookbook примерка on model, `
+    + 'highly detailed clothing texture, soft studio light, realistic skin, dress full body, 8k'
+  );
+}
+
+function buildFinalUserWish(presetMode, sanitizedManualWish, gptGender = null, uiGender = null) {
+  const preset = presetMode === 'tryon'
+    ? buildTryOnPreset(resolveModelGender(sanitizedManualWish, gptGender, uiGender))
+    : MODE_PRESETS.product;
+  const manual = sanitizedManualWish.trim();
+  return manual ? `${preset}. ${manual}` : preset;
+}
+
+function rebuildWishForProductBranch(sanitizedManualWish) {
+  return buildFinalUserWish('product', sanitizedManualWish);
+}
+
+function parseTryOnUiGender(value) {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const normalized = value.trim().toLowerCase();
+  return VALID_UI_TRYON_GENDERS.has(normalized) ? normalized : null;
+}
+
+function parseTryOnUiCategory(value) {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const normalized = value.trim().toLowerCase();
+  return VALID_UI_TRYON_CATEGORIES.has(normalized) ? normalized : null;
+}
+
+function applyUiTryOnOverrides(clothingMeta, uiGender, uiCategory) {
+  let gender = clothingMeta.gender;
+  let category = clothingMeta.category;
+  let visionCategory = clothingMeta.visionCategory;
+
+  if (uiGender) {
+    gender = uiGender;
+  }
+
+  if (uiCategory) {
+    category = normalizeClothingCategoryFromVision(uiCategory);
+    visionCategory = uiCategory;
+  }
+
+  const description = resolveGarmentDescription(clothingMeta.description);
+  const refinedPrompt = buildTryOnRefinedPrompt(gender, description);
+
+  return {
+    ...clothingMeta,
+    gender,
+    category,
+    visionCategory,
+    description,
+    refinedPrompt,
+  };
+}
+
+function buildTryOnUiCacheSuffix(uiGender, uiCategory, humanImageSuffix = '') {
+  return `${uiGender || ''}:${uiCategory || ''}:${humanImageSuffix}`;
+}
+
+const VALID_FALLBACK_REASONS = new Set(['not_clothing', 'verification_failed']);
+
+function resolveRequestedMode(generationMode, presetMode) {
+  return generationMode || presetMode;
+}
+
+function buildImageGenerationResponse({
+  imageUrl,
+  optimizedPrompt,
+  hashtags,
+  branchUsed,
+  fallbackReason = null,
+  requestedMode,
+  extractedText = null,
+}) {
+  const normalizedFallback = typeof fallbackReason === 'string' && VALID_FALLBACK_REASONS.has(fallbackReason)
+    ? fallbackReason
+    : null;
+
+  return {
+    success: true,
+    imageUrl,
+    optimizedPrompt,
+    hashtags,
+    extractedText,
+    branchUsed,
+    fallbackReason: normalizedFallback,
+    requestedMode,
+  };
+}
+
+function enrichCachedImageResponse(cached) {
+  return {
+    ...cached,
+    branchUsed: cached?.branchUsed === 'tryon' || cached?.branchUsed === 'product'
+      ? cached.branchUsed
+      : 'product',
+    fallbackReason: cached?.fallbackReason ?? null,
+  };
+}
+
+const GARMENT_FIDELITY_RULE =
+  'CRITICAL GARMENT FIDELITY: Transfer the exact garment from garm_img unchanged — same hem length, sleeve length, neckline, silhouette, color, texture and print. '
+  + 'Do not redesign, lengthen, shorten, crop or restyle the clothing. Only place the original cut-out garment onto the model body.';
 
 const SLAVIC_APPEARANCE_HINTS = [
   'русск', 'россий', 'славян', 'slavic', 'russian', 'европ', 'european',
@@ -99,79 +205,39 @@ const ELEGANT_APPEARANCE_HINTS = [
   'красив', 'beautiful', 'elegant', 'модел', 'lookbook', 'vogue', 'стильн',
 ];
 
-const CLOTHING_TRY_ON_KEYWORDS = [
-  // RU
-  'надень',
-  'надеть',
-  'одень',
-  'одеть',
-  'примерь',
-  'примерка',
-  'костюм',
-  'платье',
-  'рубашк',
-  'брюк',
-  'юбк',
-  'джинс',
-  'куртк',
-  'пиджак',
-  'футболк',
-  'свитер',
-  'одежд',
-  'модель',
-  'девушк',
-  'парень',
-  'мужчин',
-  // UZ (Latin)
-  'kiydir',
-  'kiying',
-  'kiydiring',
-  'кийдир',
-  'kiyim',
-  'kostyum',
-  'ko\'ylak',
-  'koylak',
-  'jins',
-  'kurtk',
-  'rubashk',
-  'qiz',
-  'ayol',
-  'erkak',
-  // TG (Cyrillic)
-  'пӯш',
-  'пӯшидан',
-  'либос',
-  'курта',
-  'ҷинс',
-  'духтар',
-  'мард',
-  'модела',
-  // EN
-  'wear',
-  'suit',
-  'dress',
-  'shirt',
-  'pants',
-  'jeans',
-  'skirt',
-  'jacket',
-  'blazer',
-  'try on',
-  'tryon',
-  'try-on',
-  'outfit',
-  'garment',
-  'clothing',
-  'apparel',
-  'model',
-  'woman',
-  'man',
-  'male',
-  'female',
+const YOUNG_AGE_HINTS = [
+  'молод', 'young', 'teen', 'юнош', 'девушк', 'подрост', 'girl', 'boy',
+  'молодая модель', 'young model', 'yosh', 'javan',
 ];
 
-const VALID_CLOTHING_CATEGORIES = ['upper_body', 'lower_body', 'dress'];
-const VALID_GENDERS = ['male', 'female'];
+const ADULT_AGE_HINTS = [
+  'взросл', 'adult', 'взрослая модель', 'adult model', 'kattalar',
+];
+
+const MATURE_AGE_HINTS = [
+  'зрел', 'mature', 'зрелая модель', 'mature model', 'katta',
+];
+
+const CLOTHING_TRY_ON_KEYWORDS = [
+  'модель',
+  'примерка',
+  'lookbook',
+  'надеть',
+  'одежда',
+  'на человеке',
+  'на девушке',
+  'на парне',
+  'female model',
+  'male model',
+  'on model',
+  'try on',
+  'tryon',
+  'modelga',
+  'kiyim',
+  'kiydir',
+  'модела',
+  'либос',
+];
 
 const DRESS_CATEGORY_HINTS = [
   'two-piece',
@@ -182,6 +248,12 @@ const DRESS_CATEGORY_HINTS = [
   'coord set',
   'комплект',
   'двойк',
+  'костюм',
+  'кроп-топ',
+  'кроп топ',
+  'crop top',
+  'топ и',
+  'top and',
   'юбк',
   'skirt',
   'maxi',
@@ -206,110 +278,6 @@ const DRESS_CATEGORY_HINTS = [
   'ko\'ylak to\'plami',
 ];
 
-function buildProductVisionSystemPrompt(platform, format, lang, includeText, userWish) {
-  const sceneWish = userWish?.trim() || 'luxury studio photography';
-  const isStory = format === 'story';
-
-  const storyCompositionRule = isStory
-    ? `4. Правило композиции для длинных товаров (Защита от обрезки): Выбран вертикальный формат story — принудительно добавь в промпт требование уменьшить масштаб: 'CRITICAL COMPOSITIONAL RULE: The product is a wide object. To prevent any cropping, the image MUST be a wide shot (full shot) with significant zoom-out. The entire product, including all its left and right edges (like wheels or handles), MUST be 100% fully visible, complete, and centered within the vertical frame. Leave plenty of clean negative space on the left and right sides of the object.'
-`
-    : '';
-
-  const shadowRuleNumber = isStory ? 5 : 4;
-  const environmentRuleNumber = isStory ? 6 : 5;
-  const hashtagsRuleNumber = isStory ? 7 : 6;
-
-  const textAndFormatInstruction = includeText
-    ? `${environmentRuleNumber}. Окружение, Текст и Формат: Помести товар в премиальное окружение на основе пожеланий пользователя (${sceneWish}). Наложи короткий текст на языке ${lang} в двойных кавычках. Оптимизируй под ${format} и ${platform}.`
-    : `${environmentRuleNumber}. Окружение и Формат: Помести товар в премиальное окружение на основе пожеланий пользователя (${sceneWish}). ${NO_TEXT_OVERLAY_RULE} Оптимизируй композицию под ${format} и ${platform}.`;
-
-  return `Ты — ведущий технический ИИ-инспектор и профессиональный коммерческий фотограф. Твоя задача — изучить загруженное изображение товара, определить его форму, точный цвет и сформировать идеальный JSON-объект для DALL-E 3 (images.edit).
-
-ПРАВИЛА АНАЛИЗА И ФОРМИРОВАНИЯ ПРОМПТА:
-1. Ключ 'image_prompt': Текст должен быть на английском языке и строго следовать правилам сохранения оригинального товара (Strict Object Preservation).
-2. Анализ цвета и формы: Определи главный цвет товара (например: ярко-красный, белый, светло-серый). В начале промпта четко пропиши его: 'The main product is a strictly [вставь определенный цвет, например: bright red] object matching the reference image'.
-3. Критическое правило цвета: Добавь в промпт фразу: 'CRITICAL COLOR RULE: The product itself MUST maintain its original bright, vibrant color from the reference image. Do not darken, shade, or change its color to match the background. The object must remain clean, bright, and stand out contrastingly against the background.'
-${storyCompositionRule}${shadowRuleNumber}. Реалистичные тени (Заземление товара): Добавь в промпт требование для физики теней: 'Ensure realistic contact shadows beneath the bottom edges or wheels of the product on the ground. The object must look naturally grounded and seamlessly integrated into the floor surface, avoiding any levitation effect.'
-${textAndFormatInstruction}
-${hashtagsRuleNumber}. Ключ 'hashtags': Массив из 2 тематических хэштегов на языке ${lang}.
-
-Выводи строго чистый JSON-объект без вводных слов, комментариев и markdown-разметки.`;
-}
-
-function buildClothingAnalysisSystemPrompt(userWish) {
-  const wishText = userWish?.trim() || 'Virtual try-on for this garment';
-
-  return `Ты — ведущий технический fashion-эксперт и ИИ-инспектор. Изучи фото одежды на манекене и пожелания пользователя '${wishText}'.
-
-ПЕРЕД ФОРМИРОВАНИЕМ ПРОМПТА проведи обязательный визуальный анализ длины и силуэта:
-
-A) ДЛИНА ПОДОЛА — определи точно по фото, НЕ удлиняй и НЕ укорачивай:
-- "mini" / "short" — подол выше колена (видны бёдра и значительная часть ног)
-- "midi" — подол на уровне колена или середины голени
-- "maxi" / "floor-length" — подол до щиколотки или до пола
-
-B) ВЕРХНЯЯ ЧАСТЬ — определи точно по фото:
-- strapless / bandeau — без лямок, открытые плечи
-- off-the-shoulder — спущенные с плеч рукава или вырез
-- one-shoulder — только если на фото действительно одно плечо открыто
-- with sleeves — с рукавами (укажи длину: short, long, puff и т.д.)
-
-C) СИЛУЭТ — определи точно по фото:
-- A-line / flared — расклешённый от талии или бёдер
-- fitted / bodycon — облегающий
-- straight — прямой
-- layered / ruffled / tiered — многослойный с оборками
-- gathered / ruched — со сборками
-- Описывай только то, что реально видно на фото
-
-Верни строго JSON-объект со следующими ключами:
-- 'category': только 'upper_body', 'lower_body' или 'dress'. Для платьев, юбок, комплектов (топ + юбка), jumpsuit и romper — 'dress' (полный рост).
-- 'gender': 'female' или 'male' — строго по фасону одежды на фото.
-- 'refined_prompt': рекламный промпт на английском для Replicate IDM-VTON.
-
-ПРАВИЛА ФОРМИРОВАНИЯ refined_prompt:
-
-1. НАЧАЛО (обязательно):
-'A full-body premium lookbook studio photography of a gorgeous [female/male] model standing in full height from head to toe, wearing this exact [описание верха + точная длина] [тип одежды].'
-
-2. ОПИСАНИЕ ТОВАРА — динамическое, строго по фото:
-- Опиши верх: тип выреза, детали (банты, сборки, ruching, принт и т.д.)
-- Опиши низ: точную длину (mini-skirt / midi skirt / maxi skirt) и силуэт (flared A-line / fitted / layered ruffled tulle и т.д.)
-- Укажи точный цвет: 'The color is strictly solid [цвет].' или точное описание принта с фото
-- ЗАПРЕЩЕНО использовать фразы, противоречащие фото: если платье mini — НИКОГДА не пиши 'long maxi skirt', 'floor-length', 'ankle-length', 'flowing train'. Если платье maxi — не пиши 'mini', 'short' или 'above the knee'.
-- ЗАПРЕЩЕНО навязывать 'one-shoulder', если на фото strapless/bandeau, off-the-shoulder или другой тип.
-- ЗАПРЕЩЕНО использовать жёстко прописанные шаблонные фразы — каждый промпт уникален под конкретную вещь.
-
-3. ПРАВИЛО ПОЛНОГО РОСТА (обязательно включить, подставляя реальные значения):
-'The model must be standing in full height so her shoes and legs are fully visible. The [dress/outfit/garment] must look exactly like the reference image in terms of length ([mini/short/midi/maxi] — подставь реальную длину) and silhouette ([flared A-line/fitted/etc.] — подставь реальный силуэт).'
-
-4. ФОН И СВЕТ (обязательно дословно):
-'clean luxury minimalist studio background with soft dramatic cinematic shadows, professional fashion lookbook presentation'
-
-5. ЗАЩИТА ЦВЕТА:
-'The clothing colors and print must match the garment reference exactly. No other colors should be blended into the fabric. Accessories (bags, belts, etc.) are separate and must not bleed color into the garment.'
-
-ПРИМЕР для чёрного мини-платья с bandeau и flared tulle skirt (используй как эталон структуры, НЕ копируй слепо для других вещей):
-'A full-body premium lookbook studio photography of a gorgeous female model standing in full height from head to toe, wearing this exact strapless short mini dress. The dress features a gathered ruched strapless bandeau bodice with a small white bow detailing at the neckline, and a voluminous, heavily layered flared ruffled tulle mini-skirt. The color is strictly solid black. The model must be standing in full height so her shoes and legs are fully visible. The dress must look exactly like the reference image in terms of length (mini/short) and silhouette (flared A-line). clean luxury minimalist studio background with soft dramatic cinematic shadows, professional fashion lookbook presentation. The clothing colors and print must match the garment reference exactly.'
-
-КРИТИЧЕСКИЕ ПРАВИЛА:
-1. Пол определяй ТОЛЬКО по визуальному анализу одежды на фото, а не по пожеланиям пользователя.
-2. Юбки, платья, кроп-топы, блузки, женские комплекты (топ + юбка) — всегда gender: "female".
-3. Мужские рубашки, пиджаки, классические костюмы — gender: "male".
-4. Комплект из двух частей (кроп-топ + юбка) — category: "dress".
-5. Длину подола и силуэт определяй ТОЛЬКО по фото — это критично для качества примерки в Replicate.
-6. Аксессуары (сумка, ремень) описывай отдельно, не смешивай их цвет с тканью одежды.
-7. Пожелания пользователя о поле модели ИГНОРИРУЙ, если они противоречат типу одежды.
-
-Верни строго JSON-объект:
-{
-  "category": "upper_body" | "lower_body" | "dress",
-  "gender": "female" | "male",
-  "refined_prompt": "A full-body premium lookbook studio photography..."
-}
-Никакого другого текста, кроме чистого JSON, выводить нельзя.`;
-}
-
 function buildTryOnHashtagsSystemPrompt(lang) {
   const languageName = getLanguageName(lang);
 
@@ -327,13 +295,55 @@ function getBase64HashInput(base64Image) {
   return trimmed.length > 10000 ? trimmed.slice(0, 10000) : trimmed;
 }
 
-function buildProductImageCacheKey(base64Image, userWish, format, lang, includeText, cacheVersion = '') {
+function buildProductImageCacheKey(
+  base64Image,
+  userWish,
+  format,
+  lang,
+  includeText,
+  cacheVersion = '',
+  generationMode = '',
+  tryOnUiSuffix = '',
+) {
   const base64Sample = getBase64HashInput(base64Image);
   const wish = typeof userWish === 'string' ? userWish : '';
   return crypto
     .createHash('md5')
-    .update(`${base64Sample}${wish}${format}${lang}${includeText}${cacheVersion}`)
+    .update(`${base64Sample}${wish}${format}${lang}${includeText}${cacheVersion}${generationMode}${tryOnUiSuffix}`)
     .digest('hex');
+}
+
+function resolveGenerationMode(mode) {
+  if (typeof mode !== 'string') {
+    return null;
+  }
+
+  const normalized = mode.trim().toLowerCase();
+  if (normalized === 'tryon' || normalized === 'try-on') {
+    return 'tryon';
+  }
+
+  if (normalized === 'product') {
+    return 'product';
+  }
+
+  return null;
+}
+
+function shouldRunTryOnBranch(generationMode, userWish, shouldExtractText) {
+  if (shouldExtractText) {
+    return false;
+  }
+
+  if (generationMode === 'tryon') {
+    return true;
+  }
+
+  if (generationMode === 'product') {
+    return false;
+  }
+
+  return isClothingTryOnRequest(userWish);
 }
 
 function buildOcrCacheKey(base64Image) {
@@ -354,98 +364,33 @@ function isClothingTryOnRequest(userWish) {
   return CLOTHING_TRY_ON_KEYWORDS.some((keyword) => normalized.includes(keyword));
 }
 
-function isExplicitGenderJokeRequest(userWish) {
-  const wish = (userWish || '').toLowerCase();
-  if (!wish.trim()) {
-    return false;
-  }
-
-  return EXPLICIT_JOKE_GENDER_OVERRIDE_HINTS.some((hint) => wish.includes(hint));
+function resolveStrictGender(gptGender, manualWish) {
+  return resolveModelGender(manualWish, gptGender);
 }
 
-function inferGenderFromWish(userWish) {
+function inferAgeGroupFromWish(userWish) {
   const wish = (userWish || '').toLowerCase();
   if (!wish.trim()) {
     return null;
   }
 
-  const maleHints = ['мужчин', 'парень', 'парня', 'мужчина', 'man', 'male', 'boy', 'erkak', 'мард', 'erkakga'];
-  const femaleHints = ['девуш', 'женщин', 'девоч', 'girl', 'woman', 'female', 'qiz', 'ayol', 'духтар', 'qizga'];
+  const youngScore = YOUNG_AGE_HINTS.filter((hint) => wish.includes(hint)).length;
+  const matureScore = MATURE_AGE_HINTS.filter((hint) => wish.includes(hint)).length;
+  const adultScore = ADULT_AGE_HINTS.filter((hint) => wish.includes(hint)).length;
 
-  const maleScore = maleHints.filter((hint) => wish.includes(hint)).length;
-  const femaleScore = femaleHints.filter((hint) => wish.includes(hint)).length;
-
-  if (femaleScore > maleScore) {
-    return 'female';
+  if (youngScore > matureScore && youngScore >= adultScore && youngScore > 0) {
+    return 'young';
   }
 
-  if (maleScore > femaleScore) {
-    return 'male';
+  if (matureScore > youngScore && matureScore >= adultScore && matureScore > 0) {
+    return 'mature';
   }
 
-  return null;
-}
-
-function inferGarmentGenderFromText(...texts) {
-  const combined = texts
-    .filter((text) => typeof text === 'string' && text.trim())
-    .join(' ')
-    .toLowerCase();
-
-  if (!combined) {
-    return null;
-  }
-
-  const femaleScore = FEMALE_GARMENT_HINTS.filter((hint) => combined.includes(hint)).length;
-  const maleScore = MALE_GARMENT_HINTS.filter((hint) => combined.includes(hint)).length;
-
-  if (femaleScore > maleScore) {
-    return 'female';
-  }
-
-  if (maleScore > femaleScore) {
-    return 'male';
+  if (adultScore > 0) {
+    return 'adult';
   }
 
   return null;
-}
-
-function resolveStrictGender(aiGender, category, refinedPrompt, userWish) {
-  const normalizedCategory = normalizeClothingCategory(category);
-  const normalizedAiGender = typeof aiGender === 'string' && VALID_GENDERS.includes(aiGender.trim().toLowerCase())
-    ? aiGender.trim().toLowerCase()
-    : null;
-
-  const garmentGender = inferGarmentGenderFromText(refinedPrompt) || normalizedAiGender;
-  const wishGender = inferGenderFromWish(userWish);
-  const isJokeRequest = isExplicitGenderJokeRequest(userWish);
-
-  if (normalizedCategory === 'dress') {
-    if (isJokeRequest && wishGender === 'male') {
-      return 'male';
-    }
-    return 'female';
-  }
-
-  if (garmentGender === 'female') {
-    if (isJokeRequest && wishGender === 'male') {
-      return 'male';
-    }
-    return 'female';
-  }
-
-  if (garmentGender === 'male') {
-    if (isJokeRequest && wishGender === 'female') {
-      return 'female';
-    }
-    return 'male';
-  }
-
-  if (normalizedAiGender) {
-    return normalizedAiGender;
-  }
-
-  return 'female';
 }
 
 function inferAppearanceTags(userWish) {
@@ -460,34 +405,63 @@ function inferAppearanceTags(userWish) {
     tags.push('elegant');
   }
 
+  if (!tags.includes('elegant')) {
+    tags.push('elegant');
+  }
+
   return tags;
 }
 
-function pickModelFromPool(pool, userWish) {
+function pickModelFromPool(pool, { userWish, gender, ageGroup, garmentHash } = {}) {
   if (!pool.length) {
     return null;
   }
 
-  const preferredTags = inferAppearanceTags(userWish);
   let candidates = pool;
 
-  if (preferredTags.length) {
-    const scored = pool
-      .map((model) => ({
-        model,
-        score: preferredTags.filter((tag) => model.tags.includes(tag)).length,
-      }))
-      .sort((a, b) => b.score - a.score);
-
-    if (scored[0].score > 0) {
-      candidates = scored
-        .filter((entry) => entry.score === scored[0].score)
-        .map((entry) => entry.model);
+  if (gender) {
+    const genderFiltered = candidates.filter((model) => model.gender === gender);
+    if (genderFiltered.length) {
+      candidates = genderFiltered;
     }
   }
 
-  const wishKey = (userWish || '').trim().toLowerCase();
-  const hash = crypto.createHash('md5').update(wishKey || 'default').digest('hex');
+  if (ageGroup) {
+    const ageFiltered = candidates.filter((model) => model.ageGroup === ageGroup);
+    if (ageFiltered.length) {
+      candidates = ageFiltered;
+    }
+  }
+
+  const preferredTags = inferAppearanceTags(userWish);
+  const scored = candidates
+    .filter((model) => model?.url)
+    .map((model) => {
+      const modelTags = Array.isArray(model.tags) ? model.tags : [];
+      return {
+        model,
+        score: preferredTags.filter((tag) => modelTags.includes(tag)).length,
+      };
+    })
+    .sort((a, b) => b.score - a.score);
+
+  if (!scored.length) {
+    return pool.find((model) => model?.url)?.url ?? null;
+  }
+
+  if (scored[0]?.score > 0) {
+    candidates = scored
+      .filter((entry) => entry.score === scored[0].score)
+      .map((entry) => entry.model);
+  }
+
+  const hashInput = [
+    (userWish || '').trim().toLowerCase(),
+    garmentHash || '',
+    gender || '',
+    ageGroup || '',
+  ].join('|');
+  const hash = crypto.createHash('md5').update(hashInput || 'default').digest('hex');
   const index = Number.parseInt(hash.slice(0, 8), 16) % candidates.length;
   return candidates[index].url;
 }
@@ -505,124 +479,168 @@ function shouldForceDressCategory(...texts) {
   return DRESS_CATEGORY_HINTS.some((hint) => combined.includes(hint));
 }
 
-function resolveClothingCategory(category, refinedPrompt, userWish, forceDressFromPhoto = false) {
+function resolveEffectiveVisionCategory(resolvedCategory) {
+  if (resolvedCategory === 'dress') {
+    return 'dress';
+  }
+
+  if (resolvedCategory === 'lower_body') {
+    return 'bottom';
+  }
+
+  return 'top';
+}
+
+function resolveClothingCategory(category, refinedPrompt, userWish, forceDressFromPhoto = false, description = '') {
   if (forceDressFromPhoto) {
     return 'dress';
   }
 
-  const normalized = normalizeClothingCategory(category);
-
-  if (shouldForceDressCategory(refinedPrompt, userWish)) {
+  if (shouldForceDressCategory(refinedPrompt, userWish, description)) {
     return 'dress';
   }
 
-  return normalized;
+  return normalizeClothingCategory(category);
 }
 
-const BLOCKED_FEMALE_TRYON_URL_FRAGMENTS = [
-  'sam1',
-  'will1',
-  'jensen',
-  'jensen.jpeg',
+const BLOCKED_TRYON_HUMAN_IMAGE_FRAGMENTS = [
+  'pinimg.com',
+  'pinterest.',
 ];
 
-function isBlockedFemaleTryOnUrl(url) {
+const TRYON_HUMAN_IMAGE_CHECK_TIMEOUT_MS = 5000;
+
+function isBlockedTryOnHumanImageUrl(url) {
   const lower = (url || '').toLowerCase();
-  return BLOCKED_FEMALE_TRYON_URL_FRAGMENTS.some((fragment) => lower.includes(fragment));
+  return BLOCKED_TRYON_HUMAN_IMAGE_FRAGMENTS.some((fragment) => lower.includes(fragment));
 }
 
-function resolveEnvHumanImageOverride(envValue, pool, userWish, fallbackUrl, envVarName) {
-  const override = envValue?.trim();
-
-  if (override && !isBlockedFemaleTryOnUrl(override)) {
-    return override;
+async function isHumanImageUrlReachable(url) {
+  const trimmed = url?.trim();
+  if (!trimmed) {
+    return false;
   }
 
-  if (override && isBlockedFemaleTryOnUrl(override)) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), TRYON_HUMAN_IMAGE_CHECK_TIMEOUT_MS);
+
+  try {
+    let response = await fetch(trimmed, {
+      method: 'HEAD',
+      signal: controller.signal,
+      redirect: 'follow',
+    });
+
+    if (response.ok) {
+      return true;
+    }
+
+    response = await fetch(trimmed, {
+      method: 'GET',
+      headers: { Range: 'bytes=0-0' },
+      signal: controller.signal,
+      redirect: 'follow',
+    });
+
+    return response.ok || response.status === 206;
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function pickReachableHumanImage(pool, selectionContext) {
+  const primaryUrl = pickModelFromPool(pool, selectionContext);
+  const orderedUrls = [
+    primaryUrl,
+    ...pool.map((model) => model.url).filter((url) => url !== primaryUrl),
+  ];
+
+  for (const url of orderedUrls) {
+    if (!url || isBlockedTryOnHumanImageUrl(url)) {
+      continue;
+    }
+
+    if (await isHumanImageUrlReachable(url)) {
+      return url;
+    }
+  }
+
+  return primaryUrl || pool[0]?.url || DEFAULT_FEMALE_FULLBODY_MODEL;
+}
+
+async function uploadUserHumanImage(humanImageBase64) {
+  const rawBase64 = normalizeBase64Image(humanImageBase64);
+  const mimeType = detectMimeType(humanImageBase64);
+
+  const publicBase = (process.env.PUBLIC_API_URL || process.env.API_PUBLIC_URL || '').replace(/\/$/, '');
+  if (publicBase) {
+    const buffer = Buffer.from(rawBase64, 'base64');
+    const filename = await saveImageBuffer(buffer);
+    return `${publicBase}/api/generated-images/${filename}`;
+  }
+
+  return `data:${mimeType};base64,${rawBase64}`;
+}
+
+function resolveHumanImageSuffix(humanImage) {
+  if (typeof humanImage !== 'string' || !humanImage.trim()) {
+    return '';
+  }
+
+  const trimmed = humanImage.trim();
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    return crypto.createHash('md5').update(trimmed).digest('hex').slice(0, 12);
+  }
+
+  return crypto.createHash('md5').update(getBase64HashInput(trimmed)).digest('hex').slice(0, 12);
+}
+
+async function resolveFinalHumanImage(humanImage, clothingMeta, manualWish, garmentHash) {
+  if (typeof humanImage === 'string' && humanImage.trim()) {
+    const trimmed = humanImage.trim();
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      return trimmed;
+    }
+
+    return uploadUserHumanImage(trimmed);
+  }
+
+  return resolveHumanImage(clothingMeta.gender, manualWish, clothingMeta.category, garmentHash);
+}
+
+async function resolveHumanImage(gender, userWish, category, garmentHash) {
+  const pool = getTryOnModelPool(gender, category);
+  const ageGroup = inferAgeGroupFromWish(userWish);
+  const selectionContext = { userWish, gender, ageGroup, garmentHash };
+
+  const envOverride = gender === 'male'
+    ? process.env.REPLICATE_TRYON_MALE_IMG?.trim()
+    : category === 'dress'
+      ? process.env.REPLICATE_TRYON_FEMALE_FULLBODY_IMG?.trim()
+      : process.env.REPLICATE_TRYON_FEMALE_IMG?.trim();
+
+  if (envOverride && !isBlockedTryOnHumanImageUrl(envOverride) && await isHumanImageUrlReachable(envOverride)) {
+    const overrideModel = pool.find((model) => model.url === envOverride);
+    const mergedPool = overrideModel
+      ? pool
+      : [{ url: envOverride, gender: gender || 'female', ageGroup: ageGroup || 'adult', tags: ['elegant', 'studio'] }, ...pool];
+
+    return pickReachableHumanImage(mergedPool, selectionContext);
+  }
+
+  if (envOverride) {
     console.warn(
-      `[try-on] Ignoring ${envVarName}: URL looks like a male demo photo (${override}). Using verified female model pool.`,
+      '[try-on] Env model URL is blocked or unreachable; using verified public model pool instead.',
     );
   }
 
-  return pickModelFromPool(pool, userWish) || fallbackUrl;
-}
-
-function resolveHumanImage(gender, userWish, category) {
-  if (gender === 'male') {
-    return process.env.REPLICATE_TRYON_MALE_IMG?.trim() || pickModelFromPool(MALE_TRYON_MODELS, userWish);
-  }
-
-  if (category === 'dress') {
-    return resolveEnvHumanImageOverride(
-      process.env.REPLICATE_TRYON_FEMALE_FULLBODY_IMG,
-      FEMALE_FULLBODY_TRYON_MODELS,
-      userWish,
-      DEFAULT_FEMALE_FULLBODY_MODEL,
-      'REPLICATE_TRYON_FEMALE_FULLBODY_IMG',
-    );
-  }
-
-  return resolveEnvHumanImageOverride(
-    process.env.REPLICATE_TRYON_FEMALE_IMG,
-    FEMALE_TRYON_MODELS,
-    userWish,
-    FEMALE_TRYON_MODELS[0].url,
-    'REPLICATE_TRYON_FEMALE_IMG',
-  );
+  return pickReachableHumanImage(pool, selectionContext);
 }
 
 function normalizeClothingCategory(category) {
-  if (typeof category !== 'string') {
-    return 'upper_body';
-  }
-
-  const normalized = category.trim().toLowerCase();
-  if (normalized === 'dresses') {
-    return 'dress';
-  }
-
-  if (VALID_CLOTHING_CATEGORIES.includes(normalized)) {
-    return normalized;
-  }
-
-  return 'upper_body';
-}
-
-function toIdmVtonCategory(category) {
-  if (category === 'dress') {
-    return 'dresses';
-  }
-
-  return category;
-}
-
-function resolveReplicateImageUrl(output) {
-  const item = Array.isArray(output) ? output[0] : output;
-
-  if (!item) {
-    return null;
-  }
-
-  if (typeof item.url === 'function') {
-    const url = item.url();
-    if (url instanceof URL) {
-      return url.href;
-    }
-    return String(url);
-  }
-
-  if (typeof item === 'string') {
-    return item;
-  }
-
-  if (typeof item.toString === 'function') {
-    const asString = item.toString();
-    if (asString && asString.startsWith('http')) {
-      return asString;
-    }
-  }
-
-  return null;
+  return normalizeClothingCategoryFromVision(category);
 }
 
 async function upscaleTryOnResultFromUrl(finalImageUrl) {
@@ -642,21 +660,6 @@ async function upscaleTryOnResultFromUrl(finalImageUrl) {
   return `data:image/png;base64,${upscaledBuffer.toString('base64')}`;
 }
 
-function buildFallbackClothingMeta(userWish, forceDressFromPhoto = false) {
-  const wish = (userWish || '').trim();
-  const category = forceDressFromPhoto || shouldForceDressCategory(wish)
-    ? 'dress'
-    : 'upper_body';
-  const refinedPrompt =
-    'A full-body premium lookbook studio photography of a gorgeous female model standing in full height from head to toe, wearing this exact garment from the reference photo. The model must be standing in full height so her shoes and legs are fully visible. The garment must look exactly like the reference image in terms of length and silhouette as shown in the photo. clean luxury minimalist studio background with soft dramatic cinematic shadows, professional fashion lookbook presentation. The clothing colors and print must match the garment reference exactly. No other colors should be blended into the fabric.';
-  const gender = resolveStrictGender('female', category, refinedPrompt, userWish);
-
-  return {
-    category,
-    gender,
-    refinedPrompt,
-  };
-}
 async function generateTryOnHashtags(refinedPrompt, category, lang) {
   const languageName = getLanguageName(lang);
 
@@ -693,122 +696,74 @@ async function generateTryOnHashtags(refinedPrompt, category, lang) {
   }
 }
 
-async function analyzeClothingMeta(base64Image, userWish) {
-  const visionImageUrl = await compressImageForVision(base64Image);
+async function analyzeClothingMeta(base64Image, manualWish) {
+  const visionResult = await analyzeClothingProductForTryOn(base64Image, manualWish);
 
-  const completion = await getOpenAI().chat.completions.create({
-    model: 'gpt-4o-mini',
-    response_format: { type: 'json_object' },
-    messages: [
-      {
-        role: 'system',
-        content: buildClothingAnalysisSystemPrompt(userWish),
-      },
-      {
-        role: 'user',
-        content: [
-          {
-            type: 'text',
-            text: userWish?.trim()
-              ? `Пожелания пользователя (не переопределяй пол одежды и не меняй длину/силуэт): ${userWish.trim()}\n\nКритично: перед формированием refined_prompt точно определи длину подола (mini/midi/maxi) и силуэт (A-line/flared/fitted и т.д.) по фото. Не удлиняй короткие платья до пола и не укорачивай длинные.`
-              : 'Проанализируй одежду для виртуальной примерки. Определи пол строго по фасону вещи на фото. Критично: точно определи длину подола (mini/midi/maxi) и силуэт по фото — не искажай оригинальный фасон в refined_prompt.',
-          },
-          {
-            type: 'image_url',
-            image_url: {
-              url: visionImageUrl,
-              detail: 'high',
-            },
-          },
-        ],
-      },
-    ],
-    temperature: 0.1,
-  });
-
-  const content = completion.choices[0]?.message?.content;
-  if (!content) {
-    throw createError('Clothing analysis returned an empty response.', 502);
+  if (!visionResult.isClothing) {
+    return {
+      notClothing: true,
+      productType: visionResult.productType || 'unknown',
+    };
   }
 
-  let parsed;
-  try {
-    parsed = JSON.parse(content);
-  } catch {
-    throw createError('Clothing analysis returned invalid JSON.', 502);
-  }
-
-  if (!parsed.refined_prompt || typeof parsed.refined_prompt !== 'string') {
-    throw createError('Clothing analysis returned incomplete refined_prompt.', 502);
-  }
-
-  const refinedPrompt = parsed.refined_prompt.trim();
   const tallGarmentPhoto = await isTallGarmentPhoto(base64Image);
+
   const category = resolveClothingCategory(
-    parsed.category,
-    refinedPrompt,
-    userWish,
+    visionResult.visionCategory,
+    visionResult.refinedPrompt,
+    manualWish,
     tallGarmentPhoto,
+    visionResult.description,
   );
-  const gender = resolveStrictGender(parsed.gender, category, refinedPrompt, userWish);
+  const gender = resolveStrictGender(visionResult.gender, manualWish);
+  const description = resolveGarmentDescription(visionResult.description);
+  const refinedPrompt = buildTryOnRefinedPrompt(gender, description);
+  const effectiveVisionCategory = resolveEffectiveVisionCategory(category);
+
+  if (visionResult.visionCategory === 'top' && category === 'dress') {
+    console.warn(
+      '[try-on] Vision category "top" overridden to "dress" (two-piece suit / full-length garment detected).',
+    );
+  }
 
   return {
+    notClothing: false,
     category,
     gender,
     refinedPrompt,
+    description,
+    visionCategory: effectiveVisionCategory,
   };
 }
 
-function buildGarmentDescriptionForReplicate(clothingMeta) {
-  const genderLabel = clothingMeta.gender === 'male' ? 'male' : 'female';
-  const colorGuard =
-    'The clothing colors and print must match the garment reference exactly. '
-    + 'Do not blend background colors, bag colors, or accessory colors into the fabric. '
-    + 'Accessories stay separate from garment fabric.';
+function resolveTryOnSeed(garmentHash) {
+  if (!garmentHash) {
+    return IDM_VTON_SEED;
+  }
 
-  return `${clothingMeta.refinedPrompt} Model gender: ${genderLabel}. ${colorGuard}`;
+  const parsed = Number.parseInt(garmentHash.slice(0, 8), 16);
+  return Number.isFinite(parsed) ? parsed : IDM_VTON_SEED;
 }
 
-async function runIdmVtonTryOn(base64Image, clothingMeta, userWish) {
-  const garmImg = await prepareTryOnGarmentImage(base64Image);
-  const idmCategory = toIdmVtonCategory(clothingMeta.category);
-  const humanImg = resolveHumanImage(clothingMeta.gender, userWish, clothingMeta.category);
-  const isDress = idmCategory === 'dresses';
-  const garmentDes = buildGarmentDescriptionForReplicate(clothingMeta).slice(0, 500);
+async function executeIdmVtonTryOn(base64Image, clothingMeta, manualWish, humanImage = null) {
+  const tryOnCategory = clothingMeta.category ?? clothingMeta.visionCategory;
+  const garmImg = await prepareTryOnGarmentImage(base64Image, tryOnCategory);
+  const garmentHash = crypto.createHash('md5').update(getBase64HashInput(base64Image)).digest('hex');
+  const humanImg = await resolveFinalHumanImage(humanImage, clothingMeta, manualWish, garmentHash);
 
-  const input = {
-    crop: false,
-    seed: IDM_VTON_SEED,
-    steps: IDM_VTON_STEPS,
-    category: idmCategory,
-    force_dc: isDress,
-    garm_img: garmImg,
-    human_img: humanImg,
-    mask_only: false,
-    garment_des: garmentDes,
-  };
+  const garmentCategory = clothingMeta.visionCategory ?? clothingMeta.category;
 
   console.log(
-    `Running IDM-VTON try-on, category: ${idmCategory}, gender: ${clothingMeta.gender}, garment_des: ${garmentDes}, human_img: ${humanImg}`,
+    `IDM-VTON prep: garmentCategory=${garmentCategory}, resolvedCategory=${clothingMeta.category}, gender=${clothingMeta.gender}, human_img=${humanImg}`,
   );
 
-  let output;
-  try {
-    output = await replicate.run(IDM_VTON_MODEL, { input });
-  } catch (error) {
-    const message = error?.message || 'Replicate IDM-VTON request failed.';
-    console.error('IDM-VTON failed:', message);
-    throw createError(`Virtual try-on failed: ${message}`, 502);
-  }
+  const { remoteUrl } = await runIdmVtonTryOn(garmImg, clothingMeta, {
+    humanImg,
+    seed: resolveTryOnSeed(garmentHash),
+    garmentHash,
+  });
 
-  const finalImageUrl = resolveReplicateImageUrl(output);
-  if (!finalImageUrl) {
-    throw createError('Replicate did not return an image URL', 502);
-  }
-
-  console.log(`IDM-VTON output URL: ${finalImageUrl}`);
-
-  return upscaleTryOnResultFromUrl(finalImageUrl);
+  return upscaleTryOnResultFromUrl(remoteUrl);
 }
 
 export async function generateProductImage(req, res, next) {
@@ -817,9 +772,19 @@ export async function generateProductImage(req, res, next) {
       return res.status(500).json({ error: 'OpenAI API key is not configured.' });
     }
 
-    const { base64Image, userWish, platform, format, extractText, lang, includeText } = req.body;
+    const { base64Image: bodyBase64Image, image, userWish, platform, format, extractText, lang, includeText, mode, gender, category, humanImage } = req.body;
+    const base64Image = (typeof image === 'string' && image.trim())
+      ? image.trim()
+      : (typeof bodyBase64Image === 'string' ? bodyBase64Image.trim() : '');
     const normalizedLang = normalizeLangCode(lang);
     const shouldIncludeText = parseIncludeText(includeText);
+    const generationMode = resolveGenerationMode(mode);
+    const uiTryOnGender = generationMode === 'tryon' ? parseTryOnUiGender(gender) : null;
+    const uiTryOnCategory = generationMode === 'tryon' ? parseTryOnUiCategory(category) : null;
+    const humanImageSuffix = generationMode === 'tryon' ? resolveHumanImageSuffix(humanImage) : '';
+    const tryOnUiCacheSuffix = generationMode === 'tryon'
+      ? buildTryOnUiCacheSuffix(uiTryOnGender, uiTryOnCategory, humanImageSuffix)
+      : '';
 
     if (!base64Image || typeof base64Image !== 'string' || !base64Image.trim()) {
       return res.status(400).json({ error: 'A valid base64Image string is required.' });
@@ -837,9 +802,13 @@ export async function generateProductImage(req, res, next) {
       });
     }
 
-    const wish = typeof userWish === 'string' ? userWish : '';
+    const manualWish = sanitizeUserWish(typeof userWish === 'string' ? userWish : '');
     const shouldExtractText = extractText === true;
-    const shouldRunTryOn = !shouldExtractText && isClothingTryOnRequest(wish);
+    let shouldRunTryOn = shouldRunTryOnBranch(generationMode, manualWish, shouldExtractText);
+    const presetMode = generationMode === 'tryon' || (!generationMode && shouldRunTryOn) ? 'tryon' : 'product';
+    let wish = buildFinalUserWish(presetMode, manualWish, null, uiTryOnGender);
+    const requestedMode = resolveRequestedMode(generationMode, presetMode);
+    let fallbackReason = null;
 
     if (shouldExtractText) {
       const ocrCacheKey = buildOcrCacheKey(base64Image);
@@ -858,65 +827,90 @@ export async function generateProductImage(req, res, next) {
         format,
         normalizedLang,
         shouldIncludeText,
+        shouldRunTryOn ? TRYON_CACHE_VERSION : PRODUCT_FILL_CACHE_VERSION,
+        generationMode || '',
+        tryOnUiCacheSuffix,
       );
       const cachedProduct = cache.get(productCacheKey);
 
       if (cachedProduct) {
-        return res.json({
-          ...cachedProduct,
+        return res.status(200).json({
+          ...enrichCachedImageResponse(cachedProduct),
           fromCache: true,
         });
       }
     }
 
     if (shouldRunTryOn) {
-      const replicateToken = process.env.REPLICATE_API_TOKEN?.trim();
-      if (!replicateToken || replicateToken === 'your_replicate_api_token_here') {
+      if (!isReplicateConfigured()) {
         return res.status(500).json({ error: 'Replicate API token is not configured.' });
       }
 
-      const productCacheKey = buildProductImageCacheKey(
-        base64Image,
-        wish,
-        format,
-        normalizedLang,
-        shouldIncludeText,
-        TRYON_CACHE_VERSION,
-      );
-
       let clothingMeta;
       try {
-        clothingMeta = await analyzeClothingMeta(base64Image, wish);
+        clothingMeta = await analyzeClothingMeta(base64Image, manualWish);
+
+        if (clothingMeta.notClothing) {
+          console.warn(
+            `[product-image] Try-on trigger matched but product is not clothing (${clothingMeta.productType}). Falling back to FLUX branch A.`,
+          );
+          shouldRunTryOn = false;
+          fallbackReason = 'not_clothing';
+          wish = rebuildWishForProductBranch(manualWish);
+        } else {
+          clothingMeta = applyUiTryOnOverrides(clothingMeta, uiTryOnGender, uiTryOnCategory);
+          wish = buildFinalUserWish('tryon', manualWish, clothingMeta.gender, uiTryOnGender);
+        }
       } catch (error) {
         console.warn(
-          'Clothing vision analysis failed, using fallback metadata:',
+          '[product-image] GPT Vision failed in try-on mode; switching to FLUX product branch:',
           error?.message || error,
         );
-        const tallGarmentPhoto = await isTallGarmentPhoto(base64Image);
-        clothingMeta = buildFallbackClothingMeta(wish, tallGarmentPhoto);
+        shouldRunTryOn = false;
+        fallbackReason = 'verification_failed';
+        wish = rebuildWishForProductBranch(manualWish);
+        clothingMeta = null;
       }
 
-      let upscaledUrl;
-      let hashtags;
-      try {
-        [upscaledUrl, hashtags] = await Promise.all([
-          runIdmVtonTryOn(base64Image, clothingMeta, wish),
+      if (shouldRunTryOn) {
+        const finalTryOnCacheKey = buildProductImageCacheKey(
+          base64Image,
+          wish,
+          format,
+          normalizedLang,
+          shouldIncludeText,
+          TRYON_CACHE_VERSION,
+          generationMode || 'tryon',
+          tryOnUiCacheSuffix,
+        );
+
+        const [upscaledUrl, hashtags] = await Promise.all([
+          executeIdmVtonTryOn(base64Image, clothingMeta, manualWish, humanImage),
           generateTryOnHashtags(clothingMeta.refinedPrompt, clothingMeta.category, normalizedLang),
         ]);
-      } catch (error) {
-        if (error.statusCode) throw error;
-        throw error;
+
+        const responseData = buildImageGenerationResponse({
+          imageUrl: upscaledUrl,
+          optimizedPrompt: clothingMeta.refinedPrompt,
+          hashtags,
+          branchUsed: 'tryon',
+          fallbackReason: null,
+          requestedMode,
+        });
+
+        cache.set(finalTryOnCacheKey, responseData);
+        return res.status(200).json(responseData);
       }
+    }
 
-      const responseData = {
-        success: true,
-        imageUrl: upscaledUrl,
-        optimizedPrompt: clothingMeta.refinedPrompt,
-        hashtags,
-      };
+    if (fallbackReason) {
+      wish = rebuildWishForProductBranch(manualWish);
+    }
 
-      cache.set(productCacheKey, responseData);
-      return res.json(responseData);
+    if (!shouldExtractText && !shouldRunTryOn) {
+      if (!isReplicateConfigured()) {
+        return res.status(500).json({ error: 'Replicate API token is not configured.' });
+      }
     }
 
     const productVisionSystemPrompt = shouldExtractText
@@ -941,8 +935,21 @@ export async function generateProductImage(req, res, next) {
         productVisionSystemPrompt,
       );
     } catch (error) {
-      if (error.statusCode) throw error;
-      throw mapOpenAIError(error);
+      if (shouldExtractText) {
+        if (error.statusCode) throw error;
+        throw mapOpenAIError(error);
+      }
+
+      console.warn(
+        '[product-image] GPT Vision unavailable, using fallback FLUX prompt (same strategy as text mode):',
+        error?.message || error,
+      );
+      analysis = {
+        imagePrompt: buildFallbackProductFluxPrompt(wish),
+        hashtags: getDefaultHashtags(normalizedLang),
+        extractedText: null,
+        overlayText: shouldIncludeText ? extractQuotedOverlayText(manualWish) : null,
+      };
     }
 
     if (shouldExtractText) {
@@ -962,24 +969,30 @@ export async function generateProductImage(req, res, next) {
 
     let imageUrl;
     try {
-      const result = await generateProductImageWithReference(
-        base64Image,
-        analysis.imagePrompt,
+      const overlayText = shouldIncludeText
+        ? (analysis.overlayText || extractQuotedOverlayText(manualWish))
+        : null;
+
+      const result = await generateProductImageWithFlux(base64Image, manualWish, {
+        includeText: shouldIncludeText,
+        overlayText,
         format,
-      );
+      });
       imageUrl = result.imageUrl;
+      analysis.imagePrompt = result.optimizedPrompt;
     } catch (error) {
       if (error.statusCode) throw error;
       throw mapOpenAIError(error);
     }
 
-    const responseData = {
-      success: true,
+    const responseData = buildImageGenerationResponse({
       imageUrl,
       optimizedPrompt: analysis.imagePrompt,
       hashtags: analysis.hashtags,
-      extractedText: null,
-    };
+      branchUsed: 'product',
+      fallbackReason,
+      requestedMode,
+    });
 
     const productCacheKey = buildProductImageCacheKey(
       base64Image,
@@ -987,10 +1000,13 @@ export async function generateProductImage(req, res, next) {
       format,
       normalizedLang,
       shouldIncludeText,
+      PRODUCT_FILL_CACHE_VERSION,
+      generationMode || 'product',
+      '',
     );
     cache.set(productCacheKey, responseData);
 
-    res.json(responseData);
+    return res.status(200).json(responseData);
   } catch (error) {
     next(mapOpenAIError(error));
   }

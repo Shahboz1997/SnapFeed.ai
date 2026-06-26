@@ -60,8 +60,8 @@ export function buildDalleOnlyLanguageRule(lang) {
 
   return `The user's interface language is ${languageName} (lang code: ${normalized}).
 
-CRITICAL RULE FOR DALL-E PROMPT COMPOSITION:
-1. Write the SCENE DESCRIPTION (visual layout, lighting, colors, style, composition, background, objects, mood) strictly in ENGLISH. DALL-E produces the highest quality images when the scene is described in English.
+CRITICAL RULE FOR IMAGE PROMPT COMPOSITION:
+1. Write the SCENE DESCRIPTION (visual layout, lighting, colors, style, composition, background, objects, mood) strictly in ENGLISH. FLUX produces the highest quality images when the scene is described in English.
 2. Write the ON-IMAGE TEXT OVERLAY strictly in ${languageName}: pick ONE short phrase (maximum 3-4 words) in ${languageName}, wrap it in double quotes, and instruct the image AI explicitly in English, for example:
    The text "СПОРТ И ЖИЗНЬ" is written clearly in a bold minimalist font.
    Use correct grammar and alphabet (Cyrillic for Russian/Tajik, Latin for Uzbek/English). Do not mix languages inside the quoted text.
@@ -78,8 +78,8 @@ export function buildLanguageRule(lang) {
 
   return `The user's interface language is ${languageName} (lang code: ${normalizeLangCode(lang)}).
 
-CRITICAL RULE FOR DALL-E PROMPT COMPOSITION:
-1. Write the SCENE DESCRIPTION (visual layout, lighting, colors, style, composition, background, objects, mood) strictly in ENGLISH. DALL-E produces the highest quality images when the scene is described in English.
+CRITICAL RULE FOR IMAGE PROMPT COMPOSITION:
+1. Write the SCENE DESCRIPTION (visual layout, lighting, colors, style, composition, background, objects, mood) strictly in ENGLISH. FLUX produces the highest quality images when the scene is described in English.
 2. Write the ON-IMAGE TEXT OVERLAY strictly in ${languageName}: pick ONE short phrase (maximum 3-4 words) in ${languageName}, wrap it in double quotes, and instruct the image AI explicitly in English, for example:
    The text "СПОРТ И ЖИЗНЬ" is written clearly in a bold minimalist font.
    Use correct grammar and alphabet (Cyrillic for Russian/Tajik, Latin for Uzbek/English). Do not mix languages inside the quoted text.

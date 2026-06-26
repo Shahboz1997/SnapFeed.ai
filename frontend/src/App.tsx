@@ -1,15 +1,24 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { generateImage, ApiError, type AspectRatio, type Platform } from './api/generateImage';
-import { generateProductImage } from './api/generateProductImage';
+import { generateProductImage, type ProductFallbackReason } from './api/generateProductImage';
 import AlertBanner, { type AlertType } from './components/AlertBanner';
 import GeneratedImagePreview from './components/GeneratedImagePreview';
 import LanguageSwitcher from './components/LanguageSwitcher';
 import LoadingOverlay from './components/LoadingOverlay';
 import Spinner from './components/Spinner';
 import ChatAssistant from './components/ChatAssistant';
-import ProductImageUpload from './components/ProductImageUpload';
+import ProductGenerationPanel from './components/ProductGenerationPanel';
 import VisualOptionCard from './components/VisualOptionCard';
+import {
+  type ProductGenerationMode,
+} from './constants/productGenerationPresets';
+import {
+  DEFAULT_TRYON_CATEGORY,
+  DEFAULT_TRYON_GENDER,
+  type TryOnCategory,
+  type TryOnGender,
+} from './constants/tryOnOptions';
 import {
   InstagramIcon,
   FacebookIcon,
@@ -38,9 +47,17 @@ export default function App() {
   const [base64Image, setBase64Image] = useState<string | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const [productFileError, setProductFileError] = useState<string | null>(null);
+  const [humanBase64, setHumanBase64] = useState<string | null>(null);
+  const [humanPreviewUrl, setHumanPreviewUrl] = useState<string | null>(null);
+  const [humanFileError, setHumanFileError] = useState<string | null>(null);
+  const [selectedModelUrl, setSelectedModelUrl] = useState<string | null>(null);
   const [extractText, setExtractText] = useState(false);
   const [includeText, setIncludeText] = useState(false);
   const [extractedText, setExtractedText] = useState<string | null>(null);
+  const [productGenerationMode, setProductGenerationMode] = useState<ProductGenerationMode>('product');
+  const [tryOnGender, setTryOnGender] = useState<TryOnGender>(DEFAULT_TRYON_GENDER);
+  const [tryOnCategory, setTryOnCategory] = useState<TryOnCategory>(DEFAULT_TRYON_CATEGORY);
+  const [tryOnFallbackReason, setTryOnFallbackReason] = useState<ProductFallbackReason | null>(null);
   const [userWish, setUserWish] = useState('');
   const [platform, setPlatform] = useState<Platform>('instagram');
   const [format, setFormat] = useState<Format>('square');
@@ -57,7 +74,12 @@ export default function App() {
 
   const promptLength = userPrompt.length;
   const promptIsEmpty = !userPrompt.trim();
-  const productImageReady = Boolean(base64Image) && !productFileError;
+  const garmentReady = Boolean(base64Image) && !productFileError;
+  const humanReady = Boolean(humanBase64) && !humanFileError;
+  const tryOnHumanReady = humanReady || Boolean(selectedModelUrl);
+  const productImageReady = productGenerationMode === 'tryon'
+    ? garmentReady && tryOnHumanReady
+    : garmentReady;
   const atCharLimit = promptLength >= PROMPT_MAX_LENGTH;
   const canGenerate =
     !loading && (mode === 'text' ? !promptIsEmpty : productImageReady);
@@ -88,6 +110,19 @@ export default function App() {
     setUserWish(value.slice(0, USER_WISH_MAX_LENGTH));
   }
 
+  function handleProductGenerationModeChange(next: ProductGenerationMode) {
+    if (loading || next === productGenerationMode) return;
+    setProductGenerationMode(next);
+    setTryOnFallbackReason(null);
+    setHumanBase64(null);
+    setHumanPreviewUrl(null);
+    setHumanFileError(null);
+    setSelectedModelUrl(null);
+    setImageUrl(null);
+    setOriginalImageUrl(null);
+    setHashtags([]);
+  }
+
   function handleModeChange(next: AppMode) {
     if (loading || next === mode) return;
     setMode(next);
@@ -95,6 +130,11 @@ export default function App() {
     setProductFileError(null);
     setExtractText(false);
     setExtractedText(null);
+    setProductGenerationMode('product');
+    setHumanBase64(null);
+    setHumanPreviewUrl(null);
+    setHumanFileError(null);
+    setSelectedModelUrl(null);
     setImageUrl(null);
     setOriginalImageUrl(null);
     setHashtags([]);
@@ -109,6 +149,7 @@ export default function App() {
     setBase64Image(base64);
     setImagePreviewUrl(previewUrl);
     setProductFileError(null);
+    setTryOnFallbackReason(null);
     setImageUrl(null);
     setOriginalImageUrl(null);
     setHashtags([]);
@@ -118,6 +159,7 @@ export default function App() {
     setBase64Image(null);
     setImagePreviewUrl(null);
     setProductFileError(null);
+    setTryOnFallbackReason(null);
     setImageUrl(null);
     setOriginalImageUrl(null);
     setHashtags([]);
@@ -125,6 +167,55 @@ export default function App() {
 
   function handleProductFileError(message: string) {
     setProductFileError(message);
+  }
+
+  function handleHumanImageLoaded(base64: string, previewUrl: string) {
+    setHumanBase64(base64);
+    setHumanPreviewUrl(previewUrl);
+    setHumanFileError(null);
+    setSelectedModelUrl(null);
+    setTryOnFallbackReason(null);
+    setImageUrl(null);
+    setOriginalImageUrl(null);
+    setHashtags([]);
+  }
+
+  function handleHumanImageClear() {
+    setHumanBase64(null);
+    setHumanPreviewUrl(null);
+    setHumanFileError(null);
+    setImageUrl(null);
+    setOriginalImageUrl(null);
+    setHashtags([]);
+  }
+
+  function handleHumanFileError(message: string) {
+    setHumanFileError(message);
+  }
+
+  function handleTryOnModelSelect(url: string) {
+    setSelectedModelUrl(url);
+    setHumanBase64(null);
+    setHumanPreviewUrl(null);
+    setHumanFileError(null);
+    setTryOnFallbackReason(null);
+    setImageUrl(null);
+    setOriginalImageUrl(null);
+    setHashtags([]);
+  }
+
+  function handleTryOnModelClear() {
+    setSelectedModelUrl(null);
+  }
+
+  function handleTryOnGenderChange(next: TryOnGender) {
+    setTryOnGender(next);
+    setSelectedModelUrl(null);
+  }
+
+  function handleTryOnCategoryChange(next: TryOnCategory) {
+    setTryOnCategory(next);
+    setSelectedModelUrl(null);
   }
 
   const handleChatPromptGenerated = useCallback((prompt: string) => {
@@ -146,6 +237,11 @@ export default function App() {
     setExtractedText(null);
     setIncludeText(false);
     setUserWish('');
+    setProductGenerationMode('product');
+    setHumanBase64(null);
+    setHumanPreviewUrl(null);
+    setHumanFileError(null);
+    setSelectedModelUrl(null);
     setPlatform('instagram');
     setFormat('square');
     setFormatManuallySet(false);
@@ -190,6 +286,7 @@ export default function App() {
 
     setLoading(true);
     setAlert(null);
+    setTryOnFallbackReason(null);
     setImageUrl(null);
     setHashtags([]);
     setExtractedText(null);
@@ -212,49 +309,55 @@ export default function App() {
 
         setImageUrl(data.imageUrl);
         setHashtags(data.hashtags);
+        showAlert(t('alerts.success'), 'success');
       } else {
         const data = await generateProductImage({
           base64Image: base64Image!,
           userWish,
+          mode: productGenerationMode,
+          gender: productGenerationMode === 'tryon' ? tryOnGender : undefined,
+          category: productGenerationMode === 'tryon' ? tryOnCategory : undefined,
+          humanImage: productGenerationMode === 'tryon'
+            ? (humanBase64 ?? selectedModelUrl ?? undefined)
+            : undefined,
           platform,
           format,
-          extractText,
-          includeText,
+          extractText: false,
+          includeText: productGenerationMode === 'product' ? includeText : false,
           lang: currentLanguage,
         });
 
-        if (extractText) {
-          setImageUrl(null);
-          setHashtags(data.hashtags);
-          setExtractedText(data.extractedText?.trim() ? data.extractedText : null);
-        } else {
-          setImageUrl(data.imageUrl);
-          setHashtags(data.hashtags);
-          setExtractedText(null);
-        }
-      }
+        setImageUrl(data.imageUrl);
+        setHashtags(data.hashtags);
+        setExtractedText(null);
 
-      showAlert(
-        extractText && mode === 'product' ? t('alerts.textExtractSuccess') : t('alerts.success'),
-        'success',
-      );
+        const silentTryOnFallback = productGenerationMode === 'tryon' && data.branchUsed === 'product';
+        setTryOnFallbackReason(
+          silentTryOnFallback && data.fallbackReason ? data.fallbackReason : null,
+        );
+        showAlert(t('alerts.success'), 'success');
+      }
     } catch (err) {
       showAlert(resolveApiError(err), 'error');
     } finally {
       setLoading(false);
     }
-  }, [canGenerate, mode, userPrompt, base64Image, userWish, platform, format, extractText, includeText, imagePreviewUrl, t, i18n.language]);
+  }, [canGenerate, mode, userPrompt, base64Image, userWish, productGenerationMode, tryOnGender, tryOnCategory, humanBase64, selectedModelUrl, platform, format, extractText, includeText, imagePreviewUrl, t, i18n.language]);
 
   const charCounterClass =
     atCharLimit ? 'text-red-400' : promptLength > PROMPT_MAX_LENGTH * 0.9 ? 'text-amber-400' : 'text-slate-500';
 
   const generateButtonLabel = loading
-    ? isProductOcrMode
-      ? t('form.extracting')
-      : t('form.generating')
-    : isProductOcrMode
-      ? t('form.extractTextOnly')
-      : t('form.generate');
+    ? mode === 'product'
+      ? t('form.generating')
+      : isProductOcrMode
+        ? t('form.extracting')
+        : t('form.generating')
+    : mode === 'product'
+      ? t('ecommerce.generateButton')
+      : isProductOcrMode
+        ? t('form.extractTextOnly')
+        : t('form.generate');
 
   const generateButtonClass =
     'flex w-full items-center justify-center gap-2.5 rounded-xl bg-slate-900 px-6 text-sm font-semibold text-white shadow-md transition-all duration-300 hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none';
@@ -289,10 +392,6 @@ export default function App() {
           </div>
           <div className="flex flex-wrap items-center gap-2 sm:gap-4">
             <LanguageSwitcher />
-            <div className="flex w-full min-w-0 max-w-full items-center gap-2 rounded-full border border-slate-200/80 bg-slate-50 px-3 py-1.5 text-[11px] font-normal text-slate-500 shadow-sm sm:px-4 sm:py-2 sm:text-xs">
-              <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-500" aria-hidden="true" />
-              <span className="min-w-0 truncate">{t('header.poweredBy')}</span>
-            </div>
           </div>
         </header>
 
@@ -420,65 +519,37 @@ export default function App() {
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-6">
-                    <ProductImageUpload
-                      disabled={loading}
-                      base64Image={base64Image}
-                      previewUrl={imagePreviewUrl}
-                      error={productFileError}
-                      onImageLoaded={handleProductImageLoaded}
-                      onClear={handleProductImageClear}
-                      onValidationError={handleProductFileError}
-                    />
-
-                    <div>
-                      <label htmlFor="user-wish" className="mb-4 block text-sm font-medium text-slate-700">
-                        {t('ecommerce.wishLabel')}
-                      </label>
-                      <input
-                        id="user-wish"
-                        type="text"
-                        value={userWish}
-                        onChange={(e) => handleUserWishChange(e.target.value)}
-                        disabled={loading || extractText}
-                        maxLength={USER_WISH_MAX_LENGTH}
-                        placeholder={t('ecommerce.wishPlaceholder')}
-                        className="w-full rounded-xl border border-slate-200/80 bg-white px-4 py-3 text-base text-slate-900 placeholder:font-light placeholder:text-slate-400 outline-none transition-all duration-300 focus:border-slate-400 focus:ring-2 focus:ring-slate-100 disabled:cursor-not-allowed disabled:opacity-50 lg:py-4 lg:text-sm"
-                      />
-                      {!extractText && (
-                        <div className="mt-2 space-y-1 text-xs font-normal leading-relaxed text-slate-500">
-                          <p>{t('ecommerce.wishHintProduct')}</p>
-                          <p>{t('ecommerce.wishHintTryOn')}</p>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex min-w-0 items-center justify-between gap-3 rounded-xl border border-slate-200/80 bg-white px-4 py-3.5 shadow-sm sm:gap-4 sm:px-5 sm:py-4">
-                      <label htmlFor="extract-text" className="min-w-0 flex-1 cursor-pointer text-sm font-normal leading-snug text-slate-700">
-                        {t('ecommerce.extractTextLabel')}
-                      </label>
-                      <button
-                        id="extract-text"
-                        type="button"
-                        role="switch"
-                        aria-checked={extractText}
-                        disabled={loading}
-                        onClick={() => setExtractText((current) => !current)}
-                        className={`relative h-6 w-11 shrink-0 rounded-full transition-colors duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 disabled:cursor-not-allowed disabled:opacity-50 ${
-                          extractText ? 'bg-slate-900' : 'bg-slate-300'
-                        }`}
-                      >
-                        <span
-                          aria-hidden="true"
-                          className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
-                            extractText ? 'translate-x-5' : 'translate-x-0'
-                          }`}
-                        />
-                      </button>
-                    </div>
-                  </div>
+                  <ProductGenerationPanel
+                    disabled={loading}
+                    generationMode={productGenerationMode}
+                    onGenerationModeChange={handleProductGenerationModeChange}
+                    tryOnGender={tryOnGender}
+                    onTryOnGenderChange={handleTryOnGenderChange}
+                    tryOnCategory={tryOnCategory}
+                    onTryOnCategoryChange={handleTryOnCategoryChange}
+                    tryOnFallbackReason={tryOnFallbackReason}
+                    garmentBase64={base64Image}
+                    garmentPreviewUrl={imagePreviewUrl}
+                    garmentFileError={productFileError}
+                    humanBase64={humanBase64}
+                    humanPreviewUrl={humanPreviewUrl}
+                    humanFileError={humanFileError}
+                    selectedModelUrl={selectedModelUrl}
+                    userWish={userWish}
+                    userWishMaxLength={USER_WISH_MAX_LENGTH}
+                    onGarmentLoaded={handleProductImageLoaded}
+                    onGarmentClear={handleProductImageClear}
+                    onGarmentValidationError={handleProductFileError}
+                    onHumanLoaded={handleHumanImageLoaded}
+                    onHumanClear={handleHumanImageClear}
+                    onHumanValidationError={handleHumanFileError}
+                    onModelSelect={handleTryOnModelSelect}
+                    onModelClear={handleTryOnModelClear}
+                    onUserWishChange={handleUserWishChange}
+                  />
                 )}
 
+                {mode === 'text' && (
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                   <div role="radiogroup" aria-labelledby="platform-label" className="min-w-0">
                     <p id="platform-label" className="mb-4 text-sm font-medium text-slate-700">
@@ -541,8 +612,9 @@ export default function App() {
                     </div>
                   </div>
                 </div>
+                )}
 
-                {!isProductOcrMode && (
+                {((mode === 'text' && !isProductOcrMode) || (mode === 'product' && productGenerationMode === 'product')) && (
                   <div className="flex min-w-0 items-center justify-between gap-3 rounded-xl border border-slate-200/80 bg-white px-4 py-3.5 shadow-sm sm:gap-4 sm:px-5 sm:py-4">
                     <label htmlFor="include-text" className="min-w-0 flex-1 cursor-pointer text-sm font-normal leading-snug text-slate-700">
                       {t('form.includeTextLabel')}

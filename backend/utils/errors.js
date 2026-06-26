@@ -34,7 +34,7 @@ export function mapOpenAIError(error) {
     } else if (status === 400) {
       message = error.message || 'Invalid request to OpenAI API.';
     } else if (/model.*does not exist|not found|not allowed/i.test(message)) {
-      message = 'Image model is not enabled. Open OpenAI Dashboard → Project → Limits and add gpt-image-1.5 or dall-e-2.';
+      message = 'OpenAI model is not available. Check your API key and project limits.';
     } else if (status === 502 || /timed out|ETIMEDOUT|ECONNRESET/i.test(message)) {
       message = 'OpenAI is unreachable or timed out. Enable VPN (US/EU) or add OPENAI_BASE_URL in backend/.env.';
     }

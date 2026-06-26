@@ -5,19 +5,25 @@ import {
   VALID_ASPECT_RATIOS,
   VALID_PLATFORMS,
   DALL_E_MAX_PROMPT_LENGTH,
+  FLUX_SCHNELL_MODEL,
   isAllowedImageUrl,
 } from '../constants/image.js';
+import { getReplicate, isReplicateConfigured } from '../config/replicate.js';
 import { createError, mapOpenAIError } from '../utils/errors.js';
-import { generateImageWithFallback } from '../services/imageGeneration.js';
 import {
   getImagePath,
   getFilenameFromUrl,
   isGeneratedImagePath,
+  saveImageBuffer,
 } from '../utils/imageStorage.js';
-import { upscaleImageBuffer } from '../services/imageUpscaling.js';
+import { fetchAndUpscaleRemoteImage, upscaleImageBuffer } from '../services/imageUpscaling.js';
+import { applyTextOverlay } from '../services/textOverlayRender.js';
+import { resolveReplicateImageUrl } from '../utils/replicateOutput.js';
 import cache from '../utils/cache.js';
-import { NO_TEXT_OVERLAY_RULE, appendNoTextRuleToPrompt, parseIncludeText } from '../utils/textOverlay.js';
+import { NO_TEXT_OVERLAY_RULE, appendNoTextRuleToPrompt, parseIncludeText, extractQuotedOverlayText } from '../utils/textOverlay.js';
 import { buildLanguageRule, normalizeLangCode, getLanguageName, getDefaultHashtags, stripHashtagsFromPrompt } from '../utils/languages.js';
+
+const TEXT_IMAGE_CACHE_VERSION = 'v2';
 
 function buildPromptOptimizerSystem(lang, includeText) {
   const languageRule = buildLanguageRule(lang);
@@ -26,13 +32,15 @@ function buildPromptOptimizerSystem(lang, includeText) {
   if (!includeText) {
     return `${languageRule}
 
-You are a top-tier SMM strategist and commercial designer. Your task is to analyze the user's text or idea and create a high-converting, stylish prompt for social media visual generation (Instagram, Facebook).
+You are a top-tier SMM strategist and commercial designer. Your task is to analyze the user's text or idea and create a high-converting, stylish prompt for FLUX Schnell image generation (Instagram, Facebook).
+
+If the user already wrote a detailed scene description, preserve ALL their visual details (objects, lighting, colors, mood, composition, props) while reformatting for FLUX.
 
 PROMPT GENERATION RULES:
 1. Describe the visual scene in ENGLISH — modern, eye-catching, strictly matching the user's topic (business, blog, e-commerce, services, lifestyle, etc.).
    Style: minimalist photography, editorial aesthetic, vivid contrasting colors, premium presentation.
 2. Avoid visual clutter. Focus purely on scenery, objects, composition, lighting, and mood.
-3. optimizedPrompt — the complete DALL-E prompt: ENGLISH scene description only. No extra commentary. Maximum 900 characters.
+3. optimizedPrompt — the complete image generation prompt: ENGLISH scene description only. No extra commentary. Maximum 900 characters.
 4. ${NO_TEXT_OVERLAY_RULE}
 
 HASHTAGS:
@@ -44,52 +52,30 @@ Return ONLY JSON: { "optimizedPrompt": "...", "hashtags": ["#tag1", "#tag2"] }`;
 
   return `${languageRule}
 
-You are a top-tier SMM strategist and commercial designer. Your task is to analyze the user's text or idea and create a high-converting, stylish prompt for social media visual generation (Instagram, Facebook).
+You are a top-tier SMM strategist and commercial designer. Your task is to analyze the user's text or idea and create a high-converting, stylish prompt for FLUX Schnell image generation (Instagram, Facebook).
+
+If the user already wrote a detailed scene description, preserve ALL their visual details (objects, lighting, colors, mood, composition, props) while reformatting for FLUX.
+
+FLUX SCHNELL TEXT RULE (CRITICAL):
+FLUX cannot render Cyrillic or non-Latin text reliably. The server adds text overlay separately after generation.
+- optimizedPrompt — ENGLISH scene description ONLY. No text, letters, words, logos, watermarks, or typography anywhere in the image. Leave generous clean negative space in the upper-center third for a text overlay.
+- overlayText — ONE short phrase (maximum 4 words) in ${languageName}. If the user provided a phrase in quotes, use that exact phrase. Otherwise extract the best headline from their idea.
 
 PROMPT GENERATION RULES:
-1. Extract ONE main short phrase (maximum 3-4 words) in ${languageName} that must appear on the image as a text overlay.
-   English UI examples: "NEW COLLECTION", "SUMMER SALE". Russian UI examples: "НОВАЯ КОЛЛЕКЦИЯ", "ЛЕТНЯЯ РАСПРОДАЖА".
-2. Embed that phrase inside an English instruction with double quotes, for example:
-   The text "..." is written clearly in a bold minimalist font.
-3. Describe the visual scene in ENGLISH — modern, eye-catching, strictly matching the user's topic (business, blog, e-commerce, services, lifestyle, etc.).
+1. Describe the visual scene in ENGLISH — modern, eye-catching, strictly matching the user's topic.
    Style: minimalist photography, editorial aesthetic, vivid contrasting colors, premium presentation.
-4. Avoid visual clutter. Leave ample clean negative space around the text so the post reads well in Instagram or Facebook feeds.
-5. optimizedPrompt — the complete DALL-E prompt: ENGLISH scene description plus the localized quoted text-overlay instruction. No extra commentary. Maximum 900 characters.
+2. Avoid visual clutter. Leave ample clean negative space in the upper-center area.
+3. optimizedPrompt — scene only, maximum 900 characters. No text-in-image instructions.
 
 HASHTAGS:
 - Generate exactly 2 hashtags strictly relevant to the user's text topic (each starting with #).
-- Hashtags must be written in ${languageName} and reflect the niche, product, or post topic — do not use generic or irrelevant tags.
+- Hashtags must be written in ${languageName}.
 
-Return ONLY JSON: { "optimizedPrompt": "...", "hashtags": ["#tag1", "#tag2"] }`;
-}
-
-function isDetailedImagePrompt(prompt) {
-  return prompt.trim().length >= 80;
+Return ONLY JSON: { "optimizedPrompt": "...", "hashtags": ["#tag1", "#tag2"], "overlayText": "..." }`;
 }
 
 async function resolvePrompt(userPrompt, platform, aspectRatio, lang, includeText) {
   const trimmed = userPrompt.trim();
-
-  if (isDetailedImagePrompt(trimmed)) {
-    let dallePrompt = stripHashtagsFromPrompt(trimmed).slice(0, DALL_E_MAX_PROMPT_LENGTH);
-    if (!includeText) {
-      dallePrompt = appendNoTextRuleToPrompt(dallePrompt).slice(0, DALL_E_MAX_PROMPT_LENGTH);
-    }
-
-    let hashtags = getDefaultHashtags(lang);
-
-    try {
-      const optimized = await optimizePrompt(trimmed, platform, aspectRatio, lang, includeText);
-      hashtags = optimized.hashtags;
-    } catch (error) {
-      console.warn('Hashtag generation failed for detailed prompt, using defaults:', error.message);
-    }
-
-    return {
-      optimizedPrompt: dallePrompt,
-      hashtags,
-    };
-  }
 
   try {
     return await optimizePrompt(trimmed, platform, aspectRatio, lang, includeText);
@@ -103,6 +89,7 @@ async function resolvePrompt(userPrompt, platform, aspectRatio, lang, includeTex
     return {
       optimizedPrompt,
       hashtags: getDefaultHashtags(lang),
+      overlayText: null,
     };
   }
 }
@@ -151,23 +138,67 @@ async function optimizePrompt(userPrompt, platform, aspectRatio, lang, includeTe
     throw createError('Prompt optimizer returned incomplete data.', 502);
   }
 
+  let overlayText = null;
+  if (includeText) {
+    overlayText = typeof parsed.overlayText === 'string' && parsed.overlayText.trim()
+      ? parsed.overlayText.trim()
+      : extractQuotedOverlayText(userPrompt);
+
+    if (!overlayText) {
+      throw createError('Prompt optimizer returned incomplete overlay text.', 502);
+    }
+  }
+
   return {
     optimizedPrompt: stripHashtagsFromPrompt(parsed.optimizedPrompt)
       .replace(/^["']|["']$/g, '')
       .slice(0, DALL_E_MAX_PROMPT_LENGTH),
     hashtags: parsed.hashtags.slice(0, 2),
+    overlayText,
   };
 }
 
-async function generateImageWithDalle(optimizedPrompt, aspectRatio) {
-  const { imageUrl } = await generateImageWithFallback(optimizedPrompt, aspectRatio);
-  return imageUrl;
+async function runFluxSchnellAndUpscale(optimizedPrompt, format, overlayText = null) {
+  const replicate = getReplicate();
+
+  console.log(`Running FLUX Schnell (${FLUX_SCHNELL_MODEL}), aspect_ratio: ${format === 'story' ? '9:16' : '1:1'}`);
+
+  const output = await replicate.run(
+    FLUX_SCHNELL_MODEL,
+    {
+      input: {
+        prompt: optimizedPrompt,
+        aspect_ratio: format === 'story' ? '9:16' : '1:1',
+        num_outputs: 1,
+        output_format: 'png',
+        disable_safety_checker: false,
+      },
+    },
+  );
+
+  const finalImageUrl = resolveReplicateImageUrl(output);
+
+  if (!finalImageUrl) {
+    throw createError('Replicate did not return an image URL.', 502);
+  }
+
+  console.log(`FLUX Schnell output URL: ${finalImageUrl}`);
+
+  let upscaledBuffer = await fetchAndUpscaleRemoteImage(finalImageUrl);
+
+  if (overlayText?.trim()) {
+    console.log(`Applying Sharp text overlay: "${overlayText.trim()}"`);
+    upscaledBuffer = await applyTextOverlay(upscaledBuffer, overlayText, format);
+  }
+
+  const filename = await saveImageBuffer(upscaledBuffer);
+  return `/api/generated-images/${filename}`;
 }
 
 function buildTextImageCacheKey(userPrompt, platform, format, lang, includeText) {
   return crypto
     .createHash('md5')
-    .update(`${userPrompt}${platform}${format}${lang}${includeText}`)
+    .update(`${TEXT_IMAGE_CACHE_VERSION}${userPrompt}${platform}${format}${lang}${includeText}`)
     .digest('hex');
 }
 
@@ -177,9 +208,12 @@ export async function generatePostImage(req, res, next) {
       return res.status(500).json({ error: 'OpenAI API key is not configured.' });
     }
 
+    if (!isReplicateConfigured()) {
+      return res.status(500).json({ error: 'Replicate API token is not configured.' });
+    }
+
     const { userPrompt, aspectRatio, platform, lang, includeText } = req.body;
     const normalizedLang = normalizeLangCode(lang);
-    const shouldIncludeText = parseIncludeText(includeText);
 
     if (!userPrompt || typeof userPrompt !== 'string' || !userPrompt.trim()) {
       return res.status(400).json({ error: 'A valid userPrompt string is required.' });
@@ -198,17 +232,24 @@ export async function generatePostImage(req, res, next) {
     }
 
     const trimmedPrompt = userPrompt.trim();
+    let shouldIncludeText = parseIncludeText(includeText);
+
+    if (!shouldIncludeText && extractQuotedOverlayText(trimmedPrompt)) {
+      shouldIncludeText = true;
+    }
+
     const cacheKey = buildTextImageCacheKey(trimmedPrompt, platform, aspectRatio, normalizedLang, shouldIncludeText);
     const cachedData = cache.get(cacheKey);
 
     if (cachedData) {
       return res.json({
+        success: true,
         ...cachedData,
         fromCache: true,
       });
     }
 
-    const { optimizedPrompt, hashtags } = await resolvePrompt(
+    const { optimizedPrompt, hashtags, overlayText } = await resolvePrompt(
       trimmedPrompt,
       platform,
       aspectRatio,
@@ -216,16 +257,18 @@ export async function generatePostImage(req, res, next) {
       shouldIncludeText,
     );
 
-    let imageUrl;
+    let upscaledUrl;
     try {
-      imageUrl = await generateImageWithDalle(optimizedPrompt, aspectRatio);
+      upscaledUrl = await runFluxSchnellAndUpscale(optimizedPrompt, aspectRatio, overlayText);
     } catch (error) {
       if (error.statusCode) throw error;
-      throw mapOpenAIError(error);
+      const message = error?.message || 'FLUX Schnell image generation failed.';
+      throw createError(message, 502);
     }
 
     const responseData = {
-      imageUrl,
+      success: true,
+      imageUrl: upscaledUrl,
       optimizedPrompt,
       hashtags,
     };
@@ -234,6 +277,9 @@ export async function generatePostImage(req, res, next) {
 
     res.json(responseData);
   } catch (error) {
+    if (error.statusCode) {
+      return next(error);
+    }
     next(mapOpenAIError(error));
   }
 }

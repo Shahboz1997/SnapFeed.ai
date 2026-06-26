@@ -1,7 +1,6 @@
 {
   "header": {
-    "subtitle": "AI Social Media Visual Generator",
-    "poweredBy": "Powered by DALL·E 3"
+    "subtitle": "AI Social Media Visual Generator"
   },
   "language": {
     "label": "Language",
@@ -29,8 +28,61 @@
     "remove": "Remove",
     "wishLabel": "Background/style preferences (optional)",
     "wishPlaceholder": "e.g. marble podium, warm studio light, pastel gradient…",
-    "wishHintProduct": "Any product (bike, shoes, gadgets): leave empty for a premium studio background, or describe the style you want.",
-    "wishHintTryOn": "Try-on on a model: \"try on a female model\", \"suit on a man\". For a beautiful European look add: \"beautiful Russian girl, studio lighting\".",
+    "wishTags": {
+      "studioLabel": "Studio:",
+      "studio": {
+        "marble": "marble podium",
+        "warmLight": "warm studio light",
+        "pastel": "pastel gradient",
+        "concrete": "concrete platform"
+      },
+      "tryOnLabel": "Try-on:",
+      "tryOn": {
+        "female": "on female model",
+        "male": "on male model",
+        "lookbook": "lookbook style"
+      },
+      "ageLabel": "Age:",
+      "age": {
+        "young": "young model",
+        "adult": "adult model",
+        "mature": "mature model"
+      }
+    },
+    "generateButton": "🚀 Generate",
+    "generationMode": {
+      "label": "Mode",
+      "product": "✨ Product photo",
+      "tryon": "🧍‍♂️ Virtual try-on"
+    },
+    "tryOnFallbackBanner": "⚠️ Note: We switched to \"Product photo\" mode because no clothing was detected in the uploaded image. Try-on is only available for wardrobe items.",
+    "tryOnFallbackVerificationBanner": "⚠️ Could not verify the product type. We switched to \"Product photo\" mode and created a standard image instead of try-on.",
+    "tryOnSelectors": {
+      "genderLabel": "Model gender",
+      "genderMale": "Male",
+      "genderFemale": "Female",
+      "categoryLabel": "Garment type",
+      "categoryTop": "Top",
+      "categoryBottom": "Bottom",
+      "categoryDress": "Dress / Suit"
+    },
+    "tryOnUpload": {
+      "garmentTitle": "1. Upload clothing photo",
+      "garmentAria": "Upload clothing photo for try-on",
+      "garmentPreviewAlt": "Uploaded clothing preview",
+      "garmentUploaded": "Clothing photo uploaded",
+      "garmentUploadedHint": "Ready for virtual try-on",
+      "humanTitle": "2. Upload person / model photo",
+      "humanAria": "Upload person or model photo for try-on",
+      "humanPreviewAlt": "Uploaded person preview",
+      "humanUploaded": "Person photo uploaded",
+      "humanUploadedHint": "Your photo will be used for try-on",
+      "modelSelected": "Preset model selected",
+      "modelSelectedHint": "Using a model from our gallery",
+      "showModelGallery": "Or choose a preset model",
+      "hideModelGallery": "Hide model gallery",
+      "modelGalleryAria": "Preset model gallery"
+    },
     "invalidType": "Please upload a JPEG, PNG, or WebP image.",
     "fileTooLarge": "File size must not exceed 5 MB.",
     "readFailed": "Could not read the image file. Please try again.",
@@ -125,7 +177,9 @@
     "error": "Something went wrong. Please try again.",
     "downloadSuccess": "Image saved!",
     "downloadWarning": "Could not download the image. Right-click the image and choose \"Save image as…\".",
-    "textExtractSuccess": "Text extracted successfully!"
+    "textExtractSuccess": "Text extracted successfully!",
+    "tryOnFallbackNotClothing": "Try-on is not available for this item (not clothing). A standard product photo was created instead.",
+    "tryOnFallbackVerification": "Could not verify the product type. A standard product photo was created instead of try-on."
   },
   "api": {
     "serverUnreachable": "Unable to reach the server. Please try again in a moment.",
