@@ -24,7 +24,24 @@ const LIGHT_BG_THRESHOLD = 235;
 
 let removeBackgroundLoader = null;
 
+function shouldPreferReplicateBackend() {
+  const backend = (process.env.PRODUCT_BG_REMOVAL_BACKEND || '').toLowerCase();
+  if (backend === 'imgly') return false;
+  if (backend === 'replicate') return true;
+  // IMGLY ONNX models exceed Render starter (512 MB); use Replicate in production.
+  return process.platform === 'win32' || process.env.NODE_ENV === 'production';
+}
+
+function isImglyAllowed() {
+  return process.env.PRODUCT_BG_REMOVAL_BACKEND === 'imgly'
+    || (process.env.NODE_ENV !== 'production' && process.env.PRODUCT_BG_REMOVAL_BACKEND !== 'replicate');
+}
+
 async function getRemoveBackground() {
+  if (!isImglyAllowed()) {
+    throw new Error('IMGLY background removal is disabled in this environment.');
+  }
+
   if (!removeBackgroundLoader) {
     removeBackgroundLoader = import('@imgly/background-removal-node').then((mod) => mod.removeBackground);
   }
@@ -189,7 +206,7 @@ export async function removeImageBackgroundFromBuffer(inputBuffer, options = {})
     : BG_REMOVAL_MODEL;
 
   const pngBuffer = await normalizeImageToPngBuffer(inputBuffer);
-  const preferReplicate = process.platform === 'win32' || process.env.PRODUCT_BG_REMOVAL_BACKEND === 'replicate';
+  const preferReplicate = shouldPreferReplicateBackend();
 
   if (preferReplicate && isReplicateConfigured()) {
     try {

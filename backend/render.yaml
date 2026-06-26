@@ -23,9 +23,13 @@ services:
         value: "300000"
       - key: PRODUCT_BG_REMOVAL_ENABLED
         value: "false"
+      - key: PRODUCT_BG_REMOVAL_BACKEND
+        value: replicate
       - key: PRODUCT_BG_REMOVAL_MODEL
         value: small
       - key: IMAGE_UPSCALE_ENABLED
-        value: "true"
+        value: "false"
       - key: IMAGE_UPSCALE_FACTOR
         value: "2"
+      - key: NODE_OPTIONS
+        value: "--max-old-space-size=460"
