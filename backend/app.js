@@ -60,6 +60,9 @@ app.get('/api/health', (_req, res) => {
     status: 'ok',
     openaiConfigured: Boolean(apiKey),
     openaiKeyFormatValid: apiKey.startsWith('sk-') && apiKey.length > 20,
+    replicateConfigured: Boolean(process.env.REPLICATE_API_TOKEN),
+    bgRemovalBackend: process.env.PRODUCT_BG_REMOVAL_BACKEND || 'auto',
+    imageUpscaleEnabled: process.env.IMAGE_UPSCALE_ENABLED !== 'false',
   });
 });
 
