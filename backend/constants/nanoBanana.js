@@ -39,8 +39,9 @@ export const BRANCH_A_LEGACY_GROK_MODEL =
   process.env.REPLICATE_BRANCH_A_GROK_MODEL?.trim()
   || 'xai/grok-imagine-image';
 
+/** Replicate pricing: 1K $0.067 | 2K $0.101 | 4K $0.151 per image */
 export const NANO_BANANA_RESOLUTION =
-  process.env.NANO_BANANA_RESOLUTION?.trim() || '2K';
+  process.env.NANO_BANANA_RESOLUTION?.trim() || '1K';
 
 export const NANO_BANANA_OUTPUT_FORMAT =
   process.env.NANO_BANANA_OUTPUT_FORMAT?.trim() || 'png';

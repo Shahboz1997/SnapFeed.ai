@@ -42,7 +42,7 @@ services:
       - key: REPLICATE_PRODUCT_IMAGE_FALLBACK_MODEL
         value: black-forest-labs/flux-2-max
       - key: NANO_BANANA_RESOLUTION
-        value: 2K
+        value: 1K
       - key: REPLICATE_BURST_DELAY_MS
         value: "5000"
       - key: TRYON_BG_REMOVAL_LOCAL_FIRST
