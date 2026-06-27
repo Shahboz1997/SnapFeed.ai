@@ -659,7 +659,10 @@ Rules for gender:
 Infer strictly from garment style on the photo: "female" or "male".
 
 Rules for description:
-Provide a detailed description in Russian: color, material, cut, hem length, print, and visible details. This text will be sent to IDM-VTON as garment_des.
+Write a concise, precise description IN ENGLISH for the IDM-VTON try-on model (1–3 sentences, max 120 words).
+Include: exact hem length (mini / above-knee / knee / midi / maxi / floor-length), neckline (strapless, V-neck, square, etc.), sleeves, color, fabric, silhouette, and ALL visible decorative details (bows, ruffles, tiers, lace, buttons, pleats, cut-outs).
+Do NOT describe a longer hem than visible in the photo. A short cocktail or tiered mini dress must stay mini/short — never call it maxi or floor-length.
+This text is sent directly to IDM-VTON as garment_des — accuracy of length and details is critical.
 ${wishText ? `\nUser wishes (do not override category or gender based on wishes): ${wishText}` : ''}
 
 Return ONLY valid JSON. No markdown, no extra text.`;
@@ -773,8 +776,8 @@ export async function analyzeClothingProductForTryOn(base64Image, userWish) {
           {
             type: 'text',
             text: userWish?.trim()
-              ? 'If this is a two-piece suit (top + skirt/pants), category MUST be "dress", not "top". Determine exact hem length and silhouette from the photo.'
-              : 'Analyze this garment for virtual try-on. If it is a two-piece set, category must be "dress".',
+              ? 'If this is a two-piece suit (top + skirt/pants), category MUST be "dress", not "top". Determine exact hem length, neckline and decorative details from the photo. Describe in English.'
+              : 'Analyze this garment for virtual try-on. If it is a two-piece set, category must be "dress". Describe exact hem length and all visible details in English.',
           },
           {
             type: 'image_url',

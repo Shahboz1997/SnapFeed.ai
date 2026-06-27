@@ -24,14 +24,45 @@ export function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+let lastReplicateCreateAt = 0;
+
+function resolveReplicateBurstGapMs(overrideMs) {
+  if (Number.isFinite(overrideMs) && overrideMs >= 0) {
+    return overrideMs;
+  }
+
+  const configured = Number(process.env.REPLICATE_BURST_DELAY_MS);
+  return Number.isFinite(configured) && configured >= 0 ? configured : 0;
+}
+
+export async function waitForReplicateBurstGap(overrideMs) {
+  const minGapMs = resolveReplicateBurstGapMs(overrideMs);
+  if (minGapMs <= 0) {
+    return;
+  }
+
+  const elapsed = Date.now() - lastReplicateCreateAt;
+  if (elapsed < minGapMs) {
+    const waitMs = minGapMs - elapsed;
+    console.log(`[replicate] Waiting ${waitMs}ms before next prediction (burst limit)`);
+    await sleep(waitMs);
+  }
+}
+
+export function markReplicatePredictionCreated() {
+  lastReplicateCreateAt = Date.now();
+}
+
 export async function runWithReplicateRateLimitRetry(
   runFn,
-  { label = 'Replicate', maxRetries = 2 } = {},
+  { label = 'Replicate', maxRetries = 2, burstGapMs } = {},
 ) {
   let lastError;
 
   for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
     try {
+      await waitForReplicateBurstGap(burstGapMs);
+      markReplicatePredictionCreated();
       return await runFn();
     } catch (error) {
       lastError = error;

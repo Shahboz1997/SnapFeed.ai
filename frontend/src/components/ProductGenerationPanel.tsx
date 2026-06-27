@@ -316,11 +316,12 @@ export default function ProductGenerationPanel({
               <div
                 role="listbox"
                 aria-label={t('ecommerce.tryOnUpload.modelGalleryAria')}
-                className="animate-in fade-in slide-in-from-top-1 duration-200 mt-2 max-h-36 overflow-x-auto overflow-y-hidden"
+                className="animate-in fade-in slide-in-from-top-1 duration-200 mt-2 max-h-64 overflow-y-auto rounded-xl border border-slate-200/80 bg-white/80 p-2"
               >
-                <div className="flex gap-2 pb-1">
+                <div className="grid grid-cols-4 gap-2 sm:grid-cols-5 md:grid-cols-6">
                   {availableModels.map((model) => {
                     const isSelected = selectedModelUrl === model.url && !humanBase64;
+                    const isFullBody = model.type === 'full_body';
 
                     return (
                       <button
@@ -330,7 +331,9 @@ export default function ProductGenerationPanel({
                         aria-selected={isSelected}
                         disabled={disabled}
                         onClick={() => handleModelPick(model.url)}
-                        className={`relative h-20 w-16 shrink-0 overflow-hidden rounded-lg border-2 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 disabled:cursor-not-allowed disabled:opacity-50 ${
+                        className={`relative overflow-hidden rounded-lg border-2 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 disabled:cursor-not-allowed disabled:opacity-50 ${
+                          isFullBody ? 'h-28 w-full' : 'h-24 w-full'
+                        } ${
                           isSelected
                             ? 'border-blue-600 ring-2 ring-blue-200'
                             : 'border-slate-200 hover:border-blue-400'
@@ -339,7 +342,7 @@ export default function ProductGenerationPanel({
                         <img
                           src={model.url}
                           alt=""
-                          className="h-full w-full object-cover object-top"
+                          className={`h-full w-full object-cover ${isFullBody ? 'object-center' : 'object-top'}`}
                           loading="lazy"
                         />
                       </button>

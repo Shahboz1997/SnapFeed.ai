@@ -35,6 +35,7 @@ import { fetchAndUpscaleRemoteImage } from '../services/imageUpscaling.js';
 import { getDefaultHashtags, getLanguageName, normalizeLangCode } from '../utils/languages.js';
 import cache from '../utils/cache.js';
 import { saveImageBuffer } from '../utils/imageStorage.js';
+import { waitForReplicateBurstGap } from '../utils/replicateRateLimit.js';
 import { extractQuotedOverlayText } from '../utils/textOverlay.js';
 import { isTallGarmentPhoto, prepareTryOnGarmentImage } from '../services/tryOnImagePrep.js';
 import {
@@ -42,7 +43,7 @@ import {
   getTryOnModelPool,
 } from '../constants/tryOnModels.js';
 
-const TRYON_CACHE_VERSION = 'v23-fullbody';
+const TRYON_CACHE_VERSION = 'v24-garment-fidelity';
 const PRODUCT_FILL_CACHE_VERSION = BRANCH_A_CACHE_VERSION;
 const VISION_CACHE_VERSION = 'v1-catalog-stable';
 
@@ -814,6 +815,8 @@ async function executeIdmVtonTryOn(base64Image, clothingMeta, manualWish, humanI
   const garmImg = await prepareTryOnGarmentImage(base64Image, tryOnCategory);
   const garmentHash = crypto.createHash('md5').update(getBase64HashInput(base64Image)).digest('hex');
   const humanImg = await resolveFinalHumanImage(humanImage, clothingMeta, manualWish, garmentHash);
+
+  await waitForReplicateBurstGap();
 
   const garmentCategory = clothingMeta.visionCategory ?? clothingMeta.category;
 

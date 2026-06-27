@@ -44,4 +44,6 @@ services:
       - key: NANO_BANANA_RESOLUTION
         value: 2K
       - key: REPLICATE_BURST_DELAY_MS
-        value: "2000"
+        value: "5000"
+      - key: TRYON_BG_REMOVAL_LOCAL_FIRST
+        value: "true"

@@ -1086,17 +1086,15 @@ function resolveIdmVtonUiCategory(clothingMeta) {
   return 'top';
 }
 
-function buildGarmentDescription(clothingMeta, uiCategory) {
+function buildGarmentDescription(clothingMeta) {
   const rawDescription = clothingMeta?.description
     ?? clothingMeta?.refinedPrompt
     ?? '';
   const baseDescription = resolveGarmentDescription(rawDescription);
+  const fidelityRule =
+    'Keep the exact hem length, neckline, silhouette, color, texture, print and decorative details from the reference garment. Do not lengthen, shorten or restyle.';
 
-  if (uiCategory === 'dress') {
-    return `A full-length long dress, ${baseDescription}`;
-  }
-
-  return baseDescription;
+  return `${baseDescription}. ${fidelityRule}`.slice(0, 500);
 }
 
 export async function runIdmVtonTryOn(
@@ -1144,7 +1142,7 @@ export async function runIdmVtonTryOn(
     throw createError('Try-on requires a human model image URL.', 400);
   }
 
-  const finalDescription = buildGarmentDescription(clothingMeta, uiCategory);
+  const finalDescription = buildGarmentDescription(clothingMeta);
 
   const input = buildIdmVtonInput({
     garmImg,
@@ -1164,7 +1162,10 @@ export async function runIdmVtonTryOn(
 
   try {
     const output = await withReplicateTimeout(
-      getReplicate().run(IDM_VTON_MODEL, { input }),
+      runWithReplicateRateLimitRetry(
+        () => getReplicate().run(IDM_VTON_MODEL, { input }),
+        { label: 'IDM-VTON', maxRetries: 4 },
+      ),
       'IDM-VTON',
     );
 
@@ -1186,8 +1187,6 @@ export async function runIdmVtonTryOn(
     };
   } catch (error) {
     if (error.statusCode) throw error;
-    const message = error?.message || 'Replicate IDM-VTON request failed.';
-    console.error('IDM-VTON failed:', message);
-    throw createError(`Virtual try-on failed: ${message}`, 502);
+    throw mapReplicateError(error);
   }
 }

@@ -1,6 +1,7 @@
 import sharp from 'sharp';
 import { normalizeBase64Image } from './productImageAnalysis.js';
 import {
+  buildLightBackgroundCutout,
   normalizeImageToPngBuffer,
   removeImageBackgroundFromBuffer,
   removeStudioBackdropFromBuffer,
@@ -23,11 +24,26 @@ function shouldAnchorFullLengthGarment(category) {
 
 async function isolateGarmentBuffer(inputBuffer, category) {
   const anchorFullLength = shouldAnchorFullLengthGarment(category);
+  const preferLocalFirst = process.env.TRYON_BG_REMOVAL_LOCAL_FIRST !== 'false';
+
+  if (preferLocalFirst) {
+    try {
+      const localCutout = anchorFullLength
+        ? await removeStudioBackdropFromBuffer(inputBuffer)
+        : await buildLightBackgroundCutout(inputBuffer);
+      if (localCutout?.length) {
+        console.log('[try-on] Garment isolated locally (no Replicate bg-removal call).');
+        return localCutout;
+      }
+    } catch (error) {
+      console.warn('[try-on] Local garment isolation failed:', error?.message || error);
+    }
+  }
 
   try {
     return await removeImageBackgroundFromBuffer(inputBuffer, { model: TRYON_BG_REMOVAL_MODEL });
   } catch (error) {
-    console.warn('[try-on] Background removal failed:', error?.message || error);
+    console.warn('[try-on] Replicate background removal failed:', error?.message || error);
   }
 
   if (anchorFullLength) {
@@ -94,11 +110,44 @@ async function fitFullLengthGarmentToCanvas(inputBuffer) {
     .toBuffer();
 }
 
+async function fitDressGarmentToCanvas(inputBuffer) {
+  const trimmed = await sharp(inputBuffer)
+    .ensureAlpha()
+    .trim({ threshold: 10 })
+    .toBuffer();
+
+  const { width = 1, height = 1 } = await sharp(trimmed).metadata();
+  const aspect = height / width;
+
+  // Only upscale to near-full canvas when the product photo is already a tall full-length dress.
+  // Mini/cocktail dress shots must keep natural proportions — otherwise IDM-VTON lengthens the hem.
+  if (aspect >= 1.35) {
+    return fitFullLengthGarmentToCanvas(inputBuffer);
+  }
+
+  return sharp(trimmed)
+    .resize({
+      width: TRYON_WIDTH,
+      height: TRYON_HEIGHT,
+      fit: 'contain',
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+      position: 'north',
+    })
+    .png()
+    .toBuffer();
+}
+
 async function trimAndFitToTryOnCanvas(inputBuffer, category) {
-  const anchorFullLength = shouldAnchorFullLengthGarment(category);
-  const finalGarment = anchorFullLength
-    ? await fitFullLengthGarmentToCanvas(inputBuffer)
-    : await fitTopGarmentToCanvas(inputBuffer);
+  const uiCategory = normalizeUiTryOnCategory(category);
+  let finalGarment;
+
+  if (uiCategory === 'dress') {
+    finalGarment = await fitDressGarmentToCanvas(inputBuffer);
+  } else if (uiCategory === 'bottom') {
+    finalGarment = await fitFullLengthGarmentToCanvas(inputBuffer);
+  } else {
+    finalGarment = await fitTopGarmentToCanvas(inputBuffer);
+  }
 
   const outputMeta = await sharp(finalGarment).metadata();
   if (outputMeta.width !== TRYON_WIDTH || outputMeta.height !== TRYON_HEIGHT) {
