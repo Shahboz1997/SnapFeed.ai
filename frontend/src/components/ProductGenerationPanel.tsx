@@ -9,6 +9,7 @@ import {
 } from '../constants/tryOnOptions';
 import { filterTryOnModels, resolveRequiredModelType } from '../constants/tryOnModels';
 import ProductImageUpload from './ProductImageUpload';
+import ProductPromptAssistant, { type ProductPromptAssistantResult } from './ProductPromptAssistant';
 
 const MODE_TOGGLE_CLASS =
   'flex h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-lg px-3 text-sm font-medium transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 disabled:cursor-not-allowed disabled:opacity-50';
@@ -26,6 +27,9 @@ type ProductGenerationPanelProps = {
   tryOnCategory: TryOnCategory;
   onTryOnCategoryChange: (category: TryOnCategory) => void;
   tryOnFallbackReason?: ProductFallbackReason | null;
+  productImageBase64: string | null;
+  productImagePreviewUrl: string | null;
+  productImageFileError: string | null;
   garmentBase64: string | null;
   garmentPreviewUrl: string | null;
   garmentFileError: string | null;
@@ -35,6 +39,10 @@ type ProductGenerationPanelProps = {
   selectedModelUrl: string | null;
   userWish: string;
   userWishMaxLength: number;
+  hashtags: string[];
+  onProductImageLoaded: (base64: string, previewUrl: string) => void;
+  onProductImageClear: () => void;
+  onProductImageValidationError: (message: string) => void;
   onGarmentLoaded: (base64: string, previewUrl: string) => void;
   onGarmentClear: () => void;
   onGarmentValidationError: (message: string) => void;
@@ -44,6 +52,8 @@ type ProductGenerationPanelProps = {
   onModelSelect: (url: string) => void;
   onModelClear: () => void;
   onUserWishChange: (value: string) => void;
+  onAssistantResult: (result: ProductPromptAssistantResult) => void;
+  onAssistantError: (message: string) => void;
 };
 
 function ChipButton({
@@ -80,6 +90,9 @@ export default function ProductGenerationPanel({
   tryOnCategory,
   onTryOnCategoryChange,
   tryOnFallbackReason = null,
+  productImageBase64,
+  productImagePreviewUrl,
+  productImageFileError,
   garmentBase64,
   garmentPreviewUrl,
   garmentFileError,
@@ -89,6 +102,10 @@ export default function ProductGenerationPanel({
   selectedModelUrl,
   userWish,
   userWishMaxLength,
+  hashtags,
+  onProductImageLoaded,
+  onProductImageClear,
+  onProductImageValidationError,
   onGarmentLoaded,
   onGarmentClear,
   onGarmentValidationError,
@@ -98,6 +115,8 @@ export default function ProductGenerationPanel({
   onModelSelect,
   onModelClear,
   onUserWishChange,
+  onAssistantResult,
+  onAssistantError,
 }: ProductGenerationPanelProps) {
   const { t } = useTranslation();
   const [modelGalleryOpen, setModelGalleryOpen] = useState(false);
@@ -223,18 +242,20 @@ export default function ProductGenerationPanel({
 
       {generationMode === 'product' ? (
         <ProductImageUpload
+          inputId="product-photo-upload"
           disabled={disabled}
-          base64Image={garmentBase64}
-          previewUrl={garmentPreviewUrl}
-          error={garmentFileError}
-          onImageLoaded={onGarmentLoaded}
-          onClear={onGarmentClear}
-          onValidationError={onGarmentValidationError}
+          base64Image={productImageBase64}
+          previewUrl={productImagePreviewUrl}
+          error={productImageFileError}
+          onImageLoaded={onProductImageLoaded}
+          onClear={onProductImageClear}
+          onValidationError={onProductImageValidationError}
         />
       ) : (
         <div className="animate-in fade-in duration-300 space-y-3">
           <div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2">
             <ProductImageUpload
+              inputId="tryon-garment-upload"
               disabled={disabled}
               variant="compact"
               base64Image={garmentBase64}
@@ -254,6 +275,7 @@ export default function ProductGenerationPanel({
             />
 
             <ProductImageUpload
+              inputId="tryon-human-upload"
               disabled={disabled}
               variant="compact"
               base64Image={humanBase64}
@@ -330,21 +352,33 @@ export default function ProductGenerationPanel({
         </div>
       )}
 
-      <div>
-        <label htmlFor="user-wish" className="mb-3 block text-sm font-medium text-slate-700">
-          {t('ecommerce.wishLabel')}
-        </label>
-        <input
-          id="user-wish"
-          type="text"
-          value={userWish}
-          onChange={(e) => onUserWishChange(e.target.value)}
+      {generationMode === 'product' ? (
+        <ProductPromptAssistant
           disabled={disabled}
-          maxLength={userWishMaxLength}
-          placeholder={t('ecommerce.wishPlaceholder')}
-          className="w-full rounded-xl border border-slate-200/80 bg-white px-4 py-3 text-base text-slate-900 placeholder:font-light placeholder:text-slate-400 outline-none transition-all duration-300 focus:border-slate-400 focus:ring-2 focus:ring-slate-100 disabled:cursor-not-allowed disabled:opacity-50 lg:py-4 lg:text-sm"
+          userText={userWish}
+          userTextMaxLength={userWishMaxLength}
+          onUserTextChange={onUserWishChange}
+          onResult={onAssistantResult}
+          onError={onAssistantError}
+          hashtags={hashtags}
         />
-      </div>
+      ) : (
+        <div>
+          <label htmlFor="user-wish" className="mb-3 block text-sm font-medium text-slate-700">
+            {t('ecommerce.wishLabel')}
+          </label>
+          <input
+            id="user-wish"
+            type="text"
+            value={userWish}
+            onChange={(event) => onUserWishChange(event.target.value)}
+            disabled={disabled}
+            maxLength={userWishMaxLength}
+            placeholder={t('ecommerce.wishPlaceholder')}
+            className="w-full rounded-xl border border-slate-200/80 bg-white px-4 py-3 text-base text-slate-900 placeholder:font-light placeholder:text-slate-400 outline-none transition-all duration-300 focus:border-slate-400 focus:ring-2 focus:ring-slate-100 disabled:cursor-not-allowed disabled:opacity-50 lg:py-4 lg:text-sm"
+          />
+        </div>
+      )}
     </div>
   );
 }

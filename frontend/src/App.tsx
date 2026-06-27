@@ -31,6 +31,8 @@ import {
 
 const PROMPT_MAX_LENGTH = 2000;
 const USER_WISH_MAX_LENGTH = 300;
+const PRODUCT_GROK_PROMPT_MAX_LENGTH = 8000;
+const OVERLAY_TEXT_MAX_LENGTH = 80;
 
 type Format = AspectRatio;
 type AppMode = 'text' | 'product';
@@ -44,9 +46,12 @@ export default function App() {
   const { t, i18n } = useTranslation();
   const [mode, setMode] = useState<AppMode>('text');
   const [userPrompt, setUserPrompt] = useState('');
-  const [base64Image, setBase64Image] = useState<string | null>(null);
-  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
-  const [productFileError, setProductFileError] = useState<string | null>(null);
+  const [productImageBase64, setProductImageBase64] = useState<string | null>(null);
+  const [productImagePreviewUrl, setProductImagePreviewUrl] = useState<string | null>(null);
+  const [productImageFileError, setProductImageFileError] = useState<string | null>(null);
+  const [garmentBase64, setGarmentBase64] = useState<string | null>(null);
+  const [garmentPreviewUrl, setGarmentPreviewUrl] = useState<string | null>(null);
+  const [garmentFileError, setGarmentFileError] = useState<string | null>(null);
   const [humanBase64, setHumanBase64] = useState<string | null>(null);
   const [humanPreviewUrl, setHumanPreviewUrl] = useState<string | null>(null);
   const [humanFileError, setHumanFileError] = useState<string | null>(null);
@@ -59,6 +64,8 @@ export default function App() {
   const [tryOnCategory, setTryOnCategory] = useState<TryOnCategory>(DEFAULT_TRYON_CATEGORY);
   const [tryOnFallbackReason, setTryOnFallbackReason] = useState<ProductFallbackReason | null>(null);
   const [userWish, setUserWish] = useState('');
+  const [productGrokPrompt, setProductGrokPrompt] = useState('');
+  const [overlayText, setOverlayText] = useState('');
   const [platform, setPlatform] = useState<Platform>('instagram');
   const [format, setFormat] = useState<Format>('square');
   const [formatManuallySet, setFormatManuallySet] = useState(false);
@@ -74,12 +81,15 @@ export default function App() {
 
   const promptLength = userPrompt.length;
   const promptIsEmpty = !userPrompt.trim();
-  const garmentReady = Boolean(base64Image) && !productFileError;
+  const activeProductBase64 = productGenerationMode === 'product' ? productImageBase64 : garmentBase64;
+  const activeProductPreviewUrl = productGenerationMode === 'product' ? productImagePreviewUrl : garmentPreviewUrl;
+  const garmentReady = Boolean(garmentBase64) && !garmentFileError;
+  const productPhotoReady = Boolean(productImageBase64) && !productImageFileError;
   const humanReady = Boolean(humanBase64) && !humanFileError;
   const tryOnHumanReady = humanReady || Boolean(selectedModelUrl);
   const productImageReady = productGenerationMode === 'tryon'
     ? garmentReady && tryOnHumanReady
-    : garmentReady;
+    : productPhotoReady;
   const atCharLimit = promptLength >= PROMPT_MAX_LENGTH;
   const canGenerate =
     !loading && (mode === 'text' ? !promptIsEmpty : productImageReady);
@@ -108,6 +118,22 @@ export default function App() {
 
   function handleUserWishChange(value: string) {
     setUserWish(value.slice(0, USER_WISH_MAX_LENGTH));
+    setProductGrokPrompt('');
+  }
+
+  function handleOverlayTextChange(value: string) {
+    setOverlayText(value.slice(0, OVERLAY_TEXT_MAX_LENGTH));
+  }
+
+  function handleProductAssistantResult(result: {
+    optimizedPrompt: string;
+    overlayText: string;
+    hashtags: string[];
+  }) {
+    setProductGrokPrompt(result.optimizedPrompt.slice(0, PRODUCT_GROK_PROMPT_MAX_LENGTH));
+    setOverlayText(result.overlayText.slice(0, OVERLAY_TEXT_MAX_LENGTH));
+    setIncludeText(true);
+    setHashtags(result.hashtags);
   }
 
   function handleProductGenerationModeChange(next: ProductGenerationMode) {
@@ -121,13 +147,17 @@ export default function App() {
     setImageUrl(null);
     setOriginalImageUrl(null);
     setHashtags([]);
+    setProductGrokPrompt('');
+    setOverlayText('');
+    setUserWish('');
   }
 
   function handleModeChange(next: AppMode) {
     if (loading || next === mode) return;
     setMode(next);
     setAlert(null);
-    setProductFileError(null);
+    setProductImageFileError(null);
+    setGarmentFileError(null);
     setExtractText(false);
     setExtractedText(null);
     setProductGenerationMode('product');
@@ -138,17 +168,21 @@ export default function App() {
     setImageUrl(null);
     setOriginalImageUrl(null);
     setHashtags([]);
+    setProductGrokPrompt('');
+    setOverlayText('');
 
     if (next === 'text') {
-      setBase64Image(null);
-      setImagePreviewUrl(null);
+      setProductImageBase64(null);
+      setProductImagePreviewUrl(null);
+      setGarmentBase64(null);
+      setGarmentPreviewUrl(null);
     }
   }
 
   function handleProductImageLoaded(base64: string, previewUrl: string) {
-    setBase64Image(base64);
-    setImagePreviewUrl(previewUrl);
-    setProductFileError(null);
+    setProductImageBase64(base64);
+    setProductImagePreviewUrl(previewUrl);
+    setProductImageFileError(null);
     setTryOnFallbackReason(null);
     setImageUrl(null);
     setOriginalImageUrl(null);
@@ -156,17 +190,41 @@ export default function App() {
   }
 
   function handleProductImageClear() {
-    setBase64Image(null);
-    setImagePreviewUrl(null);
-    setProductFileError(null);
+    setProductImageBase64(null);
+    setProductImagePreviewUrl(null);
+    setProductImageFileError(null);
     setTryOnFallbackReason(null);
     setImageUrl(null);
     setOriginalImageUrl(null);
     setHashtags([]);
   }
 
-  function handleProductFileError(message: string) {
-    setProductFileError(message);
+  function handleProductImageFileError(message: string) {
+    setProductImageFileError(message);
+  }
+
+  function handleGarmentImageLoaded(base64: string, previewUrl: string) {
+    setGarmentBase64(base64);
+    setGarmentPreviewUrl(previewUrl);
+    setGarmentFileError(null);
+    setTryOnFallbackReason(null);
+    setImageUrl(null);
+    setOriginalImageUrl(null);
+    setHashtags([]);
+  }
+
+  function handleGarmentImageClear() {
+    setGarmentBase64(null);
+    setGarmentPreviewUrl(null);
+    setGarmentFileError(null);
+    setTryOnFallbackReason(null);
+    setImageUrl(null);
+    setOriginalImageUrl(null);
+    setHashtags([]);
+  }
+
+  function handleGarmentFileError(message: string) {
+    setGarmentFileError(message);
   }
 
   function handleHumanImageLoaded(base64: string, previewUrl: string) {
@@ -230,13 +288,18 @@ export default function App() {
 
   function handleReset() {
     setUserPrompt('');
-    setBase64Image(null);
-    setImagePreviewUrl(null);
-    setProductFileError(null);
+    setProductImageBase64(null);
+    setProductImagePreviewUrl(null);
+    setProductImageFileError(null);
+    setGarmentBase64(null);
+    setGarmentPreviewUrl(null);
+    setGarmentFileError(null);
     setExtractText(false);
     setExtractedText(null);
     setIncludeText(false);
+    setOverlayText('');
     setUserWish('');
+    setProductGrokPrompt('');
     setProductGenerationMode('product');
     setHumanBase64(null);
     setHumanPreviewUrl(null);
@@ -284,6 +347,11 @@ export default function App() {
   const handleGenerate = useCallback(async () => {
     if (!canGenerate) return;
 
+    if (mode === 'product' && productGenerationMode === 'product' && includeText && !overlayText.trim()) {
+      showAlert(t('ecommerce.overlayTextRequired'), 'error');
+      return;
+    }
+
     setLoading(true);
     setAlert(null);
     setTryOnFallbackReason(null);
@@ -291,8 +359,8 @@ export default function App() {
     setHashtags([]);
     setExtractedText(null);
 
-    if (mode === 'product' && imagePreviewUrl && !extractText) {
-      setOriginalImageUrl(imagePreviewUrl);
+    if (mode === 'product' && activeProductPreviewUrl && !extractText) {
+      setOriginalImageUrl(activeProductPreviewUrl);
     }
 
     const currentLanguage = (i18n.language || 'ru').split('-')[0];
@@ -312,8 +380,9 @@ export default function App() {
         showAlert(t('alerts.success'), 'success');
       } else {
         const data = await generateProductImage({
-          base64Image: base64Image!,
-          userWish,
+          base64Image: activeProductBase64!,
+          userWish: userWish,
+          catalogPrompt: productGrokPrompt || undefined,
           mode: productGenerationMode,
           gender: productGenerationMode === 'tryon' ? tryOnGender : undefined,
           category: productGenerationMode === 'tryon' ? tryOnCategory : undefined,
@@ -324,6 +393,7 @@ export default function App() {
           format,
           extractText: false,
           includeText: productGenerationMode === 'product' ? includeText : false,
+          overlayText: productGenerationMode === 'product' && includeText ? overlayText : undefined,
           lang: currentLanguage,
         });
 
@@ -342,7 +412,7 @@ export default function App() {
     } finally {
       setLoading(false);
     }
-  }, [canGenerate, mode, userPrompt, base64Image, userWish, productGenerationMode, tryOnGender, tryOnCategory, humanBase64, selectedModelUrl, platform, format, extractText, includeText, imagePreviewUrl, t, i18n.language]);
+  }, [canGenerate, mode, userPrompt, activeProductBase64, activeProductPreviewUrl, userWish, productGrokPrompt, overlayText, productGenerationMode, tryOnGender, tryOnCategory, humanBase64, selectedModelUrl, platform, format, extractText, includeText, t, i18n.language]);
 
   const charCounterClass =
     atCharLimit ? 'text-red-400' : promptLength > PROMPT_MAX_LENGTH * 0.9 ? 'text-amber-400' : 'text-slate-500';
@@ -528,18 +598,27 @@ export default function App() {
                     tryOnCategory={tryOnCategory}
                     onTryOnCategoryChange={handleTryOnCategoryChange}
                     tryOnFallbackReason={tryOnFallbackReason}
-                    garmentBase64={base64Image}
-                    garmentPreviewUrl={imagePreviewUrl}
-                    garmentFileError={productFileError}
+                    garmentBase64={garmentBase64}
+                    garmentPreviewUrl={garmentPreviewUrl}
+                    garmentFileError={garmentFileError}
+                    productImageBase64={productImageBase64}
+                    productImagePreviewUrl={productImagePreviewUrl}
+                    productImageFileError={productImageFileError}
                     humanBase64={humanBase64}
                     humanPreviewUrl={humanPreviewUrl}
                     humanFileError={humanFileError}
                     selectedModelUrl={selectedModelUrl}
                     userWish={userWish}
                     userWishMaxLength={USER_WISH_MAX_LENGTH}
-                    onGarmentLoaded={handleProductImageLoaded}
-                    onGarmentClear={handleProductImageClear}
-                    onGarmentValidationError={handleProductFileError}
+                    hashtags={hashtags}
+                    onAssistantResult={handleProductAssistantResult}
+                    onAssistantError={(message) => showAlert(message, 'error')}
+                    onGarmentLoaded={handleGarmentImageLoaded}
+                    onGarmentClear={handleGarmentImageClear}
+                    onGarmentValidationError={handleGarmentFileError}
+                    onProductImageLoaded={handleProductImageLoaded}
+                    onProductImageClear={handleProductImageClear}
+                    onProductImageValidationError={handleProductImageFileError}
                     onHumanLoaded={handleHumanImageLoaded}
                     onHumanClear={handleHumanImageClear}
                     onHumanValidationError={handleHumanFileError}
@@ -615,28 +694,48 @@ export default function App() {
                 )}
 
                 {((mode === 'text' && !isProductOcrMode) || (mode === 'product' && productGenerationMode === 'product')) && (
-                  <div className="flex min-w-0 items-center justify-between gap-3 rounded-xl border border-slate-200/80 bg-white px-4 py-3.5 shadow-sm sm:gap-4 sm:px-5 sm:py-4">
-                    <label htmlFor="include-text" className="min-w-0 flex-1 cursor-pointer text-sm font-normal leading-snug text-slate-700">
-                      {t('form.includeTextLabel')}
-                    </label>
-                    <button
-                      id="include-text"
-                      type="button"
-                      role="switch"
-                      aria-checked={includeText}
-                      disabled={loading}
-                      onClick={() => setIncludeText((current) => !current)}
-                      className={`relative h-6 w-11 shrink-0 rounded-full transition-colors duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 disabled:cursor-not-allowed disabled:opacity-50 ${
-                        includeText ? 'bg-slate-900' : 'bg-slate-300'
-                      }`}
-                    >
-                      <span
-                        aria-hidden="true"
-                        className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
-                          includeText ? 'translate-x-5' : 'translate-x-0'
+                  <div className="space-y-3">
+                    <div className="flex min-w-0 items-center justify-between gap-3 rounded-xl border border-slate-200/80 bg-white px-4 py-3.5 shadow-sm sm:gap-4 sm:px-5 sm:py-4">
+                      <label htmlFor="include-text" className="min-w-0 flex-1 cursor-pointer text-sm font-normal leading-snug text-slate-700">
+                        {t('form.includeTextLabel')}
+                      </label>
+                      <button
+                        id="include-text"
+                        type="button"
+                        role="switch"
+                        aria-checked={includeText}
+                        disabled={loading}
+                        onClick={() => setIncludeText((current) => !current)}
+                        className={`relative h-6 w-11 shrink-0 rounded-full transition-colors duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 disabled:cursor-not-allowed disabled:opacity-50 ${
+                          includeText ? 'bg-slate-900' : 'bg-slate-300'
                         }`}
-                      />
-                    </button>
+                      >
+                        <span
+                          aria-hidden="true"
+                          className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                            includeText ? 'translate-x-5' : 'translate-x-0'
+                          }`}
+                        />
+                      </button>
+                    </div>
+
+                    {includeText && (
+                      <div>
+                        <label htmlFor="overlay-text" className="mb-2 block text-sm font-medium text-slate-700">
+                          {t('ecommerce.overlayTextLabel')}
+                        </label>
+                        <input
+                          id="overlay-text"
+                          type="text"
+                          value={overlayText}
+                          onChange={(event) => handleOverlayTextChange(event.target.value)}
+                          disabled={loading}
+                          maxLength={OVERLAY_TEXT_MAX_LENGTH}
+                          placeholder={t('ecommerce.overlayTextPlaceholder')}
+                          className="w-full rounded-xl border border-slate-200/80 bg-white px-4 py-3 text-base text-slate-900 placeholder:font-light placeholder:text-slate-400 outline-none transition-all duration-300 focus:border-slate-400 focus:ring-2 focus:ring-slate-100 disabled:cursor-not-allowed disabled:opacity-50 lg:text-sm"
+                        />
+                      </div>
+                    )}
                   </div>
                 )}
               </fieldset>

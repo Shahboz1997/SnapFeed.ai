@@ -27,6 +27,7 @@ export interface ProductImageUploadLabels {
 
 interface ProductImageUploadProps {
   disabled?: boolean;
+  inputId?: string;
   base64Image: string | null;
   previewUrl: string | null;
   error: string | null;
@@ -40,6 +41,7 @@ interface ProductImageUploadProps {
 
 export default function ProductImageUpload({
   disabled = false,
+  inputId = 'product-image-upload',
   base64Image,
   previewUrl,
   error,
@@ -147,9 +149,12 @@ export default function ProductImageUpload({
     }
   }
 
+  const errorId = `${inputId}-error`;
+
   return (
     <div className={`contain-width min-w-0 space-y-3 ${isCompact ? 'flex h-full flex-col' : ''}`}>
       <input
+        id={inputId}
         ref={inputRef}
         type="file"
         accept={ACCEPTED_MIME_TYPES.join(',')}
@@ -172,7 +177,7 @@ export default function ProductImageUpload({
           aria-label={uploadAria}
           aria-disabled={disabled}
           aria-invalid={Boolean(error)}
-          aria-describedby={error ? 'product-upload-error' : undefined}
+          aria-describedby={error ? errorId : undefined}
           className={`group flex w-full min-w-0 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed text-center transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 ${
             isCompact ? 'min-h-[180px] flex-1 px-3 py-10 sm:px-4 sm:py-12' : 'min-h-[260px] px-4 py-16 sm:px-8 sm:py-20'
           } ${
@@ -251,7 +256,7 @@ export default function ProductImageUpload({
 
       {error && (
         <p
-          id="product-upload-error"
+          id={errorId}
           role="alert"
           className="text-sm text-red-600"
         >

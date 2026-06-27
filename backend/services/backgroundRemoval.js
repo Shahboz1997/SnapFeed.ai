@@ -4,6 +4,7 @@ import sharp from 'sharp';
 import { REPLICATE_BG_REMOVAL_MODEL } from '../constants/image.js';
 import { getReplicate, isReplicateConfigured } from '../config/replicate.js';
 import { resolveReplicateImageUrl } from '../utils/replicateOutput.js';
+import { runWithReplicateRateLimitRetry } from '../utils/replicateRateLimit.js';
 import { normalizeBase64Image } from './productImageAnalysis.js';
 
 const BACKEND_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -169,14 +170,17 @@ async function removeBackgroundWithImgly(pngBuffer, model) {
 }
 
 async function removeBackgroundViaReplicate(pngBuffer) {
-  const output = await getReplicate().run(REPLICATE_BG_REMOVAL_MODEL, {
-    input: {
-      image: bufferToPngDataUri(pngBuffer),
-      threshold: 0,
-      background_type: 'rgba',
-      format: 'png',
-    },
-  });
+  const output = await runWithReplicateRateLimitRetry(
+    () => getReplicate().run(REPLICATE_BG_REMOVAL_MODEL, {
+      input: {
+        image: bufferToPngDataUri(pngBuffer),
+        threshold: 0,
+        background_type: 'rgba',
+        format: 'png',
+      },
+    }),
+    { label: 'background removal' },
+  );
 
   const remoteUrl = resolveReplicateImageUrl(output);
   if (!remoteUrl) {
@@ -255,4 +259,37 @@ export async function removeProductBackground(base64Image, options = {}) {
 
 export async function removeTryOnGarmentBackground(base64Image) {
   return removeProductBackground(base64Image, { model: TRYON_BG_REMOVAL_MODEL });
+}
+
+export async function removeProductCutoutForComposite(inputBuffer) {
+  const pngBuffer = await normalizeImageToPngBuffer(inputBuffer);
+  const model = ['small', 'medium', 'large'].includes(process.env.PRODUCT_BG_REMOVAL_MODEL)
+    ? process.env.PRODUCT_BG_REMOVAL_MODEL
+    : 'medium';
+
+  // IMGLY first — pixel-perfect cutout for Sharp composite (product never goes to Grok).
+  if (isImglyAllowed()) {
+    try {
+      const cutout = await removeBackgroundWithImgly(pngBuffer, model);
+      if (cutout?.length) {
+        return cutout;
+      }
+    } catch (error) {
+      console.warn('[product-composite] IMGLY cutout failed:', error?.message || error);
+    }
+  }
+
+  if (isReplicateConfigured()) {
+    try {
+      const cutout = await removeBackgroundViaReplicate(pngBuffer);
+      if (cutout?.length) {
+        return cutout;
+      }
+    } catch (error) {
+      console.warn('[product-composite] Replicate cutout failed:', error?.message || error);
+    }
+  }
+
+  console.warn('[product-composite] Using local backdrop fallback for cutout.');
+  return removeBackgroundWithLocalFallbacks(pngBuffer);
 }

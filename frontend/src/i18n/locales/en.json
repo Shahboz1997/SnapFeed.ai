@@ -28,6 +28,17 @@
     "remove": "Remove",
     "wishLabel": "Background/style preferences (optional)",
     "wishPlaceholder": "e.g. marble podium, warm studio light, pastel gradient…",
+    "overlayTextLabel": "On-image text",
+    "overlayTextPlaceholder": "e.g. Buy now, Premium quality…",
+    "overlayTextRequired": "Enter on-image text or turn off the text overlay toggle.",
+    "assistant": {
+      "placeholder": "Describe the background in your language (e.g. marble podium, warm light)…",
+      "button": "Generate Prompt",
+      "loading": "AI is thinking…",
+      "hint": "Write in Russian or Uzbek — the assistant will build a professional English Grok prompt.",
+      "success": "The assistant crafted the perfect English prompt for Grok and added a marketing slogan!",
+      "error": "Could not generate a prompt. Please try again."
+    },
     "wishTags": {
       "studioLabel": "Studio:",
       "studio": {

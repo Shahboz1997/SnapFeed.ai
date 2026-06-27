@@ -5,9 +5,13 @@ import {
   VALID_ASPECT_RATIOS,
   VALID_PLATFORMS,
   DALL_E_MAX_PROMPT_LENGTH,
-  FLUX_SCHNELL_MODEL,
+  resolveTextModeModelsToTry,
   isAllowedImageUrl,
 } from '../constants/image.js';
+import { buildBranchABackgroundInput } from '../constants/nanoBanana.js';
+import { runWithReplicateRateLimitRetry, sleep } from '../utils/replicateRateLimit.js';
+import { isDetailedScenePrompt, preserveDetailedPrompt } from '../utils/detailedPrompt.js';
+import { REPLICATE_BURST_DELAY_MS } from '../constants/nanoBanana.js';
 import { getReplicate, isReplicateConfigured } from '../config/replicate.js';
 import { createError, mapOpenAIError } from '../utils/errors.js';
 import {
@@ -20,10 +24,11 @@ import { fetchAndUpscaleRemoteImage, upscaleImageBuffer } from '../services/imag
 import { applyTextOverlay } from '../services/textOverlayRender.js';
 import { resolveReplicateImageUrl } from '../utils/replicateOutput.js';
 import cache from '../utils/cache.js';
-import { NO_TEXT_OVERLAY_RULE, appendNoTextRuleToPrompt, parseIncludeText, extractQuotedOverlayText } from '../utils/textOverlay.js';
+import { NO_TEXT_OVERLAY_RULE, appendNoTextRuleToPrompt, parseIncludeText, extractQuotedOverlayText, NO_TEXT_IN_IMAGE_RULE } from '../utils/textOverlay.js';
 import { buildLanguageRule, normalizeLangCode, getLanguageName, getDefaultHashtags, stripHashtagsFromPrompt } from '../utils/languages.js';
+import { reinforceFluxSpatialPrompt, detectExteriorPlacementRequest } from '../utils/spatialPrompt.js';
 
-const TEXT_IMAGE_CACHE_VERSION = 'v2';
+const TEXT_IMAGE_CACHE_VERSION = 'v4-nano-banana-2-text-mode';
 
 function buildPromptOptimizerSystem(lang, includeText) {
   const languageRule = buildLanguageRule(lang);
@@ -32,9 +37,23 @@ function buildPromptOptimizerSystem(lang, includeText) {
   if (!includeText) {
     return `${languageRule}
 
-You are a top-tier SMM strategist and commercial designer. Your task is to analyze the user's text or idea and create a high-converting, stylish prompt for FLUX Schnell image generation (Instagram, Facebook).
+You are a top-tier SMM strategist and commercial designer. Your task is to analyze the user's text or idea and create a high-converting, stylish prompt for Replicate google/nano-banana-2 image generation (Instagram, Facebook).
 
-If the user already wrote a detailed scene description, preserve ALL their visual details (objects, lighting, colors, mood, composition, props) while reformatting for FLUX.
+If the user already wrote a detailed scene description, preserve ALL their visual details (objects, lighting, colors, mood, composition, props, artistic style) while reformatting for the model. NEVER change the artistic style — if they ask for isometric diorama, tilt-shift, anime, cinematic, or 3D miniature, keep that exact style.
+
+STYLE PRESERVATION RULE (CRITICAL):
+If the user specifies an artistic style or technique (isometric, diorama, miniature, tilt-shift, 3D render, illustration, anime, watercolor, etc.), you MUST preserve it verbatim in optimizedPrompt. Do NOT rewrite stylized prompts into "minimalist photography" or "editorial aesthetic".
+
+SPATIAL PLACEMENT RULE (CRITICAL — highest priority):
+If the user specifies where an object belongs (e.g. "outside the entrance", "through the window", "on the sidewalk"), you MUST preserve that exact spatial relationship in optimizedPrompt. Never move an object from outside to inside or vice versa.
+
+When the user wants an object OUTSIDE (e.g. bicycle outside café entrance), optimizedPrompt MUST explicitly state ALL of the following:
+- Camera viewpoint is INSIDE the interior looking toward the entrance
+- The object is OUTSIDE on the sidewalk/street, visible through the open door or window in the BACKGROUND
+- The interior floor is EMPTY — the object is NOT on the interior floor in the foreground
+
+Example for café + bicycle outside:
+"Interior view from inside a cozy café toward the front entrance. A vintage bicycle with wicker basket stands on the sidewalk OUTSIDE, visible through the open glass door in the background. The café interior floor is empty — no bicycle inside the room. Warm afternoon sunlight, wooden shelves with ceramics, soft film grain."
 
 PROMPT GENERATION RULES:
 1. Describe the visual scene in ENGLISH — modern, eye-catching, strictly matching the user's topic (business, blog, e-commerce, services, lifestyle, etc.).
@@ -52,9 +71,23 @@ Return ONLY JSON: { "optimizedPrompt": "...", "hashtags": ["#tag1", "#tag2"] }`;
 
   return `${languageRule}
 
-You are a top-tier SMM strategist and commercial designer. Your task is to analyze the user's text or idea and create a high-converting, stylish prompt for FLUX Schnell image generation (Instagram, Facebook).
+You are a top-tier SMM strategist and commercial designer. Your task is to analyze the user's text or idea and create a high-converting, stylish prompt for Replicate google/nano-banana-2 image generation (Instagram, Facebook).
 
-If the user already wrote a detailed scene description, preserve ALL their visual details (objects, lighting, colors, mood, composition, props) while reformatting for FLUX.
+If the user already wrote a detailed scene description, preserve ALL their visual details (objects, lighting, colors, mood, composition, props, artistic style) while reformatting for the model. NEVER change the artistic style — if they ask for isometric diorama, tilt-shift, anime, cinematic, or 3D miniature, keep that exact style.
+
+STYLE PRESERVATION RULE (CRITICAL):
+If the user specifies an artistic style or technique (isometric, diorama, miniature, tilt-shift, 3D render, illustration, anime, watercolor, etc.), you MUST preserve it verbatim in optimizedPrompt. Do NOT rewrite stylized prompts into "minimalist photography" or "editorial aesthetic".
+
+SPATIAL PLACEMENT RULE (CRITICAL — highest priority):
+If the user specifies where an object belongs (e.g. "outside the entrance", "through the window", "on the sidewalk"), you MUST preserve that exact spatial relationship in optimizedPrompt. Never move an object from outside to inside or vice versa.
+
+When the user wants an object OUTSIDE (e.g. bicycle outside café entrance), optimizedPrompt MUST explicitly state ALL of the following:
+- Camera viewpoint is INSIDE the interior looking toward the entrance
+- The object is OUTSIDE on the sidewalk/street, visible through the open door or window in the BACKGROUND
+- The interior floor is EMPTY — the object is NOT on the interior floor in the foreground
+
+Example for café + bicycle outside:
+"Interior view from inside a cozy café toward the front entrance. A vintage bicycle with wicker basket stands on the sidewalk OUTSIDE, visible through the open glass door in the background. The café interior floor is empty — no bicycle inside the room. Warm afternoon sunlight, wooden shelves with ceramics, soft film grain."
 
 FLUX SCHNELL TEXT RULE (CRITICAL):
 FLUX cannot render Cyrillic or non-Latin text reliably. The server adds text overlay separately after generation.
@@ -77,6 +110,20 @@ Return ONLY JSON: { "optimizedPrompt": "...", "hashtags": ["#tag1", "#tag2"], "o
 async function resolvePrompt(userPrompt, platform, aspectRatio, lang, includeText) {
   const trimmed = userPrompt.trim();
 
+  if (isDetailedScenePrompt(trimmed)) {
+    console.log('[text-mode] detailed English prompt detected — skipping GPT rewrite');
+    let optimizedPrompt = preserveDetailedPrompt(trimmed, DALL_E_MAX_PROMPT_LENGTH);
+    if (!includeText) {
+      optimizedPrompt = `${optimizedPrompt} ${NO_TEXT_IN_IMAGE_RULE}`.slice(0, DALL_E_MAX_PROMPT_LENGTH);
+    }
+
+    return {
+      optimizedPrompt,
+      hashtags: getDefaultHashtags(lang),
+      overlayText: includeText ? extractQuotedOverlayText(trimmed) : null,
+    };
+  }
+
   try {
     return await optimizePrompt(trimmed, platform, aspectRatio, lang, includeText);
   } catch (error) {
@@ -87,7 +134,7 @@ async function resolvePrompt(userPrompt, platform, aspectRatio, lang, includeTex
     }
 
     return {
-      optimizedPrompt,
+      optimizedPrompt: reinforceFluxSpatialPrompt(trimmed, optimizedPrompt, DALL_E_MAX_PROMPT_LENGTH),
       hashtags: getDefaultHashtags(lang),
       overlayText: null,
     };
@@ -150,49 +197,71 @@ async function optimizePrompt(userPrompt, platform, aspectRatio, lang, includeTe
   }
 
   return {
-    optimizedPrompt: stripHashtagsFromPrompt(parsed.optimizedPrompt)
-      .replace(/^["']|["']$/g, '')
-      .slice(0, DALL_E_MAX_PROMPT_LENGTH),
+    optimizedPrompt: reinforceFluxSpatialPrompt(
+      userPrompt,
+      stripHashtagsFromPrompt(parsed.optimizedPrompt)
+        .replace(/^["']|["']$/g, '')
+        .slice(0, DALL_E_MAX_PROMPT_LENGTH),
+      DALL_E_MAX_PROMPT_LENGTH,
+    ),
     hashtags: parsed.hashtags.slice(0, 2),
     overlayText,
   };
 }
 
-async function runFluxSchnellAndUpscale(optimizedPrompt, format, overlayText = null) {
+async function runTextModeImageAndUpscale(optimizedPrompt, format, overlayText = null) {
   const replicate = getReplicate();
+  const aspectRatio = format === 'story' ? '9:16' : '1:1';
+  const models = resolveTextModeModelsToTry();
+  let lastError;
 
-  console.log(`Running FLUX Schnell (${FLUX_SCHNELL_MODEL}), aspect_ratio: ${format === 'story' ? '9:16' : '1:1'}`);
+  for (let index = 0; index < models.length; index += 1) {
+    const model = models[index];
 
-  const output = await replicate.run(
-    FLUX_SCHNELL_MODEL,
-    {
-      input: {
-        prompt: optimizedPrompt,
-        aspect_ratio: format === 'story' ? '9:16' : '1:1',
-        num_outputs: 1,
-        output_format: 'png',
-        disable_safety_checker: false,
-      },
-    },
-  );
+    if (index > 0 && REPLICATE_BURST_DELAY_MS > 0) {
+      await sleep(REPLICATE_BURST_DELAY_MS);
+    }
 
-  const finalImageUrl = resolveReplicateImageUrl(output);
+    const input = buildBranchABackgroundInput(model, optimizedPrompt, aspectRatio);
+    console.log(`Running text-mode image (${model}), aspect_ratio: ${aspectRatio}`);
 
-  if (!finalImageUrl) {
-    throw createError('Replicate did not return an image URL.', 502);
+    try {
+      const output = await runWithReplicateRateLimitRetry(
+        () => replicate.run(model, { input }),
+        { label: `Text mode (${model})` },
+      );
+
+      const finalImageUrl = resolveReplicateImageUrl(output);
+      if (!finalImageUrl) {
+        throw createError(`Model ${model} did not return an image URL.`, 502);
+      }
+
+      console.log(`Text-mode output URL (${model}): ${finalImageUrl}`);
+
+      let upscaledBuffer = await fetchAndUpscaleRemoteImage(finalImageUrl);
+
+      if (overlayText?.trim()) {
+        console.log(`Applying Sharp text overlay: "${overlayText.trim()}"`);
+        upscaledBuffer = await applyTextOverlay(upscaledBuffer, overlayText, format);
+      }
+
+      const filename = await saveImageBuffer(upscaledBuffer);
+      return { imagePath: `/api/generated-images/${filename}`, modelUsed: model };
+    } catch (error) {
+      lastError = error;
+      console.warn(`[text-mode] Model ${model} failed: ${error?.message || error}`);
+      if (index < models.length - 1) {
+        console.log(`[text-mode] Falling back to ${models[index + 1]}`);
+      }
+    }
   }
 
-  console.log(`FLUX Schnell output URL: ${finalImageUrl}`);
-
-  let upscaledBuffer = await fetchAndUpscaleRemoteImage(finalImageUrl);
-
-  if (overlayText?.trim()) {
-    console.log(`Applying Sharp text overlay: "${overlayText.trim()}"`);
-    upscaledBuffer = await applyTextOverlay(upscaledBuffer, overlayText, format);
+  if (lastError?.statusCode) {
+    throw lastError;
   }
 
-  const filename = await saveImageBuffer(upscaledBuffer);
-  return `/api/generated-images/${filename}`;
+  const message = lastError?.message || 'Text mode image generation failed.';
+  throw createError(message, 502);
 }
 
 function buildTextImageCacheKey(userPrompt, platform, format, lang, includeText) {
@@ -257,12 +326,19 @@ export async function generatePostImage(req, res, next) {
       shouldIncludeText,
     );
 
+    if (detectExteriorPlacementRequest(trimmedPrompt)) {
+      console.log('[text-mode] exterior spatial placement enforced in prompt');
+    }
+
     let upscaledUrl;
+    let modelUsed;
     try {
-      upscaledUrl = await runFluxSchnellAndUpscale(optimizedPrompt, aspectRatio, overlayText);
+      const result = await runTextModeImageAndUpscale(optimizedPrompt, aspectRatio, overlayText);
+      upscaledUrl = result.imagePath;
+      modelUsed = result.modelUsed;
     } catch (error) {
       if (error.statusCode) throw error;
-      const message = error?.message || 'FLUX Schnell image generation failed.';
+      const message = error?.message || 'Text mode image generation failed.';
       throw createError(message, 502);
     }
 
@@ -271,6 +347,7 @@ export async function generatePostImage(req, res, next) {
       imageUrl: upscaledUrl,
       optimizedPrompt,
       hashtags,
+      modelUsed,
     };
 
     cache.set(cacheKey, responseData);

@@ -33,3 +33,15 @@ services:
         value: "2"
       - key: NODE_OPTIONS
         value: "--max-old-space-size=460"
+      - key: PRODUCT_PIPELINE_MODE
+        value: native
+      - key: REPLICATE_NANO_BANANA_MODEL
+        value: google/nano-banana-2
+      - key: REPLICATE_NANO_BANANA_FALLBACK_MODEL
+        value: black-forest-labs/flux-2-pro
+      - key: REPLICATE_PRODUCT_IMAGE_FALLBACK_MODEL
+        value: black-forest-labs/flux-2-max
+      - key: NANO_BANANA_RESOLUTION
+        value: 2K
+      - key: REPLICATE_BURST_DELAY_MS
+        value: "2000"

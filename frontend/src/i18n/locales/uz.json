@@ -28,6 +28,17 @@
     "remove": "O'chirish",
     "wishLabel": "Fon/uslub bo'yicha istaklar (ixtiyoriy)",
     "wishPlaceholder": "Masalan: marmar podiums, iliq studiya yorug'ligi, pastel gradient…",
+    "overlayTextLabel": "Rasmdagi matn",
+    "overlayTextPlaceholder": "Masalan: Hozir xarid qiling, Premium sifat…",
+    "overlayTextRequired": "Rasmga matn kiriting yoki matn qo'shish tugmasini o'chiring.",
+    "assistant": {
+      "placeholder": "Fonni o'z tilingizda tasvirlang (masalan: marmar podiums, iliq yorug'lik)…",
+      "button": "Prompt yaratish",
+      "loading": "AI o'ylamoqda…",
+      "hint": "Rus yoki o'zbek tilida yozing — yordamchi Grok uchun professional inglizcha prompt tuzadi.",
+      "success": "Yordamchi Grok uchun ideal inglizcha prompt va reklama shiorini qo'shdi!",
+      "error": "Prompt yaratib bo'lmadi. Qayta urinib ko'ring."
+    },
     "wishTags": {
       "studioLabel": "Studiya:",
       "studio": {

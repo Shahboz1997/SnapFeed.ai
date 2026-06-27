@@ -45,7 +45,7 @@ export async function generateImage(
         platform: request.platform,
         aspectRatio: request.aspectRatio,
         lang: request.lang,
-        includeText: request.includeText !== false,
+        includeText: request.includeText === true,
       }),
     });
   } catch {

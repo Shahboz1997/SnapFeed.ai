@@ -4,6 +4,24 @@ export const VALID_PLATFORMS = ['instagram', 'facebook'];
 export const FLUX_SCHNELL_MODEL =
   process.env.REPLICATE_FLUX_SCHNELL_MODEL || 'black-forest-labs/flux-schnell';
 
+/** Text mode (Generate Visual) — primary T2I model */
+export const TEXT_MODE_IMAGE_MODEL =
+  process.env.REPLICATE_TEXT_IMAGE_MODEL?.trim()
+  || process.env.REPLICATE_NANO_BANANA_MODEL?.trim()
+  || 'google/nano-banana-2';
+
+export const TEXT_MODE_FALLBACK_MODEL =
+  process.env.REPLICATE_TEXT_IMAGE_FALLBACK_MODEL?.trim()
+  || 'black-forest-labs/flux-2-pro';
+
+export function resolveTextModeModelsToTry() {
+  return [
+    TEXT_MODE_IMAGE_MODEL,
+    TEXT_MODE_FALLBACK_MODEL,
+    FLUX_SCHNELL_MODEL,
+  ].filter((model, index, list) => model && list.indexOf(model) === index);
+}
+
 /** @deprecated Legacy img2img — product branch uses FLUX_FILL_MODEL */
 export const FLUX_IMG2IMG_MODEL =
   process.env.REPLICATE_FLUX_IMG2IMG_MODEL || 'black-forest-labs/flux-dev';
@@ -15,6 +33,41 @@ export const FLUX_FILL_FALLBACK_MODEL = 'black-forest-labs/flux-fill-dev';
 
 export const FLUX_FILL_STEPS = Number(process.env.FLUX_FILL_STEPS) || 28;
 export const FLUX_FILL_GUIDANCE = Number(process.env.FLUX_FILL_GUIDANCE) || 35;
+
+export const FLUX_PRODUCT_IMAGE_MODEL =
+  process.env.REPLICATE_PRODUCT_IMAGE_MODEL
+  || process.env.REPLICATE_PRODUCT_BG_MODEL
+  || 'black-forest-labs/flux-2-pro';
+
+export const FLUX_PRODUCT_IMAGE_FALLBACK_MODEL =
+  process.env.REPLICATE_PRODUCT_IMAGE_FALLBACK_MODEL
+  || process.env.REPLICATE_PRODUCT_BG_FALLBACK_MODEL
+  || 'black-forest-labs/flux-2-max';
+
+export const FLUX_PRODUCT_IMAGE_STEPS = Number(
+  process.env.FLUX_PRODUCT_IMAGE_STEPS
+  || process.env.FLUX_PRODUCT_BG_STEPS,
+) || 32;
+
+export const FLUX_PRODUCT_IMAGE_GUIDANCE = Number(
+  process.env.FLUX_PRODUCT_IMAGE_GUIDANCE
+  || process.env.FLUX_PRODUCT_BG_GUIDANCE,
+) || 3.5;
+
+export const FLUX_PRODUCT_IMAGE_RESOLUTION =
+  process.env.FLUX_PRODUCT_IMAGE_RESOLUTION || '2 MP';
+
+/** @deprecated Use FLUX_PRODUCT_IMAGE_MODEL */
+export const FLUX_PRODUCT_BG_MODEL = FLUX_PRODUCT_IMAGE_MODEL;
+
+/** @deprecated Use FLUX_PRODUCT_IMAGE_FALLBACK_MODEL */
+export const FLUX_PRODUCT_BG_FALLBACK_MODEL = FLUX_PRODUCT_IMAGE_FALLBACK_MODEL;
+
+/** @deprecated Use FLUX_PRODUCT_IMAGE_STEPS */
+export const FLUX_PRODUCT_BG_STEPS = FLUX_PRODUCT_IMAGE_STEPS;
+
+/** @deprecated Use FLUX_PRODUCT_IMAGE_GUIDANCE */
+export const FLUX_PRODUCT_BG_GUIDANCE = FLUX_PRODUCT_IMAGE_GUIDANCE;
 
 export const REPLICATE_BG_REMOVAL_MODEL =
   process.env.REPLICATE_BG_REMOVAL_MODEL

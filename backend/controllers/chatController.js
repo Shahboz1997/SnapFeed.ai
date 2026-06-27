@@ -1,4 +1,4 @@
-import { generateDallePrompt } from '../services/promptAssistant.js';
+import { generateDallePrompt, generateGrokPromptFromUserText } from '../services/promptAssistant.js';
 import { mapOpenAIError } from '../utils/errors.js';
 import { normalizeLangCode } from '../utils/languages.js';
 
@@ -37,9 +37,29 @@ export async function chatAssistant(req, res) {
       });
     }
 
-    const { userMessage, history, lang } = req.body;
-    const message = userMessage ?? req.body.message;
+    const { userText, userMessage, history, lang } = req.body;
     const normalizedLang = normalizeLangCode(lang);
+    const grokInput = typeof userText === 'string' ? userText : null;
+
+    if (grokInput !== null) {
+      if (!grokInput.trim()) {
+        return res.status(400).json({
+          success: false,
+          error: 'userText cannot be empty.',
+        });
+      }
+
+      const result = await generateGrokPromptFromUserText(grokInput, normalizedLang);
+
+      return res.json({
+        success: true,
+        optimizedPrompt: result.optimizedPrompt,
+        overlayText: result.overlayText,
+        hashtags: result.hashtags,
+      });
+    }
+
+    const message = userMessage ?? req.body.message;
 
     if (!message || typeof message !== 'string' || !message.trim()) {
       return res.status(400).json({

@@ -3,7 +3,9 @@ import {
   IDM_VTON_SEED,
   VALID_ASPECT_RATIOS,
   VALID_PLATFORMS,
+  PRODUCT_IMAGE_MAX_PROMPT_LENGTH,
 } from '../constants/image.js';
+import { BRANCH_A_CACHE_VERSION, parseBranchAIncludeText } from '../constants/nanoBanana.js';
 import { getOpenAI } from '../config/openai.js';
 import { isReplicateConfigured } from '../config/replicate.js';
 import { createError, mapOpenAIError } from '../utils/errors.js';
@@ -13,18 +15,27 @@ import {
   buildFallbackProductFluxPrompt,
   buildProductVisionSystemPrompt,
   buildTryOnRefinedPrompt,
+  buildAnalysisFromCatalogPrompt,
+  DEFAULT_BACKGROUND_SETUP_PROMPT,
   detectMimeType,
+  inferProductPlacementFromWish,
+  isCatalogPrompt,
   normalizeClothingCategoryFromVision,
   normalizeBase64Image,
+  normalizeMarketingOverlayText,
+  PRODUCT_MODE_PRESET,
   resolveGarmentDescription,
+  resolveManualWish,
+  resolveProductPlacement,
   sanitizeUserWish,
+  SURFACE_CONTEXT,
 } from '../services/productImageAnalysis.js';
 import { generateProductImageWithFlux, runIdmVtonTryOn } from '../services/imageGeneration.js';
 import { fetchAndUpscaleRemoteImage } from '../services/imageUpscaling.js';
 import { getDefaultHashtags, getLanguageName, normalizeLangCode } from '../utils/languages.js';
 import cache from '../utils/cache.js';
 import { saveImageBuffer } from '../utils/imageStorage.js';
-import { parseIncludeText, extractQuotedOverlayText } from '../utils/textOverlay.js';
+import { extractQuotedOverlayText } from '../utils/textOverlay.js';
 import { isTallGarmentPhoto, prepareTryOnGarmentImage } from '../services/tryOnImagePrep.js';
 import {
   DEFAULT_FEMALE_FULLBODY_MODEL,
@@ -32,14 +43,14 @@ import {
 } from '../constants/tryOnModels.js';
 
 const TRYON_CACHE_VERSION = 'v23-fullbody';
-const PRODUCT_FILL_CACHE_VERSION = 'fill-v4-style';
+const PRODUCT_FILL_CACHE_VERSION = BRANCH_A_CACHE_VERSION;
+const VISION_CACHE_VERSION = 'v1-catalog-stable';
 
 const VALID_UI_TRYON_GENDERS = new Set(['male', 'female']);
 const VALID_UI_TRYON_CATEGORIES = new Set(['top', 'bottom', 'dress']);
 
 const MODE_PRESETS = {
-  product:
-    'High-end commercial product photography, professional studio lighting, hyper-realistic, 8k, sharp focus, clean minimalist background',
+  product: PRODUCT_MODE_PRESET,
 };
 
 const TRYON_MALE_MANUAL_KEYWORDS = ['мужской', 'мужская', 'парень', 'мужчина', 'male', 'man'];
@@ -96,11 +107,42 @@ function buildFinalUserWish(presetMode, sanitizedManualWish, gptGender = null, u
     ? buildTryOnPreset(resolveModelGender(sanitizedManualWish, gptGender, uiGender))
     : MODE_PRESETS.product;
   const manual = sanitizedManualWish.trim();
-  return manual ? `${preset}. ${manual}` : preset;
+
+  if (!manual) {
+    return preset;
+  }
+
+  if (presetMode === 'product') {
+    return `${preset}, ${manual}`;
+  }
+
+  return `${preset}. ${manual}`;
 }
 
 function rebuildWishForProductBranch(sanitizedManualWish) {
   return buildFinalUserWish('product', sanitizedManualWish);
+}
+
+function resolveProductOverlayText(shouldIncludeText, analysis, manualWish, requestOverlayText = null) {
+  if (!shouldIncludeText) {
+    return null;
+  }
+
+  const raw = (
+    (typeof requestOverlayText === 'string' ? requestOverlayText.trim() : '')
+    || analysis?.overlayText?.trim()
+    || extractQuotedOverlayText(manualWish)
+    || ''
+  ).trim();
+
+  if (!raw) {
+    throw createError(
+      'Text overlay is enabled but no marketing slogan was generated. Please try again.',
+      502,
+    );
+  }
+
+  return normalizeMarketingOverlayText(raw);
 }
 
 function parseTryOnUiGender(value) {
@@ -344,6 +386,28 @@ function shouldRunTryOnBranch(generationMode, userWish, shouldExtractText) {
   }
 
   return isClothingTryOnRequest(userWish);
+}
+
+function buildVisionCacheKey(base64Image, manualWish) {
+  const base64Sample = getBase64HashInput(base64Image);
+  const wish = typeof manualWish === 'string' ? manualWish : '';
+  return crypto
+    .createHash('md5')
+    .update(`${VISION_CACHE_VERSION}${base64Sample}${wish}`)
+    .digest('hex');
+}
+
+function resolveCatalogPromptForGeneration(catalogPromptBody, manualWish, analysisImagePrompt) {
+  const explicit = typeof catalogPromptBody === 'string' ? catalogPromptBody.trim() : '';
+  if (explicit && isCatalogPrompt(explicit)) {
+    return explicit.slice(0, PRODUCT_IMAGE_MAX_PROMPT_LENGTH);
+  }
+
+  if (isCatalogPrompt(manualWish)) {
+    return manualWish.trim().slice(0, PRODUCT_IMAGE_MAX_PROMPT_LENGTH);
+  }
+
+  return analysisImagePrompt;
 }
 
 function buildOcrCacheKey(base64Image) {
@@ -772,12 +836,11 @@ export async function generateProductImage(req, res, next) {
       return res.status(500).json({ error: 'OpenAI API key is not configured.' });
     }
 
-    const { base64Image: bodyBase64Image, image, userWish, platform, format, extractText, lang, includeText, mode, gender, category, humanImage } = req.body;
+    const { base64Image: bodyBase64Image, image, userWish, catalogPrompt: bodyCatalogPrompt, platform, format, extractText, lang, includeText, overlayText, mode, gender, category, humanImage } = req.body;
     const base64Image = (typeof image === 'string' && image.trim())
       ? image.trim()
       : (typeof bodyBase64Image === 'string' ? bodyBase64Image.trim() : '');
     const normalizedLang = normalizeLangCode(lang);
-    const shouldIncludeText = parseIncludeText(includeText);
     const generationMode = resolveGenerationMode(mode);
     const uiTryOnGender = generationMode === 'tryon' ? parseTryOnUiGender(gender) : null;
     const uiTryOnCategory = generationMode === 'tryon' ? parseTryOnUiCategory(category) : null;
@@ -802,11 +865,16 @@ export async function generateProductImage(req, res, next) {
       });
     }
 
-    const manualWish = sanitizeUserWish(typeof userWish === 'string' ? userWish : '');
+    const rawWish = typeof userWish === 'string' ? userWish.trim() : '';
+    const explicitCatalogPrompt = typeof bodyCatalogPrompt === 'string' ? bodyCatalogPrompt.trim() : '';
+    const manualWish = resolveManualWish(explicitCatalogPrompt || rawWish);
     const shouldExtractText = extractText === true;
+    const shouldIncludeText = parseBranchAIncludeText(includeText);
     let shouldRunTryOn = shouldRunTryOnBranch(generationMode, manualWish, shouldExtractText);
     const presetMode = generationMode === 'tryon' || (!generationMode && shouldRunTryOn) ? 'tryon' : 'product';
     let wish = buildFinalUserWish(presetMode, manualWish, null, uiTryOnGender);
+    const catalogPromptSeed = resolveCatalogPromptForGeneration(explicitCatalogPrompt, manualWish, '');
+    const cacheWishKey = catalogPromptSeed || wish;
     const requestedMode = resolveRequestedMode(generationMode, presetMode);
     let fallbackReason = null;
 
@@ -823,7 +891,7 @@ export async function generateProductImage(req, res, next) {
     } else {
       const productCacheKey = buildProductImageCacheKey(
         base64Image,
-        wish,
+        cacheWishKey,
         format,
         normalizedLang,
         shouldIncludeText,
@@ -924,32 +992,70 @@ export async function generateProductImage(req, res, next) {
       );
 
     let analysis;
-    try {
-      analysis = await analyzeProductImage(
-        base64Image,
-        wish,
-        platform,
-        format,
-        shouldExtractText,
-        normalizedLang,
-        productVisionSystemPrompt,
-      );
-    } catch (error) {
-      if (shouldExtractText) {
+    if (!shouldExtractText && (isCatalogPrompt(explicitCatalogPrompt) || isCatalogPrompt(manualWish))) {
+      const catalogSource = explicitCatalogPrompt || manualWish;
+      console.log('[product-image] Using user catalog prompt verbatim — skipping GPT Vision rewrite');
+      analysis = buildAnalysisFromCatalogPrompt(catalogSource, manualWish, normalizedLang);
+    } else if (!shouldExtractText) {
+      const visionCacheKey = buildVisionCacheKey(base64Image, manualWish);
+      const cachedVision = cache.get(visionCacheKey);
+      if (cachedVision) {
+        console.log('[product-image] Vision cache hit');
+        analysis = cachedVision;
+      } else {
+        try {
+          analysis = await analyzeProductImage(
+            base64Image,
+            wish,
+            platform,
+            format,
+            false,
+            normalizedLang,
+            productVisionSystemPrompt,
+            { requireOverlayText: shouldIncludeText },
+          );
+          cache.set(visionCacheKey, analysis);
+        } catch (error) {
+          console.warn(
+            '[product-image] GPT Vision unavailable, using fallback catalog prompt:',
+            error?.message || error,
+          );
+          analysis = {
+            imagePrompt: buildFallbackProductFluxPrompt(wish),
+            backgroundSetupPrompt: DEFAULT_BACKGROUND_SETUP_PROMPT,
+            surfaceContext: SURFACE_CONTEXT.GENERIC_STUDIO,
+            productPlacement: resolveProductPlacement(null, manualWish),
+            productLabel: '',
+            hashtags: getDefaultHashtags(normalizedLang),
+            extractedText: null,
+            overlayText: shouldIncludeText ? extractQuotedOverlayText(manualWish) : null,
+          };
+
+          if (shouldIncludeText && analysis.overlayText) {
+            try {
+              analysis.overlayText = normalizeMarketingOverlayText(analysis.overlayText);
+            } catch {
+              analysis.overlayText = null;
+            }
+          }
+        }
+      }
+    } else {
+      try {
+        analysis = await analyzeProductImage(
+          base64Image,
+          wish,
+          platform,
+          format,
+          shouldExtractText,
+          normalizedLang,
+          productVisionSystemPrompt,
+          { requireOverlayText: shouldIncludeText },
+        );
+      } catch (error) {
         if (error.statusCode) throw error;
         throw mapOpenAIError(error);
       }
-
-      console.warn(
-        '[product-image] GPT Vision unavailable, using fallback FLUX prompt (same strategy as text mode):',
-        error?.message || error,
-      );
-      analysis = {
-        imagePrompt: buildFallbackProductFluxPrompt(wish),
-        hashtags: getDefaultHashtags(normalizedLang),
-        extractedText: null,
-        overlayText: shouldIncludeText ? extractQuotedOverlayText(manualWish) : null,
-      };
     }
 
     if (shouldExtractText) {
@@ -968,15 +1074,30 @@ export async function generateProductImage(req, res, next) {
     }
 
     let imageUrl;
+    let finalCatalogPrompt = cacheWishKey;
     try {
-      const overlayText = shouldIncludeText
-        ? (analysis.overlayText || extractQuotedOverlayText(manualWish))
-        : null;
+      const overlayTextForRender = resolveProductOverlayText(
+        shouldIncludeText,
+        analysis,
+        manualWish,
+        overlayText,
+      );
+
+      finalCatalogPrompt = resolveCatalogPromptForGeneration(
+        explicitCatalogPrompt,
+        manualWish,
+        analysis.imagePrompt,
+      );
 
       const result = await generateProductImageWithFlux(base64Image, manualWish, {
         includeText: shouldIncludeText,
-        overlayText,
+        overlayText: overlayTextForRender,
         format,
+        backgroundSetupPrompt: analysis.backgroundSetupPrompt,
+        surfaceContext: analysis.surfaceContext,
+        productPlacement: resolveProductPlacement(analysis, manualWish),
+        catalogPrompt: finalCatalogPrompt,
+        productLabel: analysis.productLabel,
       });
       imageUrl = result.imageUrl;
       analysis.imagePrompt = result.optimizedPrompt;
@@ -996,7 +1117,7 @@ export async function generateProductImage(req, res, next) {
 
     const productCacheKey = buildProductImageCacheKey(
       base64Image,
-      wish,
+      finalCatalogPrompt,
       format,
       normalizedLang,
       shouldIncludeText,

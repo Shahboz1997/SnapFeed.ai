@@ -10,6 +10,7 @@ export type { TryOnCategory, TryOnGender } from '../constants/tryOnOptions';
 export interface GenerateProductImageRequest {
   base64Image: string;
   userWish?: string;
+  catalogPrompt?: string;
   mode?: ProductGenerationMode;
   gender?: TryOnGender;
   category?: TryOnCategory;
@@ -18,6 +19,7 @@ export interface GenerateProductImageRequest {
   format: AspectRatio;
   extractText?: boolean;
   includeText?: boolean;
+  overlayText?: string;
   lang?: string;
 }
 
@@ -49,6 +51,7 @@ export async function generateProductImage(
         image: request.base64Image,
         base64Image: request.base64Image,
         userWish: request.userWish?.trim() ?? '',
+        catalogPrompt: request.catalogPrompt?.trim() || undefined,
         mode: request.mode,
         gender: request.mode === 'tryon' ? request.gender : undefined,
         category: request.mode === 'tryon' ? request.category : undefined,
@@ -56,7 +59,8 @@ export async function generateProductImage(
         platform: request.platform,
         format: request.format,
         extractText: request.extractText === true,
-        includeText: request.includeText !== false,
+        includeText: request.includeText === true,
+        overlayText: request.overlayText?.trim() || undefined,
         lang: request.lang,
       }),
     });
