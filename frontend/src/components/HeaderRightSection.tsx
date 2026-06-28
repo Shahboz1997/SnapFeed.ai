@@ -130,15 +130,13 @@ export default function HeaderRightSection({
       <div className="flex h-9 shrink-0 items-center gap-2 sm:gap-3">
         <CreditsPill credits={credits} isGuest loading={creditsLoading} onClick={onCreditsClick} />
         <LanguageSwitcher />
-        {authEnabled && (
-          <button
-            type="button"
-            onClick={onSignInClick}
-            className="inline-flex h-9 shrink-0 items-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 sm:px-4 sm:text-sm"
-          >
-            {t('auth.signIn')}
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={onSignInClick}
+          className="inline-flex h-9 shrink-0 items-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 sm:px-4 sm:text-sm"
+        >
+          {t('auth.signIn')}
+        </button>
       </div>
     );
   }
