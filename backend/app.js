@@ -11,6 +11,8 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 const productionOrigins = [
+  'https://snapfeed.help',
+  'https://www.snapfeed.help',
   'https://snap-feed-ai.vercel.app',
   'https://snap-feed-nu.vercel.app',
   'https://snap-feed-ai-stratums-projects-053e839b.vercel.app',
@@ -34,7 +36,7 @@ function isAllowedOrigin(origin) {
 
   try {
     const { hostname } = new URL(origin);
-    return hostname.endsWith('.vercel.app');
+    return hostname.endsWith('.vercel.app') || hostname === 'snapfeed.help' || hostname.endsWith('.snapfeed.help');
   } catch {
     return false;
   }
