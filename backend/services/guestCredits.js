@@ -102,12 +102,13 @@ export async function getGuestCreditsRemaining(guestKey) {
     .maybeSingle();
 
   if (error) {
-    if (isGuestUsageSchemaError(error)) {
+    if (isGuestUsageSchemaError(error) || isGuestUsageTableMissing(error)) {
       logGuestTableMissingOnce();
       return getMemoryGuestCreditsRemaining(guestKey);
     }
-    console.error('[guestCredits] getGuestCreditsRemaining failed:', error.message || error);
-    throw createError('Failed to check guest credits.', 500);
+    console.error('[guestCredits] getGuestCreditsRemaining failed:', error.message || error, error.code || '');
+    logGuestTableMissingOnce();
+    return getMemoryGuestCreditsRemaining(guestKey);
   }
 
   const used = data?.generations_used ?? 0;
