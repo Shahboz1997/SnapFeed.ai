@@ -14,6 +14,21 @@ const FINGERPRINT_PATTERN = /^[a-f0-9]{64}$/i;
 const memoryGuestUsage = new Map();
 let guestTableMissingLogged = false;
 
+function isGuestUsageTableMissing(error) {
+  if (!error) return false;
+
+  const message = typeof error.message === 'string' ? error.message : '';
+  const details = typeof error.details === 'string' ? error.details : '';
+
+  return (
+    error.code === '42P01'
+    || error.code === 'PGRST205'
+    || message.includes('guest_usage')
+    || details.includes('guest_usage')
+    || message.includes('Could not find the table')
+  );
+}
+
 function isGuestUsageSchemaError(error) {
   if (!error) return false;
   if (isGuestUsageTableMissing(error)) return true;
@@ -82,7 +97,7 @@ export async function getGuestCreditsRemaining(guestKey) {
 
   const { data, error } = await supabase
     .from('guest_usage')
-    .select('generations_used, max_generations, purchased_credits')
+    .select('generations_used, max_generations')
     .eq('fingerprint_hash', guestKey)
     .maybeSingle();
 
@@ -96,7 +111,7 @@ export async function getGuestCreditsRemaining(guestKey) {
   }
 
   const used = data?.generations_used ?? 0;
-  const max = (data?.max_generations ?? GUEST_MAX_GENERATIONS) + (data?.purchased_credits ?? 0);
+  const max = data?.max_generations ?? GUEST_MAX_GENERATIONS;
   return Math.max(0, max - used);
 }
 
@@ -115,7 +130,7 @@ export async function consumeGuestCredit(guestKey, ipAddress = null) {
 
   const { data: existing, error: readError } = await supabase
     .from('guest_usage')
-    .select('generations_used, max_generations, purchased_credits')
+    .select('generations_used, max_generations')
     .eq('fingerprint_hash', guestKey)
     .maybeSingle();
 
@@ -153,10 +168,10 @@ export async function consumeGuestCredit(guestKey, ipAddress = null) {
       throw createError('Failed to update guest credits.', 500);
     }
 
-    return Math.max(0, data.max_generations + (data.purchased_credits ?? 0) - data.generations_used);
+    return Math.max(0, data.max_generations - data.generations_used);
   }
 
-  if (existing.generations_used >= existing.max_generations + (existing.purchased_credits ?? 0)) {
+  if (existing.generations_used >= existing.max_generations) {
     throw createError('Insufficient credits.', 402);
   }
 
@@ -169,7 +184,7 @@ export async function consumeGuestCredit(guestKey, ipAddress = null) {
     })
     .eq('fingerprint_hash', guestKey)
     .eq('generations_used', existing.generations_used)
-    .select('generations_used, max_generations, purchased_credits')
+    .select('generations_used, max_generations')
     .maybeSingle();
 
   if (error) {
@@ -184,7 +199,7 @@ export async function consumeGuestCredit(guestKey, ipAddress = null) {
     return consumeGuestCredit(guestKey, ipAddress);
   }
 
-  const totalAllowance = data.max_generations + (data.purchased_credits ?? 0);
+  const totalAllowance = data.max_generations;
   return Math.max(0, totalAllowance - data.generations_used);
 }
 
@@ -250,12 +265,12 @@ export async function transferGuestCreditsToUser(userId, guestKey) {
 
   const { data: guestRow } = await supabase
     .from('guest_usage')
-    .select('generations_used, max_generations, purchased_credits')
+    .select('generations_used, max_generations')
     .eq('fingerprint_hash', guestKey)
     .maybeSingle();
 
   if (guestRow) {
-    const totalAllowance = guestRow.max_generations + (guestRow.purchased_credits ?? 0);
+    const totalAllowance = guestRow.max_generations;
     await supabase
       .from('guest_usage')
       .update({ generations_used: totalAllowance, last_seen_at: new Date().toISOString() })
