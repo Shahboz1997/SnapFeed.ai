@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import ws from 'ws';
 
 const supabaseUrl = process.env.SUPABASE_URL?.trim() || '';
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() || '';
@@ -19,6 +20,12 @@ export function getSupabaseAdmin() {
       auth: {
         autoRefreshToken: false,
         persistSession: false,
+      },
+      global: {
+        fetch,
+      },
+      realtime: {
+        transport: ws,
       },
     });
   }
