@@ -1,5 +1,5 @@
 import { ApiError } from './generateImage';
-import { getApiBaseUrl } from '../utils/apiBaseUrl';
+import { authApiFetch } from './authFetch';
 import { parseApiResponse } from './parseApiResponse';
 
 export interface ChatMessage {
@@ -21,13 +21,11 @@ export interface GeneratePromptResponse {
 export async function generatePrompt(
   request: GeneratePromptRequest,
 ): Promise<{ prompt: string }> {
-  const apiUrl = getApiBaseUrl();
   let response: Response;
 
   try {
-    response = await fetch(`${apiUrl}/api/chat/generate-prompt`, {
+    response = await authApiFetch('/api/chat/generate-prompt', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         userMessage: request.message.trim(),
         history: request.history,
@@ -38,7 +36,7 @@ export async function generatePrompt(
     throw new ApiError('Unable to reach the server.', undefined, 'api.serverUnreachable');
   }
 
-  let data: GeneratePromptResponse & { error?: string };
+  let data: GeneratePromptResponse & { error?: string; messageKey?: string };
 
   try {
     data = await parseApiResponse(response);
@@ -48,7 +46,9 @@ export async function generatePrompt(
   }
 
   if (!response.ok || data.success === false) {
-    throw new ApiError(data.error || 'Failed to generate prompt.', response.status, 'api.promptFailed');
+    const messageKey = data.messageKey
+      || (response.status === 401 ? 'api.authRequired' : undefined);
+    throw new ApiError(data.error || 'Failed to generate prompt.', response.status, messageKey || 'api.promptFailed');
   }
 
   if (!data.prompt || typeof data.prompt !== 'string') {

@@ -19,12 +19,16 @@
   "type": "module",
   "dependencies": {
     "@imgly/background-removal-node": "^1.4.5",
+    "@supabase/ssr": "^0.12.0",
+    "@supabase/supabase-js": "^2.108.2",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "jose": "^6.2.3",
     "node-cache": "^5.1.2",
     "openai": "^6.44.0",
     "replicate": "^1.4.0",
-    "sharp": "^0.35.2"
+    "sharp": "^0.35.2",
+    "stripe": "^22.3.0"
   }
 }

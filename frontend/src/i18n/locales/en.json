@@ -192,6 +192,9 @@
     "tryOnFallbackNotClothing": "Try-on is not available for this item (not clothing). A standard product photo was created instead.",
     "tryOnFallbackVerification": "Could not verify the product type. A standard product photo was created instead of try-on."
   },
+  "toasts": {
+    "creditDeducted": "✨ Success! 1 credit deducted."
+  },
   "api": {
     "serverUnreachable": "Unable to reach the server. Please try again in a moment.",
     "invalidResponse": "Received an invalid response from the server.",
@@ -199,7 +202,60 @@
     "generateFailed": "Failed to generate image.",
     "incompleteData": "Server returned incomplete image data.",
     "promptFailed": "Failed to generate prompt.",
-    "incompletePrompt": "Server returned an incomplete prompt."
+    "incompletePrompt": "Server returned an incomplete prompt.",
+    "authRequired": "Please sign in to generate images.",
+    "authInvalid": "Your session expired. Please sign in again.",
+    "insufficientCredits": "You have no credits left. Top up your balance to continue.",
+    "fingerprintRequired": "Could not verify your browser session. Please refresh the page."
+  },
+  "auth": {
+    "signIn": "Sign in",
+    "signOut": "Sign out",
+    "signInWithGoogle": "Continue with Google",
+    "signInToGenerate": "Sign in to generate",
+    "signInBanner": "Sign in to generate visuals and track your credits.",
+    "signInFailed": "Could not sign in with Google. Please try again.",
+    "signingIn": "Signing you in…",
+    "loginTitle": "Welcome back",
+    "loginDescription": "Sign in with Google to save your account and purchase credits.",
+    "loginHint": "By signing in, you agree to our terms of service and privacy policy.",
+    "loginHintPrefix": "By signing in, you agree to our",
+    "loginHintAnd": "and",
+    "termsLink": "Terms of Service",
+    "privacyLink": "Privacy Policy",
+    "alreadySignedIn": "You are already signed in.",
+    "backToApp": "Back to generator",
+    "notConfigured": "Supabase is not configured yet. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to frontend/.env.",
+    "cabinetTitle": "Account",
+    "cabinetHint": "Your credit balance is used for each successful generation.",
+    "creditsLabel": "Credits",
+    "creditsShort": "{{count}} credits",
+    "planLabel": "Plan",
+    "guest": "User"
+  },
+  "pricing": {
+    "title": "Get more credits",
+    "description": "You've used your free generations. Choose a credit pack to keep creating.",
+    "creditsPack": "{{count}} credits",
+    "buyButton": "Buy pack",
+    "buyCredits": "Buy credits",
+    "popular": "Popular",
+    "close": "Close",
+    "hint": "Credits are added manually within a few hours after payment.",
+    "manualPaymentNotice": "YooKassa is not connected yet. Payments go to a self-employed provider — tap Contact and we'll send payment details and add credits once received.",
+    "contactButton": "Contact",
+    "topUpTitle": "Top up balance",
+    "topUpDescription": "Choose a pack in the generator or contact us directly.",
+    "mailSubject": "SnapFeed.ai — {{tier}}",
+    "mailBody": "Hello!\n\nI'd like to buy: {{tier}} ({{price}}).\nMy SnapFeed.ai email: {{email}}\n\nReady to pay to a self-employed provider. Please send payment details.",
+    "guestTitle": "Free generations used up",
+    "guestDescription": "You've used your {{count}} free guest generations. Sign in to create an account and purchase credits.",
+    "guestBenefit1": "{{count}} free generations without sign-in",
+    "guestBenefit2": "Account saves your profile and credit balance",
+    "guestBenefit3": "Purchase credit packs anytime",
+    "welcomeTitle": "Welcome!",
+    "welcomeDescription": "Your account is ready. Top up your balance to start creating.",
+    "welcomeHint": "Need more? Choose a credit pack below."
   },
   "chat": {
     "title": "✨ AI Assistant (Write in your language)",
@@ -210,5 +266,23 @@
     "promptInserted": "Prompt inserted into the field above — you can edit it or click Generate.",
     "hybridHint": "The scene description stays in English (for AI quality); the on-image text and hashtags use your selected language.",
     "error": "Could not generate a prompt. Please try again."
+  },
+  "legal": {
+    "termsTitle": "Terms of Service",
+    "termsIntro": "These terms govern your use of SnapFeed.ai. By using the service you accept them.",
+    "termsUseTitle": "Use of the service",
+    "termsUseBody": "SnapFeed.ai generates visual content using AI. You are responsible for the prompts you submit and how you use generated images. Do not use the service for illegal, harmful, or infringing content.",
+    "termsCreditsTitle": "Credits and payments",
+    "termsCreditsBody": "Generations consume credits. Credit packs are sold manually until online payments are connected. Credits are non-refundable except where required by law.",
+    "termsContactTitle": "Contact",
+    "termsContactBody": "For billing or support questions, email",
+    "privacyTitle": "Privacy Policy",
+    "privacyIntro": "This policy describes what data SnapFeed.ai collects and how we use it.",
+    "privacyDataTitle": "Account data",
+    "privacyDataBody": "When you sign in with Google, we store your profile (email, name, avatar) in Supabase to manage your account and credit balance. Generated images are processed on our servers and third-party AI providers (OpenAI, Replicate).",
+    "privacyGuestTitle": "Guest usage",
+    "privacyGuestBody": "Without signing in, we use a browser fingerprint hash and optional IP address to enforce free generation limits. This data is stored in our database and is not used for advertising.",
+    "privacyContactTitle": "Contact",
+    "privacyContactBody": "To request data deletion or ask privacy questions, email"
   }
 }

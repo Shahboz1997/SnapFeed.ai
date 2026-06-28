@@ -47,3 +47,9 @@ services:
         value: "5000"
       - key: TRYON_BG_REMOVAL_LOCAL_FIRST
         value: "true"
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: GUEST_MAX_GENERATIONS
+        value: "3"

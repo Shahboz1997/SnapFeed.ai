@@ -142,6 +142,14 @@ body {
   animation: tryonPanelEnter 300ms ease-out;
 }
 
+.fade-in.slide-in-from-top-2.duration-200 {
+  animation: tryonPanelEnter 200ms ease-out;
+}
+
+.fade-in.slide-in-from-top-2.duration-150 {
+  animation: tryonPanelEnter 150ms ease-out;
+}
+
 @keyframes tryonPanelEnter {
   from {
     opacity: 0;

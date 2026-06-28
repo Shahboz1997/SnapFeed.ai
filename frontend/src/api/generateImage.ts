@@ -1,6 +1,9 @@
 export type Platform = 'instagram' | 'facebook';
 export type AspectRatio = 'square' | 'story';
 
+import { authApiFetch } from './authFetch';
+import { parseApiResponse } from './parseApiResponse';
+
 export interface GenerateImageRequest {
   userPrompt: string;
   platform: Platform;
@@ -13,6 +16,7 @@ export interface GenerateImageResponse {
   imageUrl: string;
   optimizedPrompt: string;
   hashtags: string[];
+  creditsRemaining?: number;
 }
 
 export class ApiError extends Error {
@@ -27,19 +31,14 @@ export class ApiError extends Error {
   }
 }
 
-import { getApiBaseUrl } from '../utils/apiBaseUrl';
-import { parseApiResponse } from './parseApiResponse';
-
 export async function generateImage(
   request: GenerateImageRequest,
 ): Promise<GenerateImageResponse> {
-  const apiUrl = getApiBaseUrl();
   let response: Response;
 
   try {
-    response = await fetch(`${apiUrl}/api/generate-image`, {
+    response = await authApiFetch('/api/generate-image', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         userPrompt: request.userPrompt.trim(),
         platform: request.platform,
@@ -52,7 +51,7 @@ export async function generateImage(
     throw new ApiError('Unable to reach the server.', undefined, 'api.serverUnreachable');
   }
 
-  let data: GenerateImageResponse & { error?: string };
+  let data: GenerateImageResponse & { error?: string; messageKey?: string };
 
   try {
     data = await parseApiResponse(response);
@@ -62,7 +61,10 @@ export async function generateImage(
   }
 
   if (!response.ok) {
-    throw new ApiError(data.error || 'Failed to generate image.', response.status, 'api.generateFailed');
+    const messageKey = data.messageKey
+      || (response.status === 401 ? 'api.authRequired' : undefined)
+      || (response.status === 402 ? 'api.insufficientCredits' : undefined);
+    throw new ApiError(data.error || 'Failed to generate image.', response.status, messageKey || 'api.generateFailed');
   }
 
   if (!data.imageUrl || !data.optimizedPrompt || !Array.isArray(data.hashtags)) {
@@ -73,5 +75,6 @@ export async function generateImage(
     imageUrl: data.imageUrl,
     optimizedPrompt: data.optimizedPrompt,
     hashtags: data.hashtags,
+    creditsRemaining: data.creditsRemaining,
   };
 }

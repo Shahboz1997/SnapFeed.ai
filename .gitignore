@@ -8,3 +8,7 @@ dist/
 dist-ssr/
 
 .vercel
+
+# Backend test/debug images
+backend/test-*.png
+backend/debug_*.png

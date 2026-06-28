@@ -3,6 +3,8 @@ import express from 'express';
 import cors from 'cors';
 import imageRoutes from './routes/imageRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
+import authRoutes from './routes/authRoutes.js';
+import { isSupabaseConfigured } from './config/supabase.js';
 import { errorHandler } from './utils/errors.js';
 
 const app = express();
@@ -48,7 +50,7 @@ app.use(cors({
     callback(null, false);
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Guest-Fingerprint'],
 }));
 // Настройка лимитов для приема тяжелых Base64 строк с фронтенда
 app.use(express.json({ limit: '15mb' }));
@@ -61,6 +63,7 @@ app.get('/api/health', (_req, res) => {
     openaiConfigured: Boolean(apiKey),
     openaiKeyFormatValid: apiKey.startsWith('sk-') && apiKey.length > 20,
     replicateConfigured: Boolean(process.env.REPLICATE_API_TOKEN),
+    supabaseConfigured: isSupabaseConfigured(),
     bgRemovalBackend: process.env.PRODUCT_BG_REMOVAL_BACKEND || 'auto',
     imageUpscaleEnabled: process.env.IMAGE_UPSCALE_ENABLED !== 'false',
   });
@@ -76,10 +79,14 @@ app.get('/', (_req, res) => {
       'POST /api/download-image',
       'POST /api/chat-assistant',
       'POST /api/chat/generate-prompt',
+      'GET /api/auth/me',
+      'POST /api/auth/claim-guest-credits',
+      'GET /api/guest/credits',
     ],
   });
 });
 
+app.use('/api', authRoutes);
 app.use('/api', imageRoutes);
 app.use('/api', chatRoutes);
 

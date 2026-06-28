@@ -192,6 +192,9 @@
     "tryOnFallbackNotClothing": "Bu mahsulot uchun kiydirish mavjud emas (kiyim emas). Oddiy mahsulot fotosi yaratildi.",
     "tryOnFallbackVerification": "Mahsulot turini tekshirib bo'lmadi. Kiydirish o'rniga oddiy mahsulot fotosi yaratildi."
   },
+  "toasts": {
+    "creditDeducted": "✨ Muvaffaqiyatli! 1 kredit yozildi."
+  },
   "api": {
     "serverUnreachable": "Serverga ulanib bo'lmadi. Backend 5000-portda ishlayotganiga ishonch hosil qiling.",
     "invalidResponse": "Serverdan noto'g'ri javob olindi.",
@@ -199,7 +202,60 @@
     "generateFailed": "Rasm yaratib bo'lmadi.",
     "incompleteData": "Server to'liq bo'lmagan rasm ma'lumotlarini qaytardi.",
     "promptFailed": "Prompt yaratib bo'lmadi.",
-    "incompletePrompt": "Server to'liq bo'lmagan prompt qaytardi."
+    "incompletePrompt": "Server to'liq bo'lmagan prompt qaytardi.",
+    "authRequired": "Rasm yaratish uchun tizimga kiring.",
+    "authInvalid": "Sessiya tugadi. Qayta kiring.",
+    "insufficientCredits": "Kreditlar tugadi. Davom etish uchun balansni to'ldiring.",
+    "fingerprintRequired": "Brauzer sessiyasini tasdiqlab bo'lmadi. Sahifani yangilang."
+  },
+  "auth": {
+    "signIn": "Kirish",
+    "signOut": "Chiqish",
+    "signInWithGoogle": "Google orqali kirish",
+    "signInToGenerate": "Yaratish uchun kiring",
+    "signInBanner": "Vizual yaratish va kredit balansini kuzatish uchun kiring.",
+    "signInFailed": "Google orqali kirib bo'lmadi. Qayta urinib ko'ring.",
+    "signingIn": "Kirish amalga oshirilmoqda…",
+    "loginTitle": "Xush kelibsiz",
+    "loginDescription": "Akkauntni saqlash va kredit sotib olish uchun Google orqali kiring.",
+    "loginHint": "Tizimga kirish orqali foydalanish shartlari va maxfiylik siyosatiga rozilik bildirasiz.",
+    "loginHintPrefix": "Tizimga kirish orqali siz",
+    "loginHintAnd": "va",
+    "termsLink": "Foydalanish shartlari",
+    "privacyLink": "Maxfiylik siyosati",
+    "alreadySignedIn": "Siz allaqachon tizimga kirdingiz.",
+    "backToApp": "Generatorga qaytish",
+    "notConfigured": "Supabase hali sozlanmagan. frontend/.env ga VITE_SUPABASE_URL va VITE_SUPABASE_ANON_KEY qo'shing.",
+    "cabinetTitle": "Shaxsiy kabinet",
+    "cabinetHint": "Har bir muvaffaqiyatli generatsiya uchun 1 kredit yechiladi.",
+    "creditsLabel": "Kreditlar",
+    "creditsShort": "{{count}} kredit",
+    "planLabel": "Tarif",
+    "guest": "Foydalanuvchi"
+  },
+  "pricing": {
+    "title": "Kreditlarni to'ldirish",
+    "description": "Bepul generatsiyalar tugadi. Davom etish uchun paket tanlang.",
+    "creditsPack": "{{count}} kredit",
+    "buyButton": "Paket sotib olish",
+    "buyCredits": "Kredit sotib olish",
+    "popular": "Mashhur",
+    "close": "Yopish",
+    "hint": "To'lovdan so'ng kreditlar bir necha soat ichida qo'lda qo'shiladi.",
+    "manualPaymentNotice": "YooKassa hali ulangan emas. To'lovlar o'z hisobidan ishlovchi shaxsga qabul qilinadi — «Bog'lanish» tugmasini bosing, rekvizitlarni yuboramiz va to'lovdan keyin kredit qo'shamiz.",
+    "contactButton": "Bog'lanish",
+    "topUpTitle": "Balansni to'ldirish",
+    "topUpDescription": "Generatorda paket tanlang yoki to'g'ridan-to'g'ri bizga yozing.",
+    "mailSubject": "SnapFeed.ai — {{tier}}",
+    "mailBody": "Assalomu alaykum!\n\nMen {{tier}} ({{price}}) paketini sotib olmoqchiman.\nSnapFeed.ai emailim: {{email}}\n\nO'z hisobidan ishlovchi shaxsga to'lashga tayyorman. Rekvizitlarni yuboring.",
+    "guestTitle": "Bepul generatsiyalar tugadi",
+    "guestDescription": "Siz {{count}} ta bepul mehmon generatsiyasidan foydalandingiz. Akkaunt ochish va kredit sotib olish uchun Google orqali kiring.",
+    "guestBenefit1": "Ro'yxatdan o'tmasdan {{count}} ta bepul generatsiya",
+    "guestBenefit2": "Akkaunt profilingiz va balansingizni saqlaydi",
+    "guestBenefit3": "Istalgan vaqtda balansni to'ldirish mumkin",
+    "welcomeTitle": "Xush kelibsiz!",
+    "welcomeDescription": "Akkaunt tayyor. Davom etish uchun balansni to'ldiring.",
+    "welcomeHint": "Ko'proq kerakmi? Quyidan paket tanlang."
   },
   "chat": {
     "title": "✨ AI Yordamchi (O'z tilingizda yozing)",
@@ -210,5 +266,23 @@
     "promptInserted": "Prompt yuqoridagi maydonga qo'yildi — tahrirlang yoki «Vizual yaratish»ni bosing.",
     "hybridHint": "Sahna tavsifi ingliz tilida (AI sifati uchun), rasm ustidagi yozuv va xeshteglar — siz tanlagan tilde.",
     "error": "Prompt yaratib bo'lmadi. Qayta urinib ko'ring."
+  },
+  "legal": {
+    "termsTitle": "Foydalanish shartlari",
+    "termsIntro": "Ushbu shartlar SnapFeed.ai dan foydalanishni tartibga soladi. Xizmatdan foydalanish shartlarni qabul qilish demakdir.",
+    "termsUseTitle": "Xizmatdan foydalanish",
+    "termsUseBody": "SnapFeed.ai AI yordamida vizual kontent yaratadi. Promptlar va natijalardan qanday foydalanishingiz uchun javobgarsiz. Xizmatni noqonuniy yoki zararli maqsadlarda ishlatmang.",
+    "termsCreditsTitle": "Kreditlar va to'lov",
+    "termsCreditsBody": "Har bir muvaffaqiyatli generatsiya 1 kredit sarflaydi. Onlayn to'lov ulanguncha paketlar qo'lda sotiladi. Kreditlar qaytarilmaydi, qonun talab qilganda bundan mustasno.",
+    "termsContactTitle": "Aloqa",
+    "termsContactBody": "To'lov va qo'llab-quvvatlash uchun yozing:",
+    "privacyTitle": "Maxfiylik siyosati",
+    "privacyIntro": "SnapFeed.ai qanday ma'lumotlarni yig'ishi va qanday ishlatishi haqida.",
+    "privacyDataTitle": "Akkaunt ma'lumotlari",
+    "privacyDataBody": "Google orqali kirganda profil (email, ism, avatar) Supabase da saqlanadi. Rasmlar serverlarimiz va AI provayderlarida (OpenAI, Replicate) qayta ishlanadi.",
+    "privacyGuestTitle": "Mehmon rejimi",
+    "privacyGuestBody": "Kirmasdan turib brauzer fingerprint xeshi va kerak bo'lsa IP dan foydalanamiz. Bu ma'lumot reklama uchun ishlatilmaydi.",
+    "privacyContactTitle": "Aloqa",
+    "privacyContactBody": "Ma'lumotlarni o'chirish yoki savollar uchun yozing:"
   }
 }

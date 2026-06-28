@@ -316,9 +316,9 @@ export default function ProductGenerationPanel({
               <div
                 role="listbox"
                 aria-label={t('ecommerce.tryOnUpload.modelGalleryAria')}
-                className="animate-in fade-in slide-in-from-top-1 duration-200 mt-2 max-h-64 overflow-y-auto rounded-xl border border-slate-200/80 bg-white/80 p-2"
+                className="animate-in fade-in slide-in-from-top-1 duration-200 mt-2 overflow-x-auto overflow-y-hidden rounded-xl border border-slate-200/80 bg-white/80 p-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
               >
-                <div className="grid grid-cols-4 gap-2 sm:grid-cols-5 md:grid-cols-6">
+                <div className="flex w-max flex-nowrap gap-2">
                   {availableModels.map((model) => {
                     const isSelected = selectedModelUrl === model.url && !humanBase64;
                     const isFullBody = model.type === 'full_body';
@@ -331,8 +331,8 @@ export default function ProductGenerationPanel({
                         aria-selected={isSelected}
                         disabled={disabled}
                         onClick={() => handleModelPick(model.url)}
-                        className={`relative overflow-hidden rounded-lg border-2 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 disabled:cursor-not-allowed disabled:opacity-50 ${
-                          isFullBody ? 'h-28 w-full' : 'h-24 w-full'
+                        className={`relative shrink-0 overflow-hidden rounded-lg border-2 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 disabled:cursor-not-allowed disabled:opacity-50 ${
+                          isFullBody ? 'h-28 w-20' : 'h-24 w-16'
                         } ${
                           isSelected
                             ? 'border-blue-600 ring-2 ring-blue-200'

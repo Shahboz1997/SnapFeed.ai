@@ -1,18 +1,29 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { generateImage, ApiError, type AspectRatio, type Platform } from './api/generateImage';
+import { fetchGuestCredits } from './api/guestCredits';
 import { generateProductImage, type ProductFallbackReason } from './api/generateProductImage';
 import AlertBanner, { type AlertType } from './components/AlertBanner';
 import GeneratedImagePreview from './components/GeneratedImagePreview';
-import LanguageSwitcher from './components/LanguageSwitcher';
+import Header from './components/Header';
 import LoadingOverlay from './components/LoadingOverlay';
+import LoginModal from './components/LoginModal';
+import PricingModal from './components/PricingModal';
 import Spinner from './components/Spinner';
 import ChatAssistant from './components/ChatAssistant';
 import ProductGenerationPanel from './components/ProductGenerationPanel';
 import VisualOptionCard from './components/VisualOptionCard';
+import { useAuth } from './context/AuthContext';
+import { useToast } from './context/ToastContext';
 import {
   type ProductGenerationMode,
 } from './constants/productGenerationPresets';
+import { POST_AUTH_MODAL_KEY } from './constants/authFlow';
+import {
+  GUEST_CREDITS_INITIAL,
+  readGuestCreditsFromStorage,
+  writeGuestCreditsToStorage,
+} from './constants/guestCredits';
 import {
   DEFAULT_TRYON_CATEGORY,
   DEFAULT_TRYON_GENDER,
@@ -44,6 +55,8 @@ interface AlertState {
 
 export default function App() {
   const { t, i18n } = useTranslation();
+  const { user, profile, loading: authLoading, updateCredits } = useAuth();
+  const { showToast } = useToast();
   const [mode, setMode] = useState<AppMode>('text');
   const [userPrompt, setUserPrompt] = useState('');
   const [productImageBase64, setProductImageBase64] = useState<string | null>(null);
@@ -75,7 +88,69 @@ export default function App() {
   const [originalImageUrl, setOriginalImageUrl] = useState<string | null>(null);
   const [hashtags, setHashtags] = useState<string[]>([]);
   const [isFlashing, setIsFlashing] = useState(false);
+  const [guestCredits, setGuestCredits] = useState<number | null>(() => readGuestCreditsFromStorage());
+  const [guestCreditsLoading, setGuestCreditsLoading] = useState(() => !user && readGuestCreditsFromStorage() === null);
+  const [showPricingModal, setShowPricingModal] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [pricingWelcome, setPricingWelcome] = useState(false);
   const promptTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+  function closePricingModal() {
+    setShowPricingModal(false);
+    setPricingWelcome(false);
+  }
+
+  function openCreditsFlow() {
+    if (!user) {
+      setShowLoginModal(true);
+      return;
+    }
+
+    setShowPricingModal(true);
+  }
+
+  useEffect(() => {
+    if (user) return;
+
+    let cancelled = false;
+
+    async function syncGuestCredits() {
+      const cached = readGuestCreditsFromStorage();
+      if (cached === null) {
+        setGuestCreditsLoading(true);
+      }
+
+      const serverCredits = await fetchGuestCredits();
+
+      if (cancelled) return;
+
+      setGuestCreditsLoading(false);
+
+      if (typeof serverCredits === 'number') {
+        setGuestCredits(serverCredits);
+        writeGuestCreditsToStorage(serverCredits);
+        return;
+      }
+
+      setGuestCredits(cached ?? GUEST_CREDITS_INITIAL);
+    }
+
+    syncGuestCredits();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  useEffect(() => {
+    if (authLoading || !user || !profile) return;
+
+    if (sessionStorage.getItem(POST_AUTH_MODAL_KEY)) {
+      sessionStorage.removeItem(POST_AUTH_MODAL_KEY);
+      setPricingWelcome(true);
+      setShowPricingModal(true);
+    }
+  }, [authLoading, user, profile]);
 
   const examplePrompts = t('examples', { returnObjects: true }) as string[];
 
@@ -91,6 +166,11 @@ export default function App() {
     ? garmentReady && tryOnHumanReady
     : productPhotoReady;
   const atCharLimit = promptLength >= PROMPT_MAX_LENGTH;
+  const displayCredits = user ? (profile?.credits ?? 0) : (guestCredits ?? 0);
+  const creditsLoading = user
+    ? authLoading || profile === null
+    : guestCreditsLoading;
+  const hasCredits = displayCredits > 0;
   const canGenerate =
     !loading && (mode === 'text' ? !promptIsEmpty : productImageReady);
 
@@ -318,8 +398,40 @@ export default function App() {
     setAlert({ message, type });
   }
 
+  function applyCreditsAndToast(creditsRemaining?: number) {
+    if (user) {
+      if (typeof creditsRemaining === 'number') {
+        updateCredits(creditsRemaining);
+      } else if (typeof profile?.credits === 'number') {
+        updateCredits(Math.max(0, profile.credits - 1));
+      }
+      showToast(t('toasts.creditDeducted'));
+      return;
+    }
+
+    if (typeof creditsRemaining === 'number') {
+      setGuestCredits(creditsRemaining);
+      writeGuestCreditsToStorage(creditsRemaining);
+    } else {
+      setGuestCredits((current) => {
+        const newCredits = Math.max(0, (current ?? 0) - 1);
+        writeGuestCreditsToStorage(newCredits);
+        return newCredits;
+      });
+    }
+
+    showToast(t('toasts.creditDeducted'));
+  }
+
   function resolveApiError(err: unknown): string {
     if (err instanceof ApiError) {
+      if (err.messageKey && err.messageKey.startsWith('api.')) {
+        const translated = t(err.messageKey);
+        if (translated !== err.messageKey) {
+          return translated;
+        }
+      }
+
       if (err.messageKey === 'api.generateFailed' && err.message) {
         return err.message;
       }
@@ -345,6 +457,15 @@ export default function App() {
   const isProductOcrMode = mode === 'product' && extractText;
 
   const handleGenerate = useCallback(async () => {
+    if (!hasCredits) {
+      if (!user) {
+        setShowLoginModal(true);
+      } else {
+        setShowPricingModal(true);
+      }
+      return;
+    }
+
     if (!canGenerate) return;
 
     if (mode === 'product' && productGenerationMode === 'product' && includeText && !overlayText.trim()) {
@@ -375,9 +496,9 @@ export default function App() {
           includeText,
         });
 
+        applyCreditsAndToast(data.creditsRemaining);
         setImageUrl(data.imageUrl);
         setHashtags(data.hashtags);
-        showAlert(t('alerts.success'), 'success');
       } else {
         const data = await generateProductImage({
           base64Image: activeProductBase64!,
@@ -397,6 +518,7 @@ export default function App() {
           lang: currentLanguage,
         });
 
+        applyCreditsAndToast(data.creditsRemaining);
         setImageUrl(data.imageUrl);
         setHashtags(data.hashtags);
         setExtractedText(null);
@@ -405,14 +527,24 @@ export default function App() {
         setTryOnFallbackReason(
           silentTryOnFallback && data.fallbackReason ? data.fallbackReason : null,
         );
-        showAlert(t('alerts.success'), 'success');
       }
     } catch (err) {
+      if (err instanceof ApiError && err.statusCode === 402) {
+        if (!user) {
+          setGuestCredits(0);
+          writeGuestCreditsToStorage(0);
+          setShowLoginModal(true);
+        } else {
+          setShowPricingModal(true);
+        }
+        return;
+      }
+
       showAlert(resolveApiError(err), 'error');
     } finally {
       setLoading(false);
     }
-  }, [canGenerate, mode, userPrompt, activeProductBase64, activeProductPreviewUrl, userWish, productGrokPrompt, overlayText, productGenerationMode, tryOnGender, tryOnCategory, humanBase64, selectedModelUrl, platform, format, extractText, includeText, t, i18n.language]);
+  }, [hasCredits, canGenerate, mode, userPrompt, activeProductBase64, activeProductPreviewUrl, userWish, productGrokPrompt, overlayText, productGenerationMode, tryOnGender, tryOnCategory, humanBase64, selectedModelUrl, platform, format, extractText, includeText, t, i18n.language, user, profile?.credits, updateCredits, showToast]);
 
   const charCounterClass =
     atCharLimit ? 'text-red-400' : promptLength > PROMPT_MAX_LENGTH * 0.9 ? 'text-amber-400' : 'text-slate-500';
@@ -423,6 +555,8 @@ export default function App() {
       : isProductOcrMode
         ? t('form.extracting')
         : t('form.generating')
+    : !hasCredits
+      ? t('pricing.buyCredits')
     : mode === 'product'
       ? t('ecommerce.generateButton')
       : isProductOcrMode
@@ -449,21 +583,26 @@ export default function App() {
         <div className="absolute bottom-1/3 right-1/3 hidden h-[400px] w-[400px] rounded-full bg-pink-200/15 blur-[120px] backdrop-blur-3xl sm:block" />
       </div>
 
-      <div className="safe-area-top contain-width mobile-sticky-offset relative z-10 flex w-full max-w-[100vw] flex-col px-4 py-6 pb-safe sm:px-6 md:px-8 xl:px-12 lg:pb-6">
-        <header className="mb-4 flex w-full flex-col gap-3 sm:mb-8 lg:mb-10 lg:flex-row lg:items-center lg:justify-between lg:gap-6">
-          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-base font-bold text-white shadow-md sm:h-11 sm:w-11 sm:text-lg">
-              S
-            </div>
-            <div className="min-w-0">
-              <h1 className="truncate text-lg font-bold tracking-tight text-slate-900 sm:text-xl">SnapFeed.ai</h1>
-              <p className="truncate text-xs font-normal text-slate-500 sm:text-sm">{t('header.subtitle')}</p>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2 sm:gap-4">
-            <LanguageSwitcher />
-          </div>
-        </header>
+      <Header
+        credits={displayCredits}
+        creditsLoading={creditsLoading}
+        onCreditsClick={openCreditsFlow}
+        onSignInClick={() => setShowLoginModal(true)}
+      />
+
+      <LoginModal
+        open={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+      />
+
+      <PricingModal
+        open={showPricingModal}
+        onClose={closePricingModal}
+        credits={displayCredits}
+        welcome={pricingWelcome}
+      />
+
+      <main className="contain-width mobile-sticky-offset relative z-10 flex w-full max-w-[100vw] flex-col px-4 pt-16 pb-6 pb-safe sm:px-6 md:px-8 xl:px-12 lg:pb-6">
 
         {alert && (
           <AlertBanner
@@ -628,7 +767,6 @@ export default function App() {
                   />
                 )}
 
-                {mode === 'text' && (
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                   <div role="radiogroup" aria-labelledby="platform-label" className="min-w-0">
                     <p id="platform-label" className="mb-4 text-sm font-medium text-slate-700">
@@ -691,7 +829,6 @@ export default function App() {
                     </div>
                   </div>
                 </div>
-                )}
 
                 {((mode === 'text' && !isProductOcrMode) || (mode === 'product' && productGenerationMode === 'product')) && (
                   <div className="space-y-3">
@@ -788,7 +925,7 @@ export default function App() {
           />
           </div>
         </div>
-      </div>
+      </main>
 
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200/70 bg-white/90 px-4 pt-3 backdrop-blur-xl lg:hidden pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         <button

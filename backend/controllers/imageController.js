@@ -27,6 +27,7 @@ import cache from '../utils/cache.js';
 import { NO_TEXT_OVERLAY_RULE, appendNoTextRuleToPrompt, parseIncludeText, extractQuotedOverlayText, NO_TEXT_IN_IMAGE_RULE } from '../utils/textOverlay.js';
 import { buildLanguageRule, normalizeLangCode, getLanguageName, getDefaultHashtags, stripHashtagsFromPrompt } from '../utils/languages.js';
 import { reinforceFluxSpatialPrompt, detectExteriorPlacementRequest } from '../utils/spatialPrompt.js';
+import { finishGenerationResponse } from '../services/credits.js';
 
 const TEXT_IMAGE_CACHE_VERSION = 'v4-nano-banana-2-text-mode';
 
@@ -352,7 +353,7 @@ export async function generatePostImage(req, res, next) {
 
     cache.set(cacheKey, responseData);
 
-    res.json(responseData);
+    await finishGenerationResponse(res, req, responseData);
   } catch (error) {
     if (error.statusCode) {
       return next(error);

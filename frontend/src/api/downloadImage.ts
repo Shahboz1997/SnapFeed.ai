@@ -1,14 +1,12 @@
 import { ApiError } from './generateImage';
-import { getApiBaseUrl } from '../utils/apiBaseUrl';
+import { authApiFetch } from './authFetch';
 
 export async function downloadImageBlob(imageUrl: string): Promise<Blob> {
-  const apiUrl = getApiBaseUrl();
   let response: Response;
 
   try {
-    response = await fetch(`${apiUrl}/api/download-image`, {
+    response = await authApiFetch('/api/download-image', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ imageUrl }),
     });
   } catch {

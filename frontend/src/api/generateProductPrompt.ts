@@ -1,5 +1,5 @@
 import { ApiError } from './generateImage';
-import { getApiBaseUrl } from '../utils/apiBaseUrl';
+import { authApiFetch } from './authFetch';
 import { parseApiResponse } from './parseApiResponse';
 
 export interface GenerateProductPromptRequest {
@@ -19,6 +19,7 @@ interface GenerateProductPromptResponse {
   overlayText: string;
   hashtags: string[];
   error?: string;
+  messageKey?: string;
 }
 
 export async function generateProductPrompt(
@@ -29,13 +30,11 @@ export async function generateProductPrompt(
     throw new ApiError('Prompt cannot be empty.', 400, 'api.promptFailed');
   }
 
-  const apiUrl = getApiBaseUrl();
   let response: Response;
 
   try {
-    response = await fetch(`${apiUrl}/api/chat/generate-prompt`, {
+    response = await authApiFetch('/api/chat/generate-prompt', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         userText: trimmed,
         lang: request.lang,
@@ -55,7 +54,9 @@ export async function generateProductPrompt(
   }
 
   if (!response.ok || data.success === false) {
-    throw new ApiError(data.error || 'Failed to generate prompt.', response.status, 'api.promptFailed');
+    const messageKey = data.messageKey
+      || (response.status === 401 ? 'api.authRequired' : undefined);
+    throw new ApiError(data.error || 'Failed to generate prompt.', response.status, messageKey || 'api.promptFailed');
   }
 
   if (

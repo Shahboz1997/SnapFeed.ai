@@ -31,6 +31,7 @@ import {
   SURFACE_CONTEXT,
 } from '../services/productImageAnalysis.js';
 import { generateProductImageWithFlux, runIdmVtonTryOn } from '../services/imageGeneration.js';
+import { finishGenerationResponse } from '../services/credits.js';
 import { fetchAndUpscaleRemoteImage } from '../services/imageUpscaling.js';
 import { getDefaultHashtags, getLanguageName, normalizeLangCode } from '../utils/languages.js';
 import cache from '../utils/cache.js';
@@ -970,7 +971,7 @@ export async function generateProductImage(req, res, next) {
         });
 
         cache.set(finalTryOnCacheKey, responseData);
-        return res.status(200).json(responseData);
+        return finishGenerationResponse(res, req, responseData);
       }
     }
 
@@ -1073,7 +1074,7 @@ export async function generateProductImage(req, res, next) {
       const ocrCacheKey = buildOcrCacheKey(base64Image);
       cache.set(ocrCacheKey, responseData);
 
-      return res.json(responseData);
+      return finishGenerationResponse(res, req, responseData);
     }
 
     let imageUrl;
@@ -1130,7 +1131,7 @@ export async function generateProductImage(req, res, next) {
     );
     cache.set(productCacheKey, responseData);
 
-    return res.status(200).json(responseData);
+    return finishGenerationResponse(res, req, responseData);
   } catch (error) {
     next(mapOpenAIError(error));
   }

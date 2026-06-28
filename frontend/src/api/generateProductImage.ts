@@ -2,7 +2,7 @@ import type { ProductGenerationMode } from '../constants/productGenerationPreset
 import type { TryOnCategory, TryOnGender } from '../constants/tryOnOptions';
 import { ApiError } from './generateImage';
 import type { AspectRatio, Platform } from './generateImage';
-import { getApiBaseUrl } from '../utils/apiBaseUrl';
+import { authApiFetch } from './authFetch';
 import { parseApiResponse } from './parseApiResponse';
 
 export type { TryOnCategory, TryOnGender } from '../constants/tryOnOptions';
@@ -35,18 +35,17 @@ export interface GenerateProductImageResponse {
   branchUsed: ProductBranchUsed;
   fallbackReason: ProductFallbackReason | null;
   requestedMode?: ProductGenerationMode;
+  creditsRemaining?: number;
 }
 
 export async function generateProductImage(
   request: GenerateProductImageRequest,
 ): Promise<GenerateProductImageResponse> {
-  const apiUrl = getApiBaseUrl();
   let response: Response;
 
   try {
-    response = await fetch(`${apiUrl}/api/generate-product-image`, {
+    response = await authApiFetch('/api/generate-product-image', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         image: request.base64Image,
         base64Image: request.base64Image,
@@ -68,7 +67,7 @@ export async function generateProductImage(
     throw new ApiError('Unable to reach the server.', undefined, 'api.serverUnreachable');
   }
 
-  let data: GenerateProductImageResponse & { error?: string };
+  let data: GenerateProductImageResponse & { error?: string; messageKey?: string };
 
   try {
     data = await parseApiResponse(response);
@@ -78,7 +77,10 @@ export async function generateProductImage(
   }
 
   if (!response.ok) {
-    throw new ApiError(data.error || 'Failed to generate image.', response.status, 'api.generateFailed');
+    const messageKey = data.messageKey
+      || (response.status === 401 ? 'api.authRequired' : undefined)
+      || (response.status === 402 ? 'api.insufficientCredits' : undefined);
+    throw new ApiError(data.error || 'Failed to generate image.', response.status, messageKey || 'api.generateFailed');
   }
 
   if (!data.success || !Array.isArray(data.hashtags)) {
@@ -120,5 +122,6 @@ export async function generateProductImage(
     branchUsed: data.branchUsed,
     fallbackReason: data.fallbackReason ?? null,
     requestedMode: data.requestedMode,
+    creditsRemaining: data.creditsRemaining,
   };
 }
