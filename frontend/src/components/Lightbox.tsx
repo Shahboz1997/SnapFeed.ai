@@ -42,7 +42,7 @@ export default function Lightbox({ imageUrl, alt, onClose }: LightboxProps) {
     >
       <button
         type="button"
-        className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+        className="absolute inset-0 bg-zinc-900/30 backdrop-blur-sm"
         onClick={onClose}
         aria-label={t('lightbox.closeOverlayAria')}
       />
@@ -53,7 +53,7 @@ export default function Lightbox({ imageUrl, alt, onClose }: LightboxProps) {
           type="button"
           onClick={onClose}
           aria-label={t('lightbox.closeAria')}
-          className="touch-target rounded-full border border-white/20 bg-white/90 p-2.5 text-slate-700 shadow-lg backdrop-blur-sm transition-all duration-300 hover:bg-white hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-white/50"
+          className="touch-target rounded-full border border-zinc-200/60 bg-white/70 p-2.5 text-zinc-700 shadow-lg backdrop-blur-xl transition hover:border-zinc-300 hover:text-zinc-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/40"
         >
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -63,7 +63,7 @@ export default function Lightbox({ imageUrl, alt, onClose }: LightboxProps) {
         <img
           src={imageUrl}
           alt={alt}
-          className="max-h-[min(80dvh,calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-4rem))] max-w-full rounded-xl object-contain shadow-2xl ring-1 ring-white/20"
+          className="max-h-[min(80dvh,calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-4rem))] max-w-full rounded-xl object-contain shadow-2xl ring-1 ring-zinc-200/60"
         />
       </div>
     </div>

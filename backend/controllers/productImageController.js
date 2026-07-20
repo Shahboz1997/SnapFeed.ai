@@ -1,6 +1,5 @@
 import crypto from 'crypto';
 import {
-  IDM_VTON_SEED,
   VALID_ASPECT_RATIOS,
   VALID_PLATFORMS,
   PRODUCT_IMAGE_MAX_PROMPT_LENGTH,
@@ -11,10 +10,10 @@ import { isReplicateConfigured } from '../config/replicate.js';
 import { createError, mapOpenAIError } from '../utils/errors.js';
 import {
   analyzeProductImage,
-  analyzeClothingProductForTryOn,
   buildFallbackProductFluxPrompt,
   buildProductVisionSystemPrompt,
   buildTryOnRefinedPrompt,
+  buildFashnTryOnPrompt,
   buildAnalysisFromCatalogPrompt,
   DEFAULT_BACKGROUND_SETUP_PROMPT,
   detectMimeType,
@@ -29,27 +28,29 @@ import {
   resolveProductPlacement,
   sanitizeUserWish,
   SURFACE_CONTEXT,
+  analyzeClothingProductForTryOn,
 } from '../services/productImageAnalysis.js';
-import { generateProductImageWithFlux, runIdmVtonTryOn } from '../services/imageGeneration.js';
+import { generateProductImageWithFlux } from '../services/imageGeneration.js';
+import { isFashnConfigured, runFashnTryOn, runFashnPackshot, runFashnProductToModel } from '../services/fashnTryOn.js';
+import { prepareFashnProductImage } from '../services/fashnGarmentPrep.js';
 import { finishGenerationResponse } from '../services/credits.js';
-import { fetchAndUpscaleRemoteImage } from '../services/imageUpscaling.js';
 import { getDefaultHashtags, getLanguageName, normalizeLangCode } from '../utils/languages.js';
 import cache from '../utils/cache.js';
 import { saveImageBuffer } from '../utils/imageStorage.js';
-import { waitForReplicateBurstGap } from '../utils/replicateRateLimit.js';
 import { extractQuotedOverlayText } from '../utils/textOverlay.js';
-import { isTallGarmentPhoto, prepareTryOnGarmentImage } from '../services/tryOnImagePrep.js';
 import {
   DEFAULT_FEMALE_FULLBODY_MODEL,
   getTryOnModelPool,
 } from '../constants/tryOnModels.js';
 
-const TRYON_CACHE_VERSION = 'v24-garment-fidelity';
+const TRYON_CACHE_VERSION = 'v29-studio-garment-cleanup';
+const PACKSHOT_CACHE_VERSION = 'v1-fashn-packshot';
+const PRODUCT_TO_MODEL_CACHE_VERSION = 'v1-fashn-product-to-model';
 const PRODUCT_FILL_CACHE_VERSION = BRANCH_A_CACHE_VERSION;
 const VISION_CACHE_VERSION = 'v1-catalog-stable';
 
 const VALID_UI_TRYON_GENDERS = new Set(['male', 'female']);
-const VALID_UI_TRYON_CATEGORIES = new Set(['top', 'bottom', 'dress']);
+const VALID_UI_TRYON_CATEGORIES = new Set(['auto', 'top', 'bottom', 'dress']);
 
 const MODE_PRESETS = {
   product: PRODUCT_MODE_PRESET,
@@ -230,7 +231,10 @@ function buildImageGenerationResponse({
 function enrichCachedImageResponse(cached) {
   return {
     ...cached,
-    branchUsed: cached?.branchUsed === 'tryon' || cached?.branchUsed === 'product'
+    branchUsed: cached?.branchUsed === 'tryon'
+      || cached?.branchUsed === 'product'
+      || cached?.branchUsed === 'packshot'
+      || cached?.branchUsed === 'product-to-model'
       ? cached.branchUsed
       : 'product',
     fallbackReason: cached?.fallbackReason ?? null,
@@ -367,6 +371,18 @@ function resolveGenerationMode(mode) {
     return 'tryon';
   }
 
+  if (normalized === 'packshot') {
+    return 'packshot';
+  }
+
+  if (
+    normalized === 'product-to-model'
+    || normalized === 'product_to_model'
+    || normalized === 'producttomodel'
+  ) {
+    return 'product-to-model';
+  }
+
   if (normalized === 'product') {
     return 'product';
   }
@@ -383,7 +399,11 @@ function shouldRunTryOnBranch(generationMode, userWish, shouldExtractText) {
     return true;
   }
 
-  if (generationMode === 'product') {
+  if (
+    generationMode === 'product'
+    || generationMode === 'packshot'
+    || generationMode === 'product-to-model'
+  ) {
     return false;
   }
 
@@ -461,18 +481,17 @@ function inferAgeGroupFromWish(userWish) {
 
 function inferAppearanceTags(userWish) {
   const wish = (userWish || '').toLowerCase();
-  const tags = [];
+  // Always prefer FASHN-like bright catalog studio models
+  const tags = ['studio', 'bright', 'catalog', 'elegant'];
 
   if (SLAVIC_APPEARANCE_HINTS.some((hint) => wish.includes(hint))) {
     tags.push('slavic', 'european');
   }
 
   if (ELEGANT_APPEARANCE_HINTS.some((hint) => wish.includes(hint))) {
-    tags.push('elegant');
-  }
-
-  if (!tags.includes('elegant')) {
-    tags.push('elegant');
+    if (!tags.includes('elegant')) {
+      tags.push('elegant');
+    }
   }
 
   return tags;
@@ -504,9 +523,14 @@ function pickModelFromPool(pool, { userWish, gender, ageGroup, garmentHash } = {
     .filter((model) => model?.url)
     .map((model) => {
       const modelTags = Array.isArray(model.tags) ? model.tags : [];
+      let score = preferredTags.filter((tag) => modelTags.includes(tag)).length;
+      // Extra weight for bright studio catalog look (matches FASHN Starter)
+      if (modelTags.includes('bright')) score += 2;
+      if (modelTags.includes('catalog')) score += 2;
+      if (modelTags.includes('studio')) score += 1;
       return {
         model,
-        score: preferredTags.filter((tag) => modelTags.includes(tag)).length,
+        score,
       };
     })
     .sort((a, b) => b.score - a.score);
@@ -709,21 +733,25 @@ function normalizeClothingCategory(category) {
   return normalizeClothingCategoryFromVision(category);
 }
 
-async function upscaleTryOnResultFromUrl(finalImageUrl) {
+async function downloadTryOnResult(finalImageUrl) {
   if (!finalImageUrl || typeof finalImageUrl !== 'string') {
-    throw createError('Replicate did not return an image URL', 502);
+    throw createError('Try-on did not return an image URL', 502);
   }
 
-  let upscaledBuffer;
+  // Keep FASHN output as-is — no Replicate/bg-removal/upscale pipeline.
   try {
-    upscaledBuffer = await fetchAndUpscaleRemoteImage(finalImageUrl);
+    const response = await fetch(finalImageUrl);
+    if (response.ok) {
+      const buffer = Buffer.from(await response.arrayBuffer());
+      const contentType = response.headers.get('content-type') || 'image/png';
+      const mime = contentType.split(';')[0].trim() || 'image/png';
+      return `data:${mime};base64,${buffer.toString('base64')}`;
+    }
   } catch (error) {
-    const message = error?.message || 'Image upscaling failed.';
-    console.error('Try-on upscaling failed:', message);
-    throw createError(`Virtual try-on upscaling failed: ${message}`, 502);
+    console.warn('[try-on] Could not mirror FASHN CDN output, returning URL:', error?.message || error);
   }
 
-  return `data:image/png;base64,${upscaledBuffer.toString('base64')}`;
+  return finalImageUrl;
 }
 
 async function generateTryOnHashtags(refinedPrompt, category, lang) {
@@ -762,90 +790,117 @@ async function generateTryOnHashtags(refinedPrompt, category, lang) {
   }
 }
 
-async function analyzeClothingMeta(base64Image, manualWish) {
-  const visionResult = await analyzeClothingProductForTryOn(base64Image, manualWish);
-
-  if (!visionResult.isClothing) {
-    return {
-      notClothing: true,
-      productType: visionResult.productType || 'unknown',
-    };
-  }
-
-  const tallGarmentPhoto = await isTallGarmentPhoto(base64Image);
-
-  const category = resolveClothingCategory(
-    visionResult.visionCategory,
-    visionResult.refinedPrompt,
-    manualWish,
-    tallGarmentPhoto,
-    visionResult.description,
-  );
-  const gender = resolveStrictGender(visionResult.gender, manualWish);
-  const description = resolveGarmentDescription(visionResult.description);
-  const refinedPrompt = buildTryOnRefinedPrompt(gender, description);
-  const effectiveVisionCategory = resolveEffectiveVisionCategory(category);
-
-  if (visionResult.visionCategory === 'top' && category === 'dress') {
-    console.warn(
-      '[try-on] Vision category "top" overridden to "dress" (two-piece suit / full-length garment detected).',
-    );
-  }
-
+function buildUiOnlyClothingMeta(uiGender, uiCategory, manualWish) {
+  const gender = uiGender || 'female';
+  const category = uiCategory || 'auto';
+  const description = manualWish || 'clothing garment for virtual try-on';
   return {
     notClothing: false,
     category,
     gender,
-    refinedPrompt,
     description,
-    visionCategory: effectiveVisionCategory,
+    refinedPrompt: buildTryOnRefinedPrompt(gender, description),
+    visionCategory: category,
   };
 }
 
-function resolveTryOnSeed(garmentHash) {
-  if (!garmentHash) {
-    return IDM_VTON_SEED;
-  }
-
-  const parsed = Number.parseInt(garmentHash.slice(0, 8), 16);
-  return Number.isFinite(parsed) ? parsed : IDM_VTON_SEED;
-}
-
-async function executeIdmVtonTryOn(base64Image, clothingMeta, manualWish, humanImage = null) {
-  const tryOnCategory = clothingMeta.category ?? clothingMeta.visionCategory;
-  const garmImg = await prepareTryOnGarmentImage(base64Image, tryOnCategory);
+async function executeFashnTryOn(base64Image, clothingMeta, manualWish, humanImage = null, aspectRatio = null) {
   const garmentHash = crypto.createHash('md5').update(getBase64HashInput(base64Image)).digest('hex');
   const humanImg = await resolveFinalHumanImage(humanImage, clothingMeta, manualWish, garmentHash);
-
-  await waitForReplicateBurstGap();
-
-  const garmentCategory = clothingMeta.visionCategory ?? clothingMeta.category;
-
-  console.log(
-    `IDM-VTON prep: garmentCategory=${garmentCategory}, resolvedCategory=${clothingMeta.category}, gender=${clothingMeta.gender}, human_img=${humanImg}`,
-  );
-
-  const { remoteUrl } = await runIdmVtonTryOn(garmImg, clothingMeta, {
-    humanImg,
-    seed: resolveTryOnSeed(garmentHash),
-    garmentHash,
+  const category = clothingMeta.category ?? clothingMeta.visionCategory ?? 'auto';
+  const prompt = buildFashnTryOnPrompt({
+    category,
+    description: clothingMeta.description,
+    manualWish,
   });
 
-  return upscaleTryOnResultFromUrl(remoteUrl);
+  console.log(
+    `[fashn] garment → FASHN SDK, category=${category}, gender=${clothingMeta.gender}, prompt="${prompt.slice(0, 120)}…"`,
+  );
+
+  const cleanedGarment = await prepareFashnProductImage(base64Image);
+
+  const result = await runFashnTryOn({
+    modelImage: humanImg,
+    garmentImage: cleanedGarment,
+    category,
+    prompt,
+    aspectRatio,
+  });
+
+  if (result.imageData) {
+    return result.imageData;
+  }
+
+  return downloadTryOnResult(result.remoteUrl);
+}
+
+async function executeFashnPackshot(base64Image, manualWish, aspectRatio = null) {
+  const prompt = typeof manualWish === 'string' ? manualWish.trim() : '';
+  console.log(`[fashn] product → packshot, promptLen=${prompt.length}`);
+
+  const result = await runFashnPackshot({
+    productImage: base64Image,
+    prompt,
+    aspectRatio,
+  });
+
+  if (result.imageData) {
+    return result.imageData;
+  }
+
+  return downloadTryOnResult(result.remoteUrl);
+}
+
+async function executeFashnProductToModel(base64Image, manualWish, aspectRatio = null) {
+  const prompt = typeof manualWish === 'string' ? manualWish.trim() : '';
+  console.log(`[fashn] product → product-to-model, promptLen=${prompt.length}`);
+
+  const result = await runFashnProductToModel({
+    productImage: base64Image,
+    prompt,
+    aspectRatio,
+  });
+
+  if (result.imageData) {
+    return result.imageData;
+  }
+
+  return downloadTryOnResult(result.remoteUrl);
 }
 
 export async function generateProductImage(req, res, next) {
   try {
-    if (!process.env.OPENAI_API_KEY) {
-      return res.status(500).json({ error: 'OpenAI API key is not configured.' });
-    }
-
     const { base64Image: bodyBase64Image, image, userWish, catalogPrompt: bodyCatalogPrompt, platform, format, extractText, lang, includeText, overlayText, mode, gender, category, humanImage } = req.body;
     const base64Image = (typeof image === 'string' && image.trim())
       ? image.trim()
       : (typeof bodyBase64Image === 'string' ? bodyBase64Image.trim() : '');
     const normalizedLang = normalizeLangCode(lang);
     const generationMode = resolveGenerationMode(mode);
+
+    if (
+      generationMode !== 'tryon'
+      && generationMode !== 'packshot'
+      && generationMode !== 'product-to-model'
+      && !process.env.OPENAI_API_KEY
+    ) {
+      return res.status(500).json({ error: 'OpenAI API key is not configured.' });
+    }
+
+    if (
+      (generationMode === 'tryon'
+        || generationMode === 'packshot'
+        || generationMode === 'product-to-model')
+      && !isFashnConfigured()
+    ) {
+      return res.status(500).json({
+        error: generationMode === 'packshot'
+          ? 'Configure FASHN_API_KEY for packshot.'
+          : generationMode === 'product-to-model'
+            ? 'Configure FASHN_API_KEY for product-to-model.'
+            : 'Configure FASHN_API_KEY for virtual try-on.',
+      });
+    }
     const uiTryOnGender = generationMode === 'tryon' ? parseTryOnUiGender(gender) : null;
     const uiTryOnCategory = generationMode === 'tryon' ? parseTryOnUiCategory(category) : null;
     const humanImageSuffix = generationMode === 'tryon' ? resolveHumanImageSuffix(humanImage) : '';
@@ -875,8 +930,25 @@ export async function generateProductImage(req, res, next) {
     const shouldExtractText = extractText === true;
     const shouldIncludeText = parseBranchAIncludeText(includeText);
     let shouldRunTryOn = shouldRunTryOnBranch(generationMode, manualWish, shouldExtractText);
-    const presetMode = generationMode === 'tryon' || (!generationMode && shouldRunTryOn) ? 'tryon' : 'product';
-    let wish = buildFinalUserWish(presetMode, manualWish, null, uiTryOnGender);
+    const shouldRunPackshot = generationMode === 'packshot';
+    const shouldRunProductToModel = generationMode === 'product-to-model';
+    const presetMode = generationMode === 'tryon' || (!generationMode && shouldRunTryOn)
+      ? 'tryon'
+      : generationMode === 'packshot'
+        ? 'packshot'
+        : generationMode === 'product-to-model'
+          ? 'product-to-model'
+          : 'product';
+    let wish = shouldRunPackshot
+      ? (manualWish || 'commercial fashion packshot')
+      : shouldRunProductToModel
+        ? (manualWish || 'fashion model wearing the product, full body, studio photoshoot, real person')
+        : buildFinalUserWish(
+          presetMode === 'packshot' || presetMode === 'product-to-model' ? 'product' : presetMode,
+          manualWish,
+          null,
+          uiTryOnGender,
+        );
     const catalogPromptSeed = resolveCatalogPromptForGeneration(explicitCatalogPrompt, manualWish, '');
     const cacheWishKey = catalogPromptSeed || wish;
     const requestedMode = resolveRequestedMode(generationMode, presetMode);
@@ -899,7 +971,13 @@ export async function generateProductImage(req, res, next) {
         format,
         normalizedLang,
         shouldIncludeText,
-        shouldRunTryOn ? TRYON_CACHE_VERSION : PRODUCT_FILL_CACHE_VERSION,
+        shouldRunTryOn
+          ? TRYON_CACHE_VERSION
+          : shouldRunPackshot
+            ? PACKSHOT_CACHE_VERSION
+            : shouldRunProductToModel
+              ? PRODUCT_TO_MODEL_CACHE_VERSION
+              : PRODUCT_FILL_CACHE_VERSION,
         generationMode || '',
         tryOnUiCacheSuffix,
       );
@@ -913,66 +991,141 @@ export async function generateProductImage(req, res, next) {
       }
     }
 
+    if (shouldRunProductToModel) {
+      const ptmCacheKey = buildProductImageCacheKey(
+        base64Image,
+        wish,
+        format,
+        normalizedLang,
+        shouldIncludeText,
+        PRODUCT_TO_MODEL_CACHE_VERSION,
+        'product-to-model',
+        '',
+      );
+
+      const imageUrl = await executeFashnProductToModel(
+        base64Image,
+        manualWish || 'fashion model wearing the product, full body, studio photoshoot, real person',
+        format,
+      );
+      const hashtags = await generateTryOnHashtags(
+        manualWish || 'fashion product on model',
+        'product-to-model',
+        normalizedLang,
+      );
+
+      const responseData = buildImageGenerationResponse({
+        imageUrl,
+        optimizedPrompt: manualWish || 'Fashion model wearing the product, full body studio photoshoot',
+        hashtags,
+        branchUsed: 'product-to-model',
+        fallbackReason: null,
+        requestedMode: 'product-to-model',
+      });
+
+      cache.set(ptmCacheKey, responseData);
+      return finishGenerationResponse(res, req, responseData);
+    }
+
+    if (shouldRunPackshot) {
+      const packshotCacheKey = buildProductImageCacheKey(
+        base64Image,
+        wish,
+        format,
+        normalizedLang,
+        shouldIncludeText,
+        PACKSHOT_CACHE_VERSION,
+        'packshot',
+        '',
+      );
+
+      const imageUrl = await executeFashnPackshot(base64Image, manualWish, format);
+      const hashtags = await generateTryOnHashtags(
+        manualWish || 'fashion product packshot',
+        'packshot',
+        normalizedLang,
+      );
+
+      const responseData = buildImageGenerationResponse({
+        imageUrl,
+        optimizedPrompt: manualWish || 'Clean commercial fashion packshot',
+        hashtags,
+        branchUsed: 'packshot',
+        fallbackReason: null,
+        requestedMode: 'packshot',
+      });
+
+      cache.set(packshotCacheKey, responseData);
+      return finishGenerationResponse(res, req, responseData);
+    }
+
     if (shouldRunTryOn) {
-      if (!isReplicateConfigured()) {
-        return res.status(500).json({ error: 'Replicate API token is not configured.' });
-      }
-
-      let clothingMeta;
-      try {
-        clothingMeta = await analyzeClothingMeta(base64Image, manualWish);
-
-        if (clothingMeta.notClothing) {
-          console.warn(
-            `[product-image] Try-on trigger matched but product is not clothing (${clothingMeta.productType}). Falling back to FLUX branch A.`,
-          );
-          shouldRunTryOn = false;
-          fallbackReason = 'not_clothing';
-          wish = rebuildWishForProductBranch(manualWish);
-        } else {
-          clothingMeta = applyUiTryOnOverrides(clothingMeta, uiTryOnGender, uiTryOnCategory);
-          wish = buildFinalUserWish('tryon', manualWish, clothingMeta.gender, uiTryOnGender);
-        }
-      } catch (error) {
-        console.warn(
-          '[product-image] GPT Vision failed in try-on mode; switching to FLUX product branch:',
-          error?.message || error,
-        );
-        shouldRunTryOn = false;
-        fallbackReason = 'verification_failed';
-        wish = rebuildWishForProductBranch(manualWish);
-        clothingMeta = null;
-      }
-
-      if (shouldRunTryOn) {
-        const finalTryOnCacheKey = buildProductImageCacheKey(
-          base64Image,
-          wish,
-          format,
-          normalizedLang,
-          shouldIncludeText,
-          TRYON_CACHE_VERSION,
-          generationMode || 'tryon',
-          tryOnUiCacheSuffix,
-        );
-
-        const [upscaledUrl, hashtags] = await Promise.all([
-          executeIdmVtonTryOn(base64Image, clothingMeta, manualWish, humanImage),
-          generateTryOnHashtags(clothingMeta.refinedPrompt, clothingMeta.category, normalizedLang),
-        ]);
-
-        const responseData = buildImageGenerationResponse({
-          imageUrl: upscaledUrl,
-          optimizedPrompt: clothingMeta.refinedPrompt,
-          hashtags,
-          branchUsed: 'tryon',
-          fallbackReason: null,
-          requestedMode,
+      if (!isFashnConfigured()) {
+        return res.status(500).json({
+          error: 'Configure FASHN_API_KEY for virtual try-on.',
         });
-
-        cache.set(finalTryOnCacheKey, responseData);
-        return finishGenerationResponse(res, req, responseData);
       }
+
+      // Vision for category + garment description (two-piece → dress); UI overrides win when set.
+      let clothingMeta = buildUiOnlyClothingMeta(uiTryOnGender, uiTryOnCategory, manualWish);
+
+      if (process.env.OPENAI_API_KEY) {
+        try {
+          const visionMeta = await analyzeClothingProductForTryOn(base64Image, manualWish);
+          if (visionMeta?.isClothing) {
+            clothingMeta = applyUiTryOnOverrides(
+              {
+                notClothing: false,
+                category: visionMeta.category,
+                gender: visionMeta.gender,
+                description: visionMeta.description,
+                refinedPrompt: visionMeta.refinedPrompt,
+                visionCategory: visionMeta.visionCategory,
+              },
+              uiTryOnGender,
+              uiTryOnCategory,
+            );
+          } else {
+            console.warn('[try-on] Vision marked image as non-clothing; using UI meta.');
+          }
+        } catch (visionError) {
+          console.warn(
+            '[try-on] Clothing vision failed, using UI meta:',
+            visionError?.message || visionError,
+          );
+        }
+      }
+
+      clothingMeta = applyUiTryOnOverrides(clothingMeta, uiTryOnGender, uiTryOnCategory);
+      wish = buildFinalUserWish('tryon', manualWish, clothingMeta.gender, uiTryOnGender);
+
+      const finalTryOnCacheKey = buildProductImageCacheKey(
+        base64Image,
+        wish,
+        format,
+        normalizedLang,
+        shouldIncludeText,
+        TRYON_CACHE_VERSION,
+        generationMode || 'tryon',
+        tryOnUiCacheSuffix,
+      );
+
+      const [imageUrl, hashtags] = await Promise.all([
+        executeFashnTryOn(base64Image, clothingMeta, manualWish, humanImage, format),
+        generateTryOnHashtags(clothingMeta.refinedPrompt, clothingMeta.category, normalizedLang),
+      ]);
+
+      const responseData = buildImageGenerationResponse({
+        imageUrl,
+        optimizedPrompt: clothingMeta.refinedPrompt,
+        hashtags,
+        branchUsed: 'tryon',
+        fallbackReason: null,
+        requestedMode,
+      });
+
+      cache.set(finalTryOnCacheKey, responseData);
+      return finishGenerationResponse(res, req, responseData);
     }
 
     if (fallbackReason) {

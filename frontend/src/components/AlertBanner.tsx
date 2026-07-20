@@ -13,21 +13,21 @@ interface AlertBannerProps {
 const STYLES: Record<AlertType, { container: string; icon: string; text: string; button: string }> = {
   success: {
     container: 'border-emerald-200 bg-emerald-50',
-    icon: 'text-emerald-600',
-    text: 'text-emerald-800',
-    button: 'text-emerald-600 hover:bg-emerald-100 hover:text-emerald-800',
+    icon: 'text-emerald-700',
+    text: 'text-emerald-700',
+    button: 'text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800',
   },
   error: {
-    container: 'border-red-200 bg-red-50',
-    icon: 'text-red-600',
-    text: 'text-red-800',
-    button: 'text-red-600 hover:bg-red-100 hover:text-red-800',
+    container: 'border-rose-200 bg-rose-50',
+    icon: 'text-rose-700',
+    text: 'text-rose-700',
+    button: 'text-rose-700 hover:bg-rose-100 hover:text-rose-800',
   },
   warning: {
     container: 'border-amber-200 bg-amber-50',
-    icon: 'text-amber-600',
-    text: 'text-amber-800',
-    button: 'text-amber-600 hover:bg-amber-100 hover:text-amber-800',
+    icon: 'text-amber-700',
+    text: 'text-amber-700',
+    button: 'text-amber-700 hover:bg-amber-100 hover:text-amber-800',
   },
 };
 

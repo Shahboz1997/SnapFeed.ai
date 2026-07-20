@@ -1,0 +1,198 @@
+import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
+import { ArrowRight, Images, Sparkles } from 'lucide-react';
+import AppShell from '../components/AppShell';
+import LoginModal from '../components/LoginModal';
+import PricingModal from '../components/PricingModal';
+import { useAuth } from '../context/AuthContext';
+import { fetchGuestCredits } from '../api/guestCredits';
+import { POST_AUTH_MODAL_KEY } from '../constants/authFlow';
+import {
+  GUEST_CREDITS_INITIAL,
+  readGuestCreditsFromStorage,
+  writeGuestCreditsToStorage,
+} from '../constants/guestCredits';
+
+export default function HomePage() {
+  const { t } = useTranslation();
+  const { user, profile, loading: authLoading } = useAuth();
+  const [guestCredits, setGuestCredits] = useState<number | null>(() => readGuestCreditsFromStorage());
+  const [guestCreditsLoading, setGuestCreditsLoading] = useState(() => !user && readGuestCreditsFromStorage() === null);
+  const [showPricingModal, setShowPricingModal] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [pricingWelcome, setPricingWelcome] = useState(false);
+
+  const displayCredits = user ? (profile?.credits ?? 0) : (guestCredits ?? 0);
+  const creditsLoading = user ? authLoading || profile === null : guestCreditsLoading;
+
+  useEffect(() => {
+    if (user) return;
+    let cancelled = false;
+
+    async function syncGuestCredits() {
+      const cached = readGuestCreditsFromStorage();
+      if (cached === null) setGuestCreditsLoading(true);
+      const serverCredits = await fetchGuestCredits();
+      if (cancelled) return;
+      setGuestCreditsLoading(false);
+      if (typeof serverCredits === 'number') {
+        setGuestCredits(serverCredits);
+        writeGuestCreditsToStorage(serverCredits);
+        return;
+      }
+      setGuestCredits(cached ?? GUEST_CREDITS_INITIAL);
+    }
+
+    syncGuestCredits();
+    return () => { cancelled = true; };
+  }, [user]);
+
+  useEffect(() => {
+    if (authLoading || !user || !profile) return;
+    if (sessionStorage.getItem(POST_AUTH_MODAL_KEY)) {
+      sessionStorage.removeItem(POST_AUTH_MODAL_KEY);
+      setPricingWelcome(true);
+      setShowPricingModal(true);
+    }
+  }, [authLoading, user, profile]);
+
+  function openCreditsFlow() {
+    if (!user) {
+      setShowLoginModal(true);
+      return;
+    }
+    setShowPricingModal(true);
+  }
+
+  return (
+    <AppShell
+      credits={displayCredits}
+      creditsLoading={creditsLoading}
+      onCreditsClick={openCreditsFlow}
+      onSignInClick={() => setShowLoginModal(true)}
+    >
+      <LoginModal open={showLoginModal} onClose={() => setShowLoginModal(false)} />
+      <PricingModal
+        open={showPricingModal}
+        onClose={() => { setShowPricingModal(false); setPricingWelcome(false); }}
+        credits={displayCredits}
+        welcome={pricingWelcome}
+      />
+
+      <main className="relative mx-auto flex w-full max-w-5xl flex-col px-4 py-10 sm:px-6 sm:py-16 lg:py-20">
+        <section className="mx-auto max-w-3xl text-center">
+          <motion.p
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-4 font-display text-2xl font-semibold tracking-tight text-zinc-900 sm:text-3xl"
+          >
+            {t('home.eyebrow')}
+          </motion.p>
+          <motion.h2
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+            className="font-display text-4xl leading-[1.1] tracking-tight text-zinc-900 sm:text-5xl md:text-6xl"
+          >
+            {t('home.title')}
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="mx-auto mt-5 max-w-xl text-base text-zinc-500 sm:text-lg"
+          >
+            {t('home.subtitle')}
+          </motion.p>
+
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+            className="glass-panel luxury-shadow mx-auto mt-8 flex max-w-xl flex-col gap-3 rounded-3xl p-3 sm:flex-row sm:items-center"
+          >
+            <div className="min-w-0 flex-1 px-3 py-2 text-left">
+              <p className="truncate text-sm text-zinc-500">{t('home.promptHint')}</p>
+            </div>
+            <Link
+              to="/studio"
+              className="relative inline-flex h-12 shrink-0 items-center justify-center gap-2 overflow-hidden rounded-2xl bg-zinc-900 px-6 text-sm font-semibold text-white transition hover:bg-zinc-800"
+            >
+              {t('home.cta')}
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </motion.div>
+        </section>
+
+        <section className="mt-16 sm:mt-24">
+          <h3 className="mb-6 font-display text-2xl tracking-tight text-zinc-900 sm:text-3xl">
+            {t('home.shortcutsTitle')}
+          </h3>
+          <div className="grid gap-4 sm:grid-cols-2 sm:gap-5">
+            <Link
+              to="/studio"
+              className="group relative min-h-[240px] overflow-hidden rounded-3xl border border-zinc-200/70 shadow-sm shadow-zinc-200/40 transition duration-300 hover:-translate-y-0.5 hover:border-zinc-300 hover:shadow-xl hover:shadow-zinc-200/60 sm:min-h-[280px]"
+            >
+              <img
+                src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=1200&q=80"
+                alt=""
+                className="absolute inset-0 h-full w-full object-cover object-top transition duration-500 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-white via-white/85 to-white/25" />
+              <div className="relative z-10 flex h-full min-h-[240px] flex-col justify-end p-6 sm:min-h-[280px] sm:p-7">
+                <span className="mb-auto inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-white/90 text-zinc-800 shadow-sm backdrop-blur-sm transition group-hover:bg-zinc-900 group-hover:text-white">
+                  <Sparkles className="h-4 w-4" strokeWidth={1.75} />
+                </span>
+                <p className="mt-8 text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-500">
+                  {t('home.tryOnBadge')}
+                </p>
+                <h4 className="mt-1.5 font-display text-2xl tracking-tight text-zinc-900">
+                  {t('home.tryOnTitle')}
+                </h4>
+                <p className="mt-2 max-w-sm text-sm leading-relaxed text-zinc-600">
+                  {t('home.tryOnDesc')}
+                </p>
+                <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-zinc-900">
+                  {t('home.cta')}
+                  <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+                </span>
+              </div>
+            </Link>
+
+            <Link
+              to="/gallery"
+              className="group relative min-h-[240px] overflow-hidden rounded-3xl border border-zinc-200/70 shadow-sm shadow-zinc-200/40 transition duration-300 hover:-translate-y-0.5 hover:border-zinc-300 hover:shadow-xl hover:shadow-zinc-200/60 sm:min-h-[280px]"
+            >
+              <img
+                src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=1200&q=80"
+                alt=""
+                className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-white via-white/85 to-white/25" />
+              <div className="relative z-10 flex h-full min-h-[240px] flex-col justify-end p-6 sm:min-h-[280px] sm:p-7">
+                <span className="mb-auto inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-white/90 text-zinc-800 shadow-sm backdrop-blur-sm transition group-hover:bg-zinc-900 group-hover:text-white">
+                  <Images className="h-4 w-4" strokeWidth={1.75} />
+                </span>
+                <p className="mt-8 text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-500">
+                  {t('home.galleryBadge')}
+                </p>
+                <h4 className="mt-1.5 font-display text-2xl tracking-tight text-zinc-900">
+                  {t('home.galleryTitle')}
+                </h4>
+                <p className="mt-2 max-w-sm text-sm leading-relaxed text-zinc-600">
+                  {t('home.galleryDesc')}
+                </p>
+                <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-zinc-900">
+                  {t('gallery.title')}
+                  <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+                </span>
+              </div>
+            </Link>
+          </div>
+        </section>
+      </main>
+    </AppShell>
+  );
+}

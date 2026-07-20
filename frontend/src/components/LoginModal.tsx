@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import BottomSheet from './BottomSheet';
 import Spinner from './Spinner';
 
 interface LoginModalProps {
@@ -14,8 +16,6 @@ export default function LoginModal({ open, onClose }: LoginModalProps) {
   const { authEnabled, signInWithGoogle } = useAuth();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  if (!open) return null;
 
   async function handleGoogleSignIn() {
     setSubmitting(true);
@@ -30,46 +30,37 @@ export default function LoginModal({ open, onClose }: LoginModalProps) {
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center sm:items-center"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="login-modal-title"
+    <BottomSheet
+      open={open}
+      onClose={onClose}
+      labelledBy="login-modal-title"
+      closeLabel={t('pricing.close')}
     >
-      <button
-        type="button"
-        className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
-        aria-label={t('pricing.close')}
-        onClick={onClose}
-      />
-
-      <div className="relative z-10 w-full max-w-md rounded-t-2xl border border-slate-200/80 bg-white p-6 shadow-2xl sm:rounded-2xl sm:p-8">
+      <div className="relative">
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+          className="absolute -right-1 -top-1 z-20 flex h-9 w-9 items-center justify-center rounded-full text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900"
           aria-label={t('pricing.close')}
         >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-4 w-4">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
+          <X className="h-4 w-4" />
         </button>
 
-        <h2 id="login-modal-title" className="mb-2 text-xl font-extrabold tracking-tight text-slate-900">
+        <h2 id="login-modal-title" className="mb-2 pr-10 font-display text-xl font-bold tracking-tight text-zinc-900">
           {t('auth.loginTitle')}
         </h2>
-        <p className="mb-6 text-sm leading-relaxed text-slate-500">
+        <p className="mb-6 text-sm leading-relaxed text-zinc-500">
           {t('auth.loginDescription')}
         </p>
 
         {!authEnabled && (
-          <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
             {t('auth.notConfigured')}
           </div>
         )}
 
         {error && (
-          <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
             {error}
           </div>
         )}
@@ -78,7 +69,7 @@ export default function LoginModal({ open, onClose }: LoginModalProps) {
           type="button"
           onClick={handleGoogleSignIn}
           disabled={!authEnabled || submitting}
-          className="flex w-full items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white px-5 py-3.5 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex w-full items-center justify-center gap-3 rounded-xl border border-zinc-200 bg-white px-5 py-3.5 text-base font-semibold text-zinc-900 transition hover:border-zinc-300 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm"
         >
           {submitting ? <Spinner /> : (
             <svg aria-hidden="true" className="h-5 w-5" viewBox="0 0 24 24">
@@ -91,18 +82,18 @@ export default function LoginModal({ open, onClose }: LoginModalProps) {
           {t('auth.signInWithGoogle')}
         </button>
 
-        <p className="mt-4 text-center text-xs text-slate-400">
+        <p className="mt-4 text-center text-xs text-zinc-500">
           {t('auth.loginHintPrefix')}{' '}
-          <Link to="/terms" onClick={onClose} className="font-medium text-slate-600 underline-offset-2 hover:underline">
+          <Link to="/terms" onClick={onClose} className="font-medium text-zinc-700 underline-offset-2 hover:underline">
             {t('auth.termsLink')}
           </Link>
           {' '}{t('auth.loginHintAnd')}{' '}
-          <Link to="/privacy" onClick={onClose} className="font-medium text-slate-600 underline-offset-2 hover:underline">
+          <Link to="/privacy" onClick={onClose} className="font-medium text-zinc-700 underline-offset-2 hover:underline">
             {t('auth.privacyLink')}
           </Link>
           .
         </p>
       </div>
-    </div>
+    </BottomSheet>
   );
 }

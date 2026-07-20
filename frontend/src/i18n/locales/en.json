@@ -1,6 +1,106 @@
 {
   "header": {
-    "subtitle": "AI Social Media Visual Generator"
+    "subtitle": "Virtual clothing try-on",
+    "productName": "Virtual Try-On"
+  },
+  "nav": {
+    "label": "Main navigation",
+    "home": "Home",
+    "studio": "Studio",
+    "gallery": "Gallery"
+  },
+  "home": {
+    "eyebrow": "SnapFeed.ai",
+    "title": "What will you try on today?",
+    "subtitle": "Upload a garment and a photo — see a realistic virtual try-on in seconds.",
+    "promptHint": "Clothing photo + person photo → try-on result",
+    "cta": "Open Studio",
+    "shortcutsTitle": "Studio Shortcuts",
+    "tryOnBadge": "Primary",
+    "tryOnTitle": "Try-On",
+    "tryOnDesc": "Visualize how an outfit looks on you or a model.",
+    "galleryBadge": "Library",
+    "galleryTitle": "Gallery",
+    "galleryDesc": "Browse your recent try-on results."
+  },
+  "studio": {
+    "eyebrow": "Studio",
+    "title": "Virtual Try-On",
+    "subtitle": "Add a clothing photo and a person, then run the try-on.",
+    "badge": "Try-On",
+    "modeTryOn": "Try-On",
+    "modePackshot": "Packshot",
+    "modeProductToModel": "Product to Model",
+    "modeProductToModelDesc": "Turn wearable product images into professional model photography.",
+    "modeTryOnDesc": "Place your garment on a real person or studio model photo.",
+    "modePackshotDesc": "Clean product photos into catalog-ready packshots.",
+    "uploadProduct": "Upload product",
+    "productOnlyHint": "One product photo is enough — a model is applied automatically after upload.",
+    "packshotPromptPlaceholder": "Optional: add instructions (e.g. flat-lay with window-light shadows)",
+    "productToModelPromptPlaceholder": "Optional: Blonde hair, studio photoshoot",
+    "flowHint": "Three simple steps: clothing photo → person photo → Run.",
+    "stepGarmentTitle": "Clothing photo",
+    "stepGarmentHint": "Upload a clear photo of the garment (flat lay or on a hanger).",
+    "stepGarmentUpload": "Upload clothing photo",
+    "stepPersonTitle": "Person photo",
+    "stepPersonHint": "Optional — a studio model is used by default. Or upload your own photo.",
+    "stepPersonUpload": "Upload person photo",
+    "stepPromptTitle": "Optional note",
+    "stepPromptHint": "You can skip this. Add a short style note if you want.",
+    "modeHint": "Garment type is detected automatically",
+    "modelSection": "Model / person",
+    "dropHint": "or drop an image here",
+    "promptLabel": "Optional prompt",
+    "uploadGarment": "Upload clothing",
+    "paste": "Paste",
+    "upload": "Upload",
+    "gallery": "Gallery",
+    "modelLabel": "Model",
+    "productLabel": "Product",
+    "history": "History",
+    "historyEmpty": "No generations yet",
+    "running": "Running",
+    "waitTips": {
+      "fitting": "Fitting the garment on the model…",
+      "lighting": "Matching studio lighting…",
+      "pose": "Finding a natural pose…",
+      "details": "Refining fabric and details…",
+      "almost": "Almost ready…"
+    },
+    "back": "Back",
+    "newGeneration": "New generation",
+    "pasteFailed": "Could not paste image from clipboard.",
+    "ratio": "Ratio",
+    "resolution": "Resolution",
+    "mode": "Mode",
+    "modeBalanced": "Balanced",
+    "modeFast": "Fast",
+    "promptPlaceholder": "Optional: add instructions (e.g. remove scarf, tuck shirt)",
+    "run": "Run",
+    "loading": "Creating your try-on…",
+    "openLightbox": "Open",
+    "reusePrompt": "Reuse prompt",
+    "uploading": "Uploading",
+    "historyCollapse": "Collapse history",
+    "historyExpand": "Expand history",
+    "promptPresets": {
+      "studioLight": "studio light",
+      "softShadows": "soft shadows",
+      "lookbook": "lookbook pose",
+      "fullBody": "full body",
+      "cleanBg": "clean background",
+      "naturalFit": "natural fit"
+    }
+  },
+  "gallery": {
+    "eyebrow": "Library",
+    "title": "Gallery",
+    "newTryOn": "New try-on",
+    "emptyTitle": "No try-ons yet",
+    "emptyDesc": "Results from Studio are saved here automatically.",
+    "emptyCta": "Go to Studio",
+    "download": "Download",
+    "remove": "Remove"
   },
   "language": {
     "label": "Language",
@@ -17,7 +117,7 @@
     "productShort": "Product photo"
   },
   "ecommerce": {
-    "description": "Upload a product photo and we'll create a scroll-stopping commercial visual optimized for your platform.",
+    "description": "Upload clothing and a person photo for a realistic virtual try-on.",
     "uploadTitle": "Upload or drag & drop a product photo",
     "uploadHint": "JPEG, PNG or WebP — up to 5 MB",
     "uploadAria": "Upload product photo",
@@ -60,14 +160,14 @@
         "mature": "mature model"
       }
     },
-    "generateButton": "🚀 Generate",
+    "generateButton": "Run try-on",
     "generationMode": {
       "label": "Mode",
-      "product": "✨ Product photo",
-      "tryon": "🧍‍♂️ Virtual try-on"
+      "product": "Product photo",
+      "tryon": "Virtual try-on"
     },
-    "tryOnFallbackBanner": "⚠️ Note: We switched to \"Product photo\" mode because no clothing was detected in the uploaded image. Try-on is only available for wardrobe items.",
-    "tryOnFallbackVerificationBanner": "⚠️ Could not verify the product type. We switched to \"Product photo\" mode and created a standard image instead of try-on.",
+    "tryOnFallbackBanner": "Note: We switched to \"Product photo\" mode because no clothing was detected in the uploaded image. Try-on is only available for wardrobe items.",
+    "tryOnFallbackVerificationBanner": "Could not verify the product type. We switched to \"Product photo\" mode and created a standard image instead of try-on.",
     "tryOnSelectors": {
       "genderLabel": "Model gender",
       "genderMale": "Male",
@@ -78,12 +178,12 @@
       "categoryDress": "Dress / Suit"
     },
     "tryOnUpload": {
-      "garmentTitle": "1. Upload clothing photo",
+      "garmentTitle": "1. Clothing photo",
       "garmentAria": "Upload clothing photo for try-on",
       "garmentPreviewAlt": "Uploaded clothing preview",
       "garmentUploaded": "Clothing photo uploaded",
       "garmentUploadedHint": "Ready for virtual try-on",
-      "humanTitle": "2. Upload person / model photo",
+      "humanTitle": "2. Person / model photo",
       "humanAria": "Upload person or model photo for try-on",
       "humanPreviewAlt": "Uploaded person preview",
       "humanUploaded": "Person photo uploaded",
@@ -92,10 +192,11 @@
       "modelSelectedHint": "Using a model from our gallery",
       "showModelGallery": "Or choose a preset model",
       "hideModelGallery": "Hide model gallery",
-      "modelGalleryAria": "Preset model gallery"
+      "modelGalleryAria": "Preset model gallery",
+      "fileHint": "JPEG, PNG or WebP — up to 12 MB, original quality"
     },
     "invalidType": "Please upload a JPEG, PNG, or WebP image.",
-    "fileTooLarge": "File size must not exceed 5 MB.",
+    "fileTooLarge": "File size must not exceed the allowed limit.",
     "readFailed": "Could not read the image file. Please try again.",
     "extractTextLabel": "Extract text from image (Content Remix mode)"
   },
@@ -193,7 +294,10 @@
     "tryOnFallbackVerification": "Could not verify the product type. A standard product photo was created instead of try-on."
   },
   "toasts": {
-    "creditDeducted": "✨ Success! 1 credit deducted."
+    "creditDeducted": "✨ Success! 1 credit deducted.",
+    "success": "Success",
+    "error": "Error",
+    "info": "Info"
   },
   "api": {
     "serverUnreachable": "Unable to reach the server. Please try again in a moment.",
@@ -239,10 +343,11 @@
     "creditsPack": "{{count}} credits",
     "buyButton": "Buy pack",
     "buyCredits": "Buy credits",
+    "upgrade": "Upgrade",
     "popular": "Popular",
     "close": "Close",
-    "hint": "Credits are added manually within a few hours after payment.",
-    "manualPaymentNotice": "YooKassa is not connected yet. Payments go to a self-employed provider — tap Contact and we'll send payment details and add credits once received.",
+    "hint": "Credits are added within 10–15 minutes after we verify your transfer.",
+    "manualPaymentNotice": "Choose a pack to get an invoice with transfer details (SBP / card / crypto). Credits are added after we verify your payment.",
     "contactButton": "Contact",
     "topUpTitle": "Top up balance",
     "topUpDescription": "Choose a pack in the generator or contact us directly.",
@@ -255,7 +360,33 @@
     "guestBenefit3": "Purchase credit packs anytime",
     "welcomeTitle": "Welcome!",
     "welcomeDescription": "Your account is ready. Top up your balance to start creating.",
-    "welcomeHint": "Need more? Choose a credit pack below."
+    "welcomeHint": "Need more? Choose a credit pack below.",
+    "selectPlan": "Select",
+    "backToPlans": "Back to plans",
+    "invoiceTitle": "Payment invoice",
+    "invoiceHint": "Transfer the exact amount using the details below. Include your SnapFeed.ai email in the payment comment.",
+    "invoicePack": "Pack",
+    "invoiceAmount": "Amount",
+    "invoiceStatusPending": "Awaiting review",
+    "paymentDetails": "Payment details",
+    "copyDetails": "Copy details",
+    "copied": "Copied",
+    "copyFailed": "Could not copy to clipboard",
+    "iPaidButton": "I paid — notify admin",
+    "paidNotifyToast": "Request submitted. Credits will be added within 10–15 minutes after payment review.",
+    "invoiceFooter": "Keep the receipt until credits appear in your account.",
+    "billingHistory": "Top-up history",
+    "billingEmpty": "No deposit requests yet.",
+    "billingDate": "Date",
+    "billingPlan": "Pack",
+    "billingAmount": "Amount",
+    "billingStatus": "Status",
+    "statusPending": "Pending review",
+    "statusApproved": "Approved",
+    "statusRejected": "Rejected",
+    "invalidPlan": "Invalid plan selected.",
+    "depositCreateFailed": "Could not create a deposit request. Please try again.",
+    "depositLoadFailed": "Could not load deposit history."
   },
   "chat": {
     "title": "✨ AI Assistant (Write in your language)",

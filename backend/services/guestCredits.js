@@ -136,11 +136,13 @@ export async function consumeGuestCredit(guestKey, ipAddress = null) {
     .maybeSingle();
 
   if (readError) {
-    if (isGuestUsageSchemaError(readError)) {
-      logGuestTableMissingOnce();
-      return consumeMemoryGuestCredit(guestKey);
-    }
-    throw createError('Failed to load guest usage.', 500);
+    // Network / schema / missing-table: keep try-on working with in-memory guest credits.
+    console.warn(
+      '[guestCredits] consumeGuestCredit read failed, using memory fallback:',
+      readError.message || readError,
+    );
+    logGuestTableMissingOnce();
+    return consumeMemoryGuestCredit(guestKey);
   }
 
   const now = new Date().toISOString();
@@ -162,11 +164,12 @@ export async function consumeGuestCredit(guestKey, ipAddress = null) {
       if (error.code === '23505') {
         return consumeGuestCredit(guestKey, ipAddress);
       }
-      if (isGuestUsageSchemaError(error)) {
-        logGuestTableMissingOnce();
-        return consumeMemoryGuestCredit(guestKey);
-      }
-      throw createError('Failed to update guest credits.', 500);
+      console.warn(
+        '[guestCredits] consumeGuestCredit insert failed, using memory fallback:',
+        error.message || error,
+      );
+      logGuestTableMissingOnce();
+      return consumeMemoryGuestCredit(guestKey);
     }
 
     return Math.max(0, data.max_generations - data.generations_used);
@@ -189,11 +192,12 @@ export async function consumeGuestCredit(guestKey, ipAddress = null) {
     .maybeSingle();
 
   if (error) {
-    if (isGuestUsageTableMissing(error)) {
-      logGuestTableMissingOnce();
-      return consumeMemoryGuestCredit(guestKey);
-    }
-    throw createError('Failed to update guest credits.', 500);
+    console.warn(
+      '[guestCredits] consumeGuestCredit update failed, using memory fallback:',
+      error.message || error,
+    );
+    logGuestTableMissingOnce();
+    return consumeMemoryGuestCredit(guestKey);
   }
 
   if (!data) {

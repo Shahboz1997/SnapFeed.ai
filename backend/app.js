@@ -5,6 +5,11 @@ import imageRoutes from './routes/imageRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import { isSupabaseConfigured } from './config/supabase.js';
+import {
+  getFashnCreditsBalance,
+  getFashnModelName,
+  isFashnConfigured,
+} from './services/fashnTryOn.js';
 import { errorHandler } from './utils/errors.js';
 
 const app = express();
@@ -54,9 +59,9 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Guest-Fingerprint'],
 }));
-// Настройка лимитов для приема тяжелых Base64 строк с фронтенда
-app.use(express.json({ limit: '15mb' }));
-app.use(express.urlencoded({ limit: '15mb', extended: true }));
+// Two full-res try-on photos as base64 can exceed 15mb.
+app.use(express.json({ limit: '40mb' }));
+app.use(express.urlencoded({ limit: '40mb', extended: true }));
 
 app.get('/api/health', (_req, res) => {
   const apiKey = process.env.OPENAI_API_KEY || '';
@@ -65,10 +70,24 @@ app.get('/api/health', (_req, res) => {
     openaiConfigured: Boolean(apiKey),
     openaiKeyFormatValid: apiKey.startsWith('sk-') && apiKey.length > 20,
     replicateConfigured: Boolean(process.env.REPLICATE_API_TOKEN),
+    fashnConfigured: isFashnConfigured(),
+    fashnModel: isFashnConfigured() ? getFashnModelName() : null,
     supabaseConfigured: isSupabaseConfigured(),
     bgRemovalBackend: process.env.PRODUCT_BG_REMOVAL_BACKEND || 'auto',
     imageUpscaleEnabled: process.env.IMAGE_UPSCALE_ENABLED !== 'false',
   });
+});
+
+app.get('/api/fashn/credits', async (_req, res, next) => {
+  try {
+    if (!isFashnConfigured()) {
+      return res.status(503).json({ error: 'FASHN_API_KEY is not configured.' });
+    }
+    const credits = await getFashnCreditsBalance();
+    return res.json({ success: true, credits });
+  } catch (error) {
+    return next(error);
+  }
 });
 
 app.get('/', (_req, res) => {
@@ -83,6 +102,8 @@ app.get('/', (_req, res) => {
       'POST /api/chat/generate-prompt',
       'GET /api/auth/me',
       'POST /api/auth/claim-guest-credits',
+      'POST /api/auth/create-deposit-request',
+      'GET /api/auth/deposit-requests',
       'GET /api/guest/credits',
     ],
   });

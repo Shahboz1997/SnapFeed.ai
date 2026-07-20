@@ -659,10 +659,11 @@ Rules for gender:
 Infer strictly from garment style on the photo: "female" or "male".
 
 Rules for description:
-Write a concise, precise description IN ENGLISH for the IDM-VTON try-on model (1–3 sentences, max 120 words).
-Include: exact hem length (mini / above-knee / knee / midi / maxi / floor-length), neckline (strapless, V-neck, square, etc.), sleeves, color, fabric, silhouette, and ALL visible decorative details (bows, ruffles, tiers, lace, buttons, pleats, cut-outs).
+Write a concise, precise description IN ENGLISH for virtual try-on (1–3 sentences, max 120 words).
+Include: exact hem length (mini / above-knee / knee / midi / maxi / floor-length), neckline (strapless, V-neck, square, off-shoulder, etc.), sleeves, color, fabric texture (e.g. swiss-dot, lace, linen), print color/scale, silhouette, midriff gap if two-piece, and ALL visible decorative details (bows, ruffles, tiers, lace, buttons, pleats, cut-outs).
 Do NOT describe a longer hem than visible in the photo. A short cocktail or tiered mini dress must stay mini/short — never call it maxi or floor-length.
-This text is sent directly to IDM-VTON as garment_des — accuracy of length and details is critical.
+For two-piece sets, explicitly say "two-piece matching set" and describe BOTH the top and the bottom.
+This text drives try-on fidelity — accuracy of length, color and texture is critical.
 ${wishText ? `\nUser wishes (do not override category or gender based on wishes): ${wishText}` : ''}
 
 Return ONLY valid JSON. No markdown, no extra text.`;
@@ -683,6 +684,50 @@ export function buildTryOnRefinedPrompt(gender, description) {
   );
 }
 
+const TWO_PIECE_HINT =
+  /\b(two[\s-]?piece|2[\s-]?piece|matching set|co-?ord|crop top|top and skirt|top and pants|комплект|двойк)\b/i;
+
+/**
+ * Short styling prompt for FASHN tryon-max (max 500 chars).
+ * Do NOT pass long lookbook / Flux prompts — FASHN expects brief wear instructions.
+ * @see https://docs.fashn.ai/api-reference/tryon-max
+ */
+export function buildFashnTryOnPrompt({ category, description, manualWish } = {}) {
+  const parts = [];
+  const desc = typeof description === 'string' ? description.trim() : '';
+  const wish = typeof manualWish === 'string' ? manualWish.trim() : '';
+  const normalizedCategory = normalizeClothingCategoryFromVision(category);
+  const looksLikeTwoPiece = TWO_PIECE_HINT.test(desc) || TWO_PIECE_HINT.test(wish);
+
+  if (normalizedCategory === 'dress' || looksLikeTwoPiece) {
+    parts.push(
+      'wear the complete matching outfit from the product photo as a full set, including both top and bottom pieces',
+    );
+  } else if (normalizedCategory === 'lower_body') {
+    parts.push('wear only the bottom garment from the product photo');
+  } else if (normalizedCategory === 'upper_body') {
+    parts.push('wear only the top garment from the product photo');
+  }
+
+  if (desc && desc.toLowerCase() !== 'clothing garment for virtual try-on') {
+    const compact = desc.replace(/\s+/g, ' ').slice(0, 220);
+    parts.push(`exact match to product: ${compact}`);
+  }
+
+  parts.push(
+    'preserve exact fabric color, print scale, and texture',
+    'natural cloth drape with soft contact shadows where fabric meets skin',
+    'keep sleeve volume, ruffles, and hem length identical to the product photo',
+    'bright even catalog studio lighting',
+  );
+
+  if (wish && !isCatalogPrompt(wish) && wish.length < 160) {
+    parts.push(wish);
+  }
+
+  return parts.join('. ').replace(/\s+/g, ' ').trim().slice(0, 500);
+}
+
 export function normalizeClothingCategoryFromVision(category) {
   if (typeof category !== 'string') {
     return 'upper_body';
@@ -691,6 +736,8 @@ export function normalizeClothingCategoryFromVision(category) {
   const normalized = category.trim().toLowerCase();
 
   switch (normalized) {
+    case 'auto':
+      return 'auto';
     case 'top':
     case 'upper_body':
     case 'upperbody':
@@ -701,6 +748,8 @@ export function normalizeClothingCategoryFromVision(category) {
       return 'lower_body';
     case 'dress':
     case 'dresses':
+    case 'one-pieces':
+    case 'one_pieces':
       return 'dress';
     default:
       return 'upper_body';

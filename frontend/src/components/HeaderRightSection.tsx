@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { LogOut, Zap } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import LanguageSwitcher from './LanguageSwitcher';
 
@@ -19,6 +20,7 @@ interface HeaderRightSectionProps {
   creditsLoading?: boolean;
   onCreditsClick?: () => void;
   onSignInClick?: () => void;
+  variant?: 'light' | 'dark';
 }
 
 function CreditsPill({
@@ -38,15 +40,7 @@ function CreditsPill({
 
   const pill = (
     <>
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 24 24"
-        fill="currentColor"
-        className="h-3.5 w-3.5 shrink-0 text-amber-500"
-        aria-hidden="true"
-      >
-        <path d="M12 2L3.5 13H11V22L19.5 11H12V2Z" />
-      </svg>
+      <Zap className="h-3.5 w-3.5 shrink-0 text-amber-500" fill="currentColor" aria-hidden="true" />
       <span
         className={`min-w-[1ch] tabular-nums ${loading ? 'animate-pulse opacity-80' : ''}`}
         aria-label={loading ? t('auth.creditsLabel') : undefined}
@@ -56,8 +50,8 @@ function CreditsPill({
     </>
   );
 
-  const className = `inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-amber-200/60 bg-amber-50 px-2.5 text-xs font-bold text-amber-700 shadow-sm transition hover:scale-105 sm:px-3 ${
-    isEmpty ? 'cursor-pointer ring-2 ring-amber-300/50' : ''
+  const className = `inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl border border-zinc-200/80 bg-white px-2.5 text-xs font-bold text-zinc-800 shadow-sm shadow-zinc-200/50 transition hover:border-zinc-300 hover:shadow-md hover:shadow-zinc-200/60 sm:px-3 ${
+    isEmpty ? 'cursor-pointer ring-1 ring-amber-300/60' : ''
   }`;
 
   if (isEmpty && onClick) {
@@ -83,11 +77,7 @@ function CreditsPill({
   }
 
   return (
-    <Link
-      to="/cabinet"
-      title={t('auth.creditsLabel')}
-      className={className}
-    >
+    <Link to="/cabinet" title={t('auth.creditsLabel')} className={className}>
       {pill}
     </Link>
   );
@@ -119,8 +109,8 @@ export default function HeaderRightSection({
     return (
       <div className="flex h-9 shrink-0 items-center gap-2 sm:gap-3">
         <CreditsPill credits={credits} isGuest={!user} loading={creditsLoading} onClick={onCreditsClick} />
-        <LanguageSwitcher />
-        <div className="h-9 w-9 shrink-0 animate-pulse rounded-full bg-slate-200/70" aria-hidden="true" />
+        <LanguageSwitcher variant="light" />
+        <div className="h-9 w-9 shrink-0 animate-pulse rounded-xl bg-zinc-200" aria-hidden="true" />
       </div>
     );
   }
@@ -129,11 +119,11 @@ export default function HeaderRightSection({
     return (
       <div className="flex h-9 shrink-0 items-center gap-2 sm:gap-3">
         <CreditsPill credits={credits} isGuest loading={creditsLoading} onClick={onCreditsClick} />
-        <LanguageSwitcher />
+        <LanguageSwitcher variant="light" />
         <button
           type="button"
           onClick={onSignInClick}
-          className="inline-flex h-9 shrink-0 items-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 sm:px-4 sm:text-sm"
+          className="inline-flex h-9 shrink-0 items-center rounded-xl border border-zinc-200/80 bg-white px-3 text-xs font-semibold text-zinc-700 shadow-sm shadow-zinc-200/40 transition hover:border-zinc-300 hover:bg-zinc-50 sm:px-4 sm:text-sm"
         >
           {t('auth.signIn')}
         </button>
@@ -152,8 +142,7 @@ export default function HeaderRightSection({
   return (
     <div className="flex h-9 shrink-0 items-center gap-2 sm:gap-3">
       <CreditsPill credits={credits} loading={creditsLoading} onClick={onCreditsClick} />
-
-      <LanguageSwitcher />
+      <LanguageSwitcher variant="light" />
 
       <div ref={dropdownRef} className="relative">
         <button
@@ -162,7 +151,7 @@ export default function HeaderRightSection({
           aria-haspopup="menu"
           aria-expanded={isProfileOpen}
           aria-label={displayName}
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-white shadow-sm transition-all hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900/20"
+          className="flex h-9 w-9 items-center justify-center rounded-xl bg-zinc-900 text-sm font-semibold text-white shadow-sm shadow-zinc-300/50 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/40"
         >
           {getInitials(displayName)}
         </button>
@@ -170,42 +159,31 @@ export default function HeaderRightSection({
         {isProfileOpen && (
           <div
             role="menu"
-            className="absolute right-0 top-11 z-50 w-48 origin-top-right transform rounded-xl border border-slate-200/60 bg-white p-1.5 shadow-xl transition-all animate-in fade-in slide-in-from-top-2 duration-150"
+            className="absolute right-0 top-11 z-50 w-52 origin-top-right rounded-xl border border-zinc-200/70 bg-white/95 p-1.5 shadow-xl shadow-zinc-200/70 backdrop-blur-xl"
           >
             <div className="px-3 py-2 text-left">
-              <p className="truncate text-xs font-semibold text-slate-800">
-                {displayName}
-              </p>
-              {email && (
-                <p className="truncate text-[10px] text-slate-400">
-                  {email}
-                </p>
-              )}
+              <p className="truncate text-xs font-semibold text-zinc-900">{displayName}</p>
+              {email && <p className="truncate text-[10px] text-zinc-500">{email}</p>}
             </div>
 
-            <div className="my-1 border-b border-slate-100" />
+            <div className="my-1 border-b border-zinc-100" />
+
+            <Link
+              to="/cabinet"
+              role="menuitem"
+              onClick={() => setIsProfileOpen(false)}
+              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-medium text-zinc-600 transition hover:bg-zinc-50 hover:text-zinc-900"
+            >
+              {t('auth.cabinetTitle')}
+            </Link>
 
             <button
               type="button"
               role="menuitem"
               onClick={handleSignOut}
-              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-medium text-rose-600 transition-colors hover:bg-rose-50"
+              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-medium text-rose-600 transition hover:bg-rose-50"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={2}
-                stroke="currentColor"
-                className="h-3.5 w-3.5"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"
-                />
-              </svg>
+              <LogOut className="h-3.5 w-3.5" />
               <span>{t('auth.signOut')}</span>
             </button>
           </div>

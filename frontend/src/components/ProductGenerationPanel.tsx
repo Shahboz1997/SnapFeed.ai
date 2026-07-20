@@ -2,7 +2,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ProductFallbackReason } from '../api/generateProductImage';
 import type { ProductGenerationMode } from '../constants/productGenerationPresets';
-import type { TryOnCategory, TryOnGender } from '../constants/tryOnOptions';
+import type { TryOnCategory, TryOnGender, TryOnManualCategory } from '../constants/tryOnOptions';
 import {
   TRYON_CATEGORY_OPTIONS,
   TRYON_GENDER_OPTIONS,
@@ -126,7 +126,7 @@ export default function ProductGenerationPanel({
     female: 'ecommerce.tryOnSelectors.genderFemale',
   };
 
-  const categoryLabelKey: Record<TryOnCategory, string> = {
+  const categoryLabelKey: Record<TryOnManualCategory, string> = {
     top: 'ecommerce.tryOnSelectors.categoryTop',
     bottom: 'ecommerce.tryOnSelectors.categoryBottom',
     dress: 'ecommerce.tryOnSelectors.categoryDress',

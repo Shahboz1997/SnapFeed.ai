@@ -23,7 +23,7 @@ export interface GenerateProductImageRequest {
   lang?: string;
 }
 
-export type ProductBranchUsed = 'product' | 'tryon';
+export type ProductBranchUsed = 'product' | 'tryon' | 'packshot' | 'product-to-model';
 export type ProductFallbackReason = 'not_clothing' | 'verification_failed';
 
 export interface GenerateProductImageResponse {
@@ -109,7 +109,12 @@ export async function generateProductImage(
     throw new ApiError('Incomplete data.', response.status, 'api.incompleteData');
   }
 
-  if (data.branchUsed !== 'product' && data.branchUsed !== 'tryon') {
+  if (
+    data.branchUsed !== 'product'
+    && data.branchUsed !== 'tryon'
+    && data.branchUsed !== 'packshot'
+    && data.branchUsed !== 'product-to-model'
+  ) {
     throw new ApiError('Incomplete data.', response.status, 'api.incompleteData');
   }
 
