@@ -97,31 +97,31 @@ export default function GalleryPage() {
         credits={displayCredits}
       />
 
-      <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:py-10">
-        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
-          <div>
+      <main className="mx-auto w-full max-w-6xl px-3 py-6 sm:px-6 sm:py-8 lg:py-10">
+        <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
+          <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
               {t('gallery.eyebrow')}
             </p>
-            <h2 className="mt-2 font-display text-3xl text-zinc-900 sm:text-4xl">
+            <h2 className="mt-2 font-display text-2xl text-zinc-900 sm:text-4xl">
               {t('gallery.title')}
             </h2>
           </div>
           <Link
             to="/studio"
-            className="inline-flex h-11 items-center rounded-xl bg-zinc-900 px-5 text-sm font-semibold text-white transition hover:bg-zinc-800"
+            className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-zinc-900 px-5 text-sm font-semibold text-white transition hover:bg-zinc-800 sm:w-auto"
           >
             {t('gallery.newTryOn')}
           </Link>
         </div>
 
         {items.length === 0 ? (
-          <div className="glass-panel luxury-shadow flex min-h-[420px] flex-col items-center justify-center rounded-3xl border-dashed px-6 text-center">
-            <p className="font-display text-2xl text-zinc-900">{t('gallery.emptyTitle')}</p>
+          <div className="glass-panel luxury-shadow flex min-h-[280px] flex-col items-center justify-center rounded-2xl border-dashed px-4 text-center sm:min-h-[420px] sm:rounded-3xl sm:px-6">
+            <p className="font-display text-xl text-zinc-900 sm:text-2xl">{t('gallery.emptyTitle')}</p>
             <p className="mt-2 max-w-md text-sm text-zinc-500">{t('gallery.emptyDesc')}</p>
             <Link
               to="/studio"
-              className="mt-6 inline-flex h-11 items-center rounded-xl bg-zinc-900 px-5 text-sm font-semibold text-white transition hover:bg-zinc-800"
+              className="mt-6 inline-flex h-11 w-full max-w-xs items-center justify-center rounded-xl bg-zinc-900 px-5 text-sm font-semibold text-white transition hover:bg-zinc-800 sm:w-auto"
             >
               {t('gallery.emptyCta')}
             </Link>

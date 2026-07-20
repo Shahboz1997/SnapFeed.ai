@@ -37,7 +37,7 @@ export default function AppShell({
   const { t } = useTranslation();
 
   return (
-    <div className="relative flex min-h-dvh overflow-x-hidden bg-zinc-50 text-zinc-900">
+    <div className="relative flex h-dvh max-h-dvh overflow-hidden bg-zinc-50 text-zinc-900">
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden="true">
         <div className="absolute -left-24 top-0 h-[420px] w-[420px] rounded-full bg-indigo-200/25 blur-[120px]" />
         <div className="absolute right-0 top-24 h-[380px] w-[380px] rounded-full bg-violet-200/20 blur-[130px]" />
@@ -115,9 +115,9 @@ export default function AppShell({
         </nav>
       </aside>
 
-      <div className="relative z-10 flex min-h-dvh w-full min-w-0 flex-col overflow-x-hidden lg:pl-16">
+      <div className="relative z-10 flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden lg:pl-16">
         <header
-          className="sticky top-0 z-50 shrink-0 border-b border-zinc-200/60 bg-white/80 backdrop-blur-md"
+          className="z-50 shrink-0 border-b border-zinc-200/60 bg-white/80 backdrop-blur-md"
           style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
         >
           <div className="flex h-14 items-center justify-between gap-3 px-3 sm:gap-4 sm:px-6">
@@ -149,7 +149,7 @@ export default function AppShell({
           </div>
         </header>
 
-        <div className="mobile-tab-offset min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain">
+        <div className="mobile-tab-offset min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain [-webkit-overflow-scrolling:touch]">
           {children}
         </div>
       </div>

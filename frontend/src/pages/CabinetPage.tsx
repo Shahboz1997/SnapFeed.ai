@@ -119,22 +119,22 @@ export default function CabinetPage() {
         credits={profile?.credits ?? 0}
       />
 
-      <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 py-8 sm:px-6">
-        <div className="flex items-center justify-between gap-4">
-          <Link to="/studio" className="text-sm font-medium text-zinc-500 transition hover:text-zinc-900">
+      <div className="mx-auto flex w-full max-w-2xl flex-col gap-5 px-3 py-6 sm:gap-6 sm:px-6 sm:py-8">
+        <div className="flex items-center justify-between gap-3">
+          <Link to="/studio" className="min-w-0 truncate text-sm font-medium text-zinc-500 transition hover:text-zinc-900">
             ← {t('auth.backToApp')}
           </Link>
           <button
             type="button"
             onClick={() => signOut()}
-            className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-500 transition hover:border-zinc-300 hover:text-zinc-900"
+            className="shrink-0 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-500 transition hover:border-zinc-300 hover:text-zinc-900"
           >
             {t('auth.signOut')}
           </button>
         </div>
 
-        <section className="glass-panel luxury-shadow rounded-3xl p-6 sm:p-8">
-          <h1 className="mb-6 font-display text-2xl font-bold tracking-tight text-zinc-900">
+        <section className="glass-panel luxury-shadow rounded-2xl p-5 sm:rounded-3xl sm:p-8">
+          <h1 className="mb-5 font-display text-xl font-bold tracking-tight text-zinc-900 sm:mb-6 sm:text-2xl">
             {t('auth.cabinetTitle')}
           </h1>
 
