@@ -57,7 +57,15 @@ export function errorHandler(err, req, res, _next) {
   console.error(err);
 
   const statusCode = err.statusCode || 500;
-  const message = err.message || 'Internal Server Error';
+  const isProduction = process.env.NODE_ENV === 'production';
+  const message = (isProduction && statusCode >= 500)
+    ? 'Internal Server Error'
+    : (err.message || 'Internal Server Error');
 
-  res.status(statusCode).json({ error: message });
+  const payload = { error: message };
+  if (err.messageKey) {
+    payload.messageKey = err.messageKey;
+  }
+
+  res.status(statusCode).json(payload);
 }

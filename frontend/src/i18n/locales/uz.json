@@ -21,7 +21,48 @@
     "tryOnDesc": "Kiyim sizda yoki modelda qanday ko‘rinishini ko‘ring.",
     "galleryBadge": "Kutubxona",
     "galleryTitle": "Galereya",
-    "galleryDesc": "So‘nggi kiydirish natijalari."
+    "galleryDesc": "So‘nggi kiydirish natijalari.",
+    "photoTipsTitle": "Eng yaxshi natija uchun qanday suratga olish kerak",
+    "photoTipsSubtitle": "Aniq suratlar AI ga kiyimni yanada real kiydirishga yordam beradi.",
+    "photoTipsAvoid": "Ilgichdagi kiyim, poldagi kiyim, ekstremal pozalar, kiyimni yopib turgan soch va bir nechta odam bo‘lgan suratlardan saqlaning.",
+    "photoTips": {
+      "personFull": {
+        "title": "To‘liq bo‘y yoki ¾",
+        "desc": "Kiyim to‘liq kadrda bo‘lsin — boshdan oyoqgacha yoki uch chorak."
+      },
+      "personPose": {
+        "title": "Yaxshi o‘tirgan kiyim, tabiiy poza",
+        "desc": "Kameraga qaragan holda yoki biroz burchakda turing. Yaxshi o‘tirgan kiyim AI ga siluetni o‘qishga yordam beradi."
+      },
+      "aspectRatio": {
+        "title": "2:3 formatda oling",
+        "desc": "Baland portret kadr (2:3) eng muvozanatli kiydirish natijasini beradi."
+      },
+      "garmentShape": {
+        "title": "Kiyim shaklini ko‘rsating",
+        "desc": "Tekis yorug‘lik va oddiy fon — buyum to‘liq ko‘rinishi kerak."
+      }
+    },
+    "garmentRankTitle": "Eng yaxshi kiyim surat turlari",
+    "garmentRankSubtitle": "Virtual kiydirish uchun kuchlidan zaifgacha.",
+    "garmentRank": {
+      "best": {
+        "label": "Eng yaxshi",
+        "desc": "Modelda — tabiiy shakl va yorug‘lik"
+      },
+      "good": {
+        "label": "Yaxshi",
+        "desc": "Ghost mannequin — aniq proporsiya"
+      },
+      "ok": {
+        "label": "Bo‘ladi",
+        "desc": "Flat-lay — ishlaydi, kamroq hajm"
+      },
+      "avoid": {
+        "label": "Yo‘q",
+        "desc": "Ilgichda yoki polda"
+      }
+    }
   },
   "studio": {
     "eyebrow": "Studiya",
@@ -59,7 +100,8 @@
     "productLabel": "Mahsulot",
     "history": "History",
     "historyEmpty": "Hali generatsiya yo‘q",
-    "running": "Running",
+    "running": "Yaratilmoqda…",
+    "readyInGallery": "Tayyor — Galereyaga saqlandi",
     "waitTips": {
       "fitting": "Kiyim modelga kiydirilmoqda…",
       "lighting": "Studiya yorug‘ligi moslashtirilmoqda…",
@@ -75,6 +117,22 @@
     "mode": "Mode",
     "modeBalanced": "Balanced",
     "modeFast": "Fast",
+    "variants": "Variantlar",
+    "variantsOne": "1 rasm",
+    "variantsThree": "3 variant",
+    "variantN": "Variant {{n}}",
+    "creditsCost": "{{count}} kr.",
+    "runWithCredits": "Ishga tushirish · {{count}} kr.",
+    "qualityModes": {
+      "auto": "Avto",
+      "autoDesc": "Tezlik va sifatni o'zi tanlaydi",
+      "fast": "Tez",
+      "fastDesc": "Tezroq, kamroq detal",
+      "balanced": "Muvozanat",
+      "balancedDesc": "Tezlik va sifatning yaxshi aralashmasi",
+      "quality": "Sifat",
+      "qualityDesc": "Eng yuqori detal, sekinroq"
+    },
     "promptPlaceholder": "Ixtiyoriy: ko‘rsatmalar (masalan, sharfni olib tashlash)",
     "run": "Run",
     "loading": "Kiydirish yaratilmoqda…",
@@ -293,7 +351,7 @@
     "tryOnFallbackVerification": "Mahsulot turini tekshirib bo'lmadi. Kiydirish o'rniga oddiy mahsulot fotosi yaratildi."
   },
   "toasts": {
-    "creditDeducted": "✨ Muvaffaqiyatli! 1 kredit yozildi.",
+    "creditDeducted": "✨ Muvaffaqiyatli! {{count}} kredit yozildi.",
     "success": "Muvaffaqiyat",
     "error": "Xato",
     "info": "Info"
@@ -309,7 +367,9 @@
     "authRequired": "Rasm yaratish uchun tizimga kiring.",
     "authInvalid": "Sessiya tugadi. Qayta kiring.",
     "insufficientCredits": "Kreditlar tugadi. Davom etish uchun balansni to'ldiring.",
-    "fingerprintRequired": "Brauzer sessiyasini tasdiqlab bo'lmadi. Sahifani yangilang."
+    "fingerprintRequired": "Brauzer sessiyasini tasdiqlab bo'lmadi. Sahifani yangilang.",
+    "rateLimited": "Juda ko'p so'rovlar. Keyinroq qayta urinib ko'ring.",
+    "authUnavailable": "Autentifikatsiya vaqtincha mavjud emas."
   },
   "auth": {
     "signIn": "Kirish",
@@ -339,13 +399,28 @@
   "pricing": {
     "title": "Kreditlarni to'ldirish",
     "description": "Bepul generatsiyalar tugadi. Davom etish uchun paket tanlang.",
-    "creditsPack": "{{count}} kredit",
+    "creditsPack_one": "{{count}} kredit",
+    "creditsPack_other": "{{count}} kredit",
+    "perCreditApprox": "≈ {{price}} / generatsiya",
+    "currency": "Valyuta",
+    "currencyLabel": {
+      "RUB": "₽ RU",
+      "USD": "$ EN",
+      "UZS": "soʻm UZ",
+      "TJS": "с. TG"
+    },
     "buyButton": "Paket sotib olish",
     "buyCredits": "Kredit sotib olish",
+    "upgrade": "Yangilash",
     "popular": "Mashhur",
     "close": "Yopish",
     "hint": "O'tkazma tekshirilgach, kreditlar 10–15 daqiqada qo'shiladi.",
-    "manualPaymentNotice": "Paketni tanlang — SBP / karta / kripto rekvizitlari bilan hisob ochiladi. To'lov tekshirilgach kreditlar qo'shiladi.",
+    "manualPaymentNotice": {
+      "RUB": "Paketni tanlang — SBP / karta / kripto rekvizitlari. To'lov tekshirilgach kreditlar qo'shiladi.",
+      "USD": "Paketni tanlang — karta / kripto / PayPal rekvizitlari. To'lov tekshirilgach kreditlar qo'shiladi.",
+      "UZS": "Paketni tanlang — soʻmda karta / kripto rekvizitlari. To'lov tekshirilgach kreditlar qo'shiladi.",
+      "TJS": "Paketni tanlang — somonida karta / kripto rekvizitlari. To'lov tekshirilgach kreditlar qo'shiladi."
+    },
     "contactButton": "Bog'lanish",
     "topUpTitle": "Balansni to'ldirish",
     "topUpDescription": "Generatorda paket tanlang yoki to'g'ridan-to'g'ri bizga yozing.",
@@ -371,7 +446,10 @@
     "copied": "Nusxalandi",
     "copyFailed": "Nusxalab bo'lmadi",
     "iPaidButton": "To'ladim — adminni xabardor qilish",
+    "iPaidSending": "Bildirishnoma yuborilmoqda…",
     "paidNotifyToast": "Ariza yuborildi. To'lov tekshirilgach, kreditlar 10–15 daqiqada qo'shiladi.",
+    "paidNotifyFailed": "Adminni xabardor qilib bo'lmadi. Qayta urinib ko'ring yoki supportga yozing.",
+    "paidNotifyNotConfigured": "Bildirishnomalar vaqtincha ishlamayapti. To'lovdan so'ng supportga yozing.",
     "invoiceFooter": "Kreditlar chiqguncha chekni saqlang.",
     "billingHistory": "To'ldirish tarixi",
     "billingEmpty": "Hali to'ldirish arizalari yo'q.",

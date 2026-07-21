@@ -22,11 +22,34 @@ export const TRYON_MODEL_FAN = [
   '/studio-examples/tryon-model-2.png',
 ] as const;
 
+/**
+ * Product → Model empty-state fan: packshot + worn result.
+ */
+export const PRODUCT_TO_MODEL_FAN = [
+  '/studio-examples/product-to-model-sample-product.png',
+  '/studio-examples/product-to-model-sample-result.png',
+] as const;
+
+/** Clicking the fan loads this garment into the product slot. */
+export const PRODUCT_TO_MODEL_SAMPLE_PRODUCT =
+  '/studio-examples/product-to-model-sample-product.png';
+
+/**
+ * Packshot empty-state fan: on-model source → clean catalog packshot.
+ */
+export const PACKSHOT_FAN = [
+  '/studio-examples/packshot-before.png',
+  '/studio-examples/packshot-after.png',
+] as const;
+
+/** Clicking the packshot fan loads the source product photo. */
+export const PACKSHOT_SAMPLE_PRODUCT = '/studio-examples/packshot-before.png';
+
 /** Hover / focus demo cards for studio mode pills (FASHN-style). */
 export const STUDIO_MODE_EXAMPLES: Record<StudioModeExampleId, StudioModeExample> = {
   'product-to-model': {
-    before: '/studio-examples/product-to-model-before-2.png',
-    after: '/studio-examples/product-to-model-after-2.png',
+    before: '/studio-examples/product-to-model-sample-product.png',
+    after: '/studio-examples/product-to-model-sample-result.png',
     titleKey: 'studio.modeProductToModel',
     descriptionKey: 'studio.modeProductToModelDesc',
   },

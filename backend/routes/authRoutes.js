@@ -9,22 +9,55 @@ import {
 } from '../services/guestCredits.js';
 import { getSupabaseAdmin, isSupabaseConfigured } from '../config/supabase.js';
 import {
-  formatTierAmountUsd,
+  formatTierAmount,
   getPricingTier,
+  normalizeDepositCurrency,
 } from '../constants/pricingTiers.js';
+import {
+  isAdminEmailConfigured,
+  sendDepositPaidAdminEmail,
+} from '../services/adminNotifyEmail.js';
 
 const router = express.Router();
 
-const DEFAULT_PAYMENT_DETAILS = [
-  'СБП / карта: переведите точную сумму на реквизиты, которые пришлёт поддержка после заявки.',
+const DEFAULT_PAYMENT_DETAILS_RUB = [
+  'СБП / карта / крипта: переведите точную сумму на реквизиты ниже (или которые пришлёт поддержка).',
   'В комментарии к платежу укажите email аккаунта SnapFeed.ai.',
   'После перевода нажмите «Я оплатил» — кредиты начислим в течение 10–15 минут после проверки.',
 ].join('\n');
 
-function getManualPaymentDetails() {
-  const fromEnv = process.env.MANUAL_PAYMENT_DETAILS?.trim();
-  if (!fromEnv) return DEFAULT_PAYMENT_DETAILS;
-  return fromEnv.replace(/\\n/g, '\n');
+const DEFAULT_PAYMENT_DETAILS_USD = [
+  'Card / crypto / PayPal: transfer the exact USD amount using the details below (or wait for support to reply).',
+  'Include your SnapFeed.ai account email in the payment note.',
+  'After paying, tap “I paid” — credits are added within 10–15 minutes after verification.',
+].join('\n');
+
+const DEFAULT_PAYMENT_DETAILS_UZS = [
+  'Karta / kripto: aniq soʻm summasini quyidagi rekvizitlarga o\'tkazing (yoki support javobini kuting).',
+  'To\'lov izohiga SnapFeed.ai emailingizni yozing.',
+  'To\'lovdan so\'ng «To\'ladim» tugmasini bosing — kreditlar 10–15 daqiqada qo\'shiladi.',
+].join('\n');
+
+const DEFAULT_PAYMENT_DETAILS_TJS = [
+  'Корт / крипто: маблағи дақиқи сомониро ба реквизитҳои зерин гузаронед (ё ҷавоби дастгириро интизор шавед).',
+  'Дар шарҳи пардохт email-и ҳисоби SnapFeed.ai-ро нависед.',
+  'Пас аз пардохт «Ман пардохт кардам»-ро пахш кунед — кредитҳо дар 10–15 дақиқа илова мешаванд.',
+].join('\n');
+
+function getManualPaymentDetails(currency = 'RUB') {
+  const code = normalizeDepositCurrency(currency);
+  const envKey = {
+    RUB: 'MANUAL_PAYMENT_DETAILS',
+    USD: 'MANUAL_PAYMENT_DETAILS_USD',
+    UZS: 'MANUAL_PAYMENT_DETAILS_UZS',
+    TJS: 'MANUAL_PAYMENT_DETAILS_TJS',
+  }[code];
+  const fromEnv = process.env[envKey]?.trim() || process.env.MANUAL_PAYMENT_DETAILS?.trim();
+  if (fromEnv) return fromEnv.replace(/\\n/g, '\n');
+  if (code === 'USD') return DEFAULT_PAYMENT_DETAILS_USD;
+  if (code === 'UZS') return DEFAULT_PAYMENT_DETAILS_UZS;
+  if (code === 'TJS') return DEFAULT_PAYMENT_DETAILS_TJS;
+  return DEFAULT_PAYMENT_DETAILS_RUB;
 }
 
 router.get('/guest/credits', optionalAuth, async (req, res, next) => {
@@ -99,6 +132,7 @@ router.post('/auth/create-deposit-request', protect, async (req, res, next) => {
     const planName = typeof req.body?.planName === 'string'
       ? req.body.planName.trim().toLowerCase()
       : '';
+    const currency = normalizeDepositCurrency(req.body?.currency);
     const tier = getPricingTier(planName);
 
     if (!tier) {
@@ -108,24 +142,46 @@ router.post('/auth/create-deposit-request', protect, async (req, res, next) => {
       });
     }
 
-    const amount = formatTierAmountUsd(tier);
+    const amount = formatTierAmount(tier, currency);
     const supabase = getSupabaseAdmin();
 
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('deposit_requests')
       .insert({
         user_id: req.user.id,
         plan_name: tier.id,
         amount,
+        currency,
         status: 'pending',
       })
-      .select('id, plan_name, amount, status, created_at')
+      .select('id, plan_name, amount, currency, status, created_at')
       .single();
+
+    // Older schema without currency column — retry without it.
+    if (error && /currency/i.test(error.message || '')) {
+      console.warn('[create-deposit-request] currency column missing — retrying without it');
+      ({ data, error } = await supabase
+        .from('deposit_requests')
+        .insert({
+          user_id: req.user.id,
+          plan_name: tier.id,
+          amount,
+          status: 'pending',
+        })
+        .select('id, plan_name, amount, status, created_at')
+        .single());
+    }
 
     if (error) {
       console.error('[create-deposit-request]', error.message);
-      return res.status(500).json({
-        error: 'Failed to create deposit request.',
+      const tableMissing = error.code === '42P01'
+        || error.code === 'PGRST205'
+        || /Could not find the table/i.test(error.message || '')
+        || (/deposit_requests/i.test(error.message || '') && !/currency/i.test(error.message || ''));
+      return res.status(tableMissing ? 503 : 500).json({
+        error: tableMissing
+          ? 'Deposit table is not set up. Run supabase/migrations/006_deposit_requests.sql in Supabase.'
+          : 'Failed to create deposit request.',
         messageKey: 'pricing.depositCreateFailed',
       });
     }
@@ -134,11 +190,12 @@ router.post('/auth/create-deposit-request', protect, async (req, res, next) => {
       success: true,
       requestId: data.id,
       amount: Number(data.amount),
+      currency: normalizeDepositCurrency(data.currency || currency),
       credits: tier.credits,
       planName: tier.id,
       planLabel: tier.label,
       status: data.status,
-      paymentDetails: getManualPaymentDetails(),
+      paymentDetails: getManualPaymentDetails(currency),
     });
   } catch (error) {
     return next(error);
@@ -152,12 +209,33 @@ router.get('/auth/deposit-requests', protect, async (req, res, next) => {
     }
 
     const supabase = getSupabaseAdmin();
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('deposit_requests')
-      .select('id, plan_name, amount, status, created_at')
+      .select('id, plan_name, amount, currency, status, created_at')
       .eq('user_id', req.user.id)
       .order('created_at', { ascending: false })
       .limit(50);
+
+    // Older schema without currency column — retry without it.
+    if (error && /currency/i.test(error.message || '')) {
+      ({ data, error } = await supabase
+        .from('deposit_requests')
+        .select('id, plan_name, amount, status, created_at')
+        .eq('user_id', req.user.id)
+        .order('created_at', { ascending: false })
+        .limit(50));
+    }
+
+    // Table not created yet — show empty history instead of a hard error.
+    if (error && (
+      error.code === '42P01'
+      || error.code === 'PGRST205'
+      || /deposit_requests/i.test(error.message || '')
+      || /Could not find the table/i.test(error.message || '')
+    )) {
+      console.warn('[deposit-requests] table missing — run supabase/migrations/006_deposit_requests.sql');
+      return res.json({ requests: [] });
+    }
 
     if (error) {
       console.error('[deposit-requests]', error.message);
@@ -172,10 +250,111 @@ router.get('/auth/deposit-requests', protect, async (req, res, next) => {
         id: row.id,
         planName: row.plan_name,
         amount: Number(row.amount),
+        currency: normalizeDepositCurrency(row.currency),
         status: row.status,
         createdAt: row.created_at,
       })),
     });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+router.post('/auth/notify-deposit-paid', protect, async (req, res, next) => {
+  try {
+    if (!isSupabaseConfigured() || !req.user?.id) {
+      return res.status(503).json({
+        error: 'Payments are not configured.',
+        messageKey: 'api.authRequired',
+      });
+    }
+
+    if (!isAdminEmailConfigured()) {
+      return res.status(503).json({
+        error: 'Admin email is not configured. Set SMTP_* or RESEND_API_KEY.',
+        messageKey: 'pricing.paidNotifyNotConfigured',
+      });
+    }
+
+    const requestId = typeof req.body?.requestId === 'string'
+      ? req.body.requestId.trim()
+      : '';
+
+    if (!requestId) {
+      return res.status(400).json({
+        error: 'requestId is required.',
+        messageKey: 'pricing.paidNotifyFailed',
+      });
+    }
+
+    const supabase = getSupabaseAdmin();
+    let { data: row, error } = await supabase
+      .from('deposit_requests')
+      .select('id, plan_name, amount, currency, status, user_id')
+      .eq('id', requestId)
+      .eq('user_id', req.user.id)
+      .maybeSingle();
+
+    if (error && /currency/i.test(error.message || '')) {
+      ({ data: row, error } = await supabase
+        .from('deposit_requests')
+        .select('id, plan_name, amount, status, user_id')
+        .eq('id', requestId)
+        .eq('user_id', req.user.id)
+        .maybeSingle());
+    }
+
+    if (error) {
+      console.error('[notify-deposit-paid]', error.message);
+      return res.status(500).json({
+        error: 'Failed to load deposit request.',
+        messageKey: 'pricing.paidNotifyFailed',
+      });
+    }
+
+    if (!row) {
+      return res.status(404).json({
+        error: 'Deposit request not found.',
+        messageKey: 'pricing.paidNotifyFailed',
+      });
+    }
+
+    if (row.status !== 'pending') {
+      return res.status(400).json({
+        error: 'Deposit request is no longer pending.',
+        messageKey: 'pricing.paidNotifyFailed',
+      });
+    }
+
+    const currency = normalizeDepositCurrency(row.currency);
+    const tier = getPricingTier(row.plan_name);
+    if (!tier) {
+      return res.status(400).json({
+        error: 'Invalid plan on deposit request.',
+        messageKey: 'pricing.paidNotifyFailed',
+      });
+    }
+
+    try {
+      await sendDepositPaidAdminEmail({
+        requestId: row.id,
+        userEmail: req.user.email ?? null,
+        userId: req.user.id,
+        planName: tier.id,
+        planLabel: tier.label,
+        amount: Number(row.amount),
+        currency,
+        credits: tier.credits,
+      });
+    } catch (mailError) {
+      console.error('[notify-deposit-paid] email failed:', mailError.message);
+      return res.status(502).json({
+        error: 'Failed to send admin notification email.',
+        messageKey: 'pricing.paidNotifyFailed',
+      });
+    }
+
+    return res.json({ success: true });
   } catch (error) {
     return next(error);
   }

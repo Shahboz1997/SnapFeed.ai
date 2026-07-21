@@ -15,6 +15,48 @@ import {
   writeGuestCreditsToStorage,
 } from '../constants/guestCredits';
 
+const PHOTO_TIPS = [
+  {
+    key: 'personFull',
+    image: '/studio-examples/tryon-model-1.png',
+    objectPosition: 'object-top',
+  },
+  {
+    key: 'personPose',
+    image: '/studio-examples/tryon-model-3.png',
+    objectPosition: 'object-top',
+  },
+  {
+    key: 'aspectRatio',
+    image: '/studio-examples/tryon-model-2.png',
+    objectPosition: 'object-top',
+  },
+  {
+    key: 'garmentShape',
+    image: '/studio-examples/photo-tip-garment-shape.png',
+    objectPosition: 'object-top',
+  },
+] as const;
+
+const GARMENT_RANK = [
+  {
+    key: 'best',
+    image: '/studio-examples/packshot-after.png',
+  },
+  {
+    key: 'good',
+    image: '/studio-examples/garment-ghost-mannequin.png',
+  },
+  {
+    key: 'ok',
+    image: '/studio-examples/product-to-model-sample-product.png',
+  },
+  {
+    key: 'avoid',
+    image: 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&w=600&q=80',
+  },
+] as const;
+
 export default function HomePage() {
   const { t } = useTranslation();
   const { user, profile, loading: authLoading } = useAuth();
@@ -126,6 +168,101 @@ export default function HomePage() {
               <ArrowRight className="h-4 w-4" />
             </Link>
           </motion.div>
+        </section>
+
+        <section className="mt-12 sm:mt-16 lg:mt-20">
+          <div className="mx-auto max-w-2xl text-center">
+            <h3 className="font-display text-xl tracking-tight text-zinc-900 sm:text-3xl">
+              {t('home.photoTipsTitle')}
+            </h3>
+            <p className="mt-2 text-sm leading-relaxed text-zinc-500 sm:mt-3 sm:text-base">
+              {t('home.photoTipsSubtitle')}
+            </p>
+          </div>
+
+          <div className="mt-6 grid grid-cols-2 gap-3 sm:mt-8 sm:gap-4 lg:grid-cols-4">
+            {PHOTO_TIPS.map((tip, index) => (
+              <motion.article
+                key={tip.key}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.18 + index * 0.05 }}
+                className="min-w-0"
+              >
+                <div className="aspect-[2/3] overflow-hidden rounded-2xl bg-zinc-100 sm:rounded-3xl">
+                  <img
+                    src={tip.image}
+                    alt=""
+                    className={`h-full w-full object-cover ${tip.objectPosition}`}
+                    loading="lazy"
+                  />
+                </div>
+                <h4 className="mt-3 font-display text-sm tracking-tight text-zinc-900 sm:text-base">
+                  {t(`home.photoTips.${tip.key}.title`)}
+                </h4>
+                <p className="mt-1 text-xs leading-relaxed text-zinc-500 sm:text-sm">
+                  {t(`home.photoTips.${tip.key}.desc`)}
+                </p>
+              </motion.article>
+            ))}
+          </div>
+
+          <div className="mt-10 sm:mt-12">
+            <div className="mx-auto max-w-2xl text-center">
+              <h4 className="font-display text-lg tracking-tight text-zinc-900 sm:text-xl">
+                {t('home.garmentRankTitle')}
+              </h4>
+              <p className="mt-1.5 text-sm leading-relaxed text-zinc-500">
+                {t('home.garmentRankSubtitle')}
+              </p>
+            </div>
+
+            <div className="mt-5 grid grid-cols-2 items-stretch gap-3 sm:mt-6 sm:grid-cols-4 sm:gap-4">
+              {GARMENT_RANK.map((item, index) => {
+                const isAvoid = item.key === 'avoid';
+                return (
+                  <motion.article
+                    key={item.key}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.28 + index * 0.04 }}
+                    className="flex h-full min-w-0 flex-col"
+                  >
+                    <div
+                      className={`relative aspect-[3/4] w-full shrink-0 overflow-hidden rounded-2xl bg-zinc-100 sm:rounded-3xl ${
+                        isAvoid ? 'ring-1 ring-zinc-300/80' : ''
+                      }`}
+                    >
+                      <img
+                        src={item.image}
+                        alt=""
+                        className={`absolute inset-0 h-full w-full object-cover object-center ${
+                          isAvoid ? 'opacity-70 grayscale' : ''
+                        }`}
+                        loading="lazy"
+                      />
+                      <span
+                        className={`absolute left-2 top-2 rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider sm:left-2.5 sm:top-2.5 sm:text-[11px] ${
+                          isAvoid
+                            ? 'bg-zinc-900/80 text-white'
+                            : 'bg-white/90 text-zinc-800 backdrop-blur-sm'
+                        }`}
+                      >
+                        {t(`home.garmentRank.${item.key}.label`)}
+                      </span>
+                    </div>
+                    <p className="mt-2 min-h-[2.5rem] text-xs leading-relaxed text-zinc-500 sm:min-h-[2.75rem] sm:text-sm">
+                      {t(`home.garmentRank.${item.key}.desc`)}
+                    </p>
+                  </motion.article>
+                );
+              })}
+            </div>
+          </div>
+
+          <p className="mx-auto mt-5 max-w-2xl text-center text-xs leading-relaxed text-zinc-400 sm:mt-6 sm:text-sm">
+            {t('home.photoTipsAvoid')}
+          </p>
         </section>
 
         <section className="mt-12 sm:mt-20 lg:mt-24">

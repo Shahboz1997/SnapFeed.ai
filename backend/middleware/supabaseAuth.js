@@ -14,15 +14,27 @@ function getJWKS() {
 }
 
 async function verifyAccessToken(token) {
-  const { payload } = await jwtVerify(token, getJWKS(), {
+  const options = {
     issuer: `${getSupabaseUrl()}/auth/v1`,
-  });
-
-  return {
-    id: payload.sub,
-    email: typeof payload.email === 'string' ? payload.email : null,
-    role: payload.role,
   };
+
+  try {
+    const { payload } = await jwtVerify(token, getJWKS(), options);
+    return {
+      id: payload.sub,
+      email: typeof payload.email === 'string' ? payload.email : null,
+      role: payload.role,
+    };
+  } catch (error) {
+    // Cold JWKS fetch / transient network — reset cache and retry once.
+    jwks = null;
+    const { payload } = await jwtVerify(token, getJWKS(), options);
+    return {
+      id: payload.sub,
+      email: typeof payload.email === 'string' ? payload.email : null,
+      role: payload.role,
+    };
+  }
 }
 
 export async function optionalAuth(req, res, next) {
@@ -47,6 +59,13 @@ export async function optionalAuth(req, res, next) {
 
 export async function protect(req, res, next) {
   if (!isSupabaseConfigured()) {
+    if (process.env.NODE_ENV === 'production') {
+      return res.status(503).json({
+        error: 'Authentication is not configured.',
+        messageKey: 'api.authUnavailable',
+      });
+    }
+
     return next();
   }
 

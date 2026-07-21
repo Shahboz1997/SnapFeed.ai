@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ApiError } from './api/generateImage';
 import { fetchGuestCredits } from './api/guestCredits';
@@ -21,6 +21,16 @@ import {
   DEFAULT_TRYON_GENDER,
 } from './constants/tryOnOptions';
 import { DEFAULT_STUDIO_MODEL_URL } from './constants/tryOnModels';
+import {
+  DEFAULT_STUDIO_OUTPUT_SETTINGS,
+  aspectRatioToLegacyFormat,
+  creditCostForVariantCount,
+  type StudioOutputSettings,
+} from './constants/studioOutputSettings';
+import {
+  composeStudioUserWish,
+  type StudioPromptPresetKey,
+} from './constants/studioPromptPresets';
 import { addGalleryItem, listGalleryItems } from './lib/galleryStorage';
 
 interface AlertState {
@@ -42,16 +52,26 @@ export default function App() {
   const [humanFileError, setHumanFileError] = useState<string | null>(null);
   const [selectedModelUrl, setSelectedModelUrl] = useState<string | null>(null);
   const [tryOnPrompt, setTryOnPrompt] = useState('');
+  const [selectedPromptPresets, setSelectedPromptPresets] = useState<StudioPromptPresetKey[]>([]);
+  const [outputSettings, setOutputSettings] = useState<StudioOutputSettings>(
+    DEFAULT_STUDIO_OUTPUT_SETTINGS,
+  );
   const [autoRunToken, setAutoRunToken] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [runningMode, setRunningMode] = useState<StudioMode | null>(null);
   const [alert, setAlert] = useState<AlertState | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [resultVariantUrls, setResultVariantUrls] = useState<string[]>([]);
   const [historyItems, setHistoryItems] = useState<TryOnHistoryItem[]>(() => listGalleryItems());
   const [guestCredits, setGuestCredits] = useState<number | null>(() => readGuestCreditsFromStorage());
   const [guestCreditsLoading, setGuestCreditsLoading] = useState(() => !user && readGuestCreditsFromStorage() === null);
   const [showPricingModal, setShowPricingModal] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [pricingWelcome, setPricingWelcome] = useState(false);
+
+  const studioModeRef = useRef(studioMode);
+  const generationIdRef = useRef(0);
+  studioModeRef.current = studioMode;
 
   const garmentReady = Boolean(garmentBase64) && !garmentFileError;
   const tryOnHumanReady = (Boolean(humanBase64) && !humanFileError) || Boolean(selectedModelUrl);
@@ -63,7 +83,8 @@ export default function App() {
       || tryOnHumanReady);
   const displayCredits = user ? (profile?.credits ?? 0) : (guestCredits ?? 0);
   const creditsLoading = user ? authLoading || profile === null : guestCreditsLoading;
-  const hasCredits = displayCredits > 0;
+  const generationCreditCost = creditCostForVariantCount(outputSettings.numImages);
+  const hasCredits = displayCredits >= generationCreditCost;
 
   useEffect(() => {
     if (user) return;
@@ -117,14 +138,14 @@ export default function App() {
     setHistoryItems(listGalleryItems());
   }
 
-  function applyCreditsAndToast(creditsRemaining?: number) {
+  function applyCreditsAndToast(creditsRemaining?: number, creditCost = 1) {
     if (user) {
       if (typeof creditsRemaining === 'number') {
         updateCredits(creditsRemaining);
       } else if (typeof profile?.credits === 'number') {
-        updateCredits(Math.max(0, profile.credits - 1));
+        updateCredits(Math.max(0, profile.credits - creditCost));
       }
-      showToast(t('toasts.creditDeducted'));
+      showToast(t('toasts.creditDeducted', { count: creditCost }));
       return;
     }
 
@@ -133,13 +154,13 @@ export default function App() {
       writeGuestCreditsToStorage(creditsRemaining);
     } else {
       setGuestCredits((current) => {
-        const newCredits = Math.max(0, (current ?? 0) - 1);
+        const newCredits = Math.max(0, (current ?? 0) - creditCost);
         writeGuestCreditsToStorage(newCredits);
         return newCredits;
       });
     }
 
-    showToast(t('toasts.creditDeducted'));
+    showToast(t('toasts.creditDeducted', { count: creditCost }));
   }
 
   function resolveApiError(err: unknown): string {
@@ -184,6 +205,7 @@ export default function App() {
     setGarmentPreviewUrl(null);
     setGarmentFileError(null);
     setImageUrl(null);
+    setResultVariantUrls([]);
   }
 
   function handleHumanImageLoaded(base64: string, previewUrl: string) {
@@ -199,6 +221,7 @@ export default function App() {
     setHumanPreviewUrl(null);
     setHumanFileError(null);
     setImageUrl(null);
+    setResultVariantUrls([]);
   }
 
   function handleTryOnModelSelect(url: string) {
@@ -207,21 +230,25 @@ export default function App() {
     setHumanPreviewUrl(null);
     setHumanFileError(null);
     setImageUrl(null);
+    setResultVariantUrls([]);
   }
 
   function handleBackToSetup() {
     setImageUrl(null);
+    setResultVariantUrls([]);
     setAlert(null);
   }
 
   function handleSelectHistory(item: TryOnHistoryItem) {
     setImageUrl(item.imageUrl);
+    setResultVariantUrls([item.imageUrl]);
   }
 
   function handleStudioModeChange(mode: StudioMode) {
     if (mode === studioMode) return;
     setStudioMode(mode);
     setImageUrl(null);
+    setResultVariantUrls([]);
     setAlert(null);
   }
 
@@ -234,11 +261,15 @@ export default function App() {
     setHumanFileError(null);
     setSelectedModelUrl(null);
     setImageUrl(null);
+    setResultVariantUrls([]);
     setTryOnPrompt('');
+    setSelectedPromptPresets([]);
     setAlert(null);
   }
 
   const handleGenerate = useCallback(async () => {
+    if (loading) return;
+
     if (!hasCredits) {
       if (!user) setShowLoginModal(true);
       else setShowPricingModal(true);
@@ -247,40 +278,67 @@ export default function App() {
 
     if (!canGenerate || !garmentBase64) return;
 
+    const jobId = ++generationIdRef.current;
+    const jobMode = studioMode;
+
     setLoading(true);
+    setRunningMode(jobMode);
     setAlert(null);
     setImageUrl(null);
+    setResultVariantUrls([]);
 
     const previewSource = garmentPreviewUrl;
     const currentLanguage = (i18n.language || 'ru').split('-')[0];
+    const userWish = composeStudioUserWish(tryOnPrompt, selectedPromptPresets) || undefined;
+    const creditCost = creditCostForVariantCount(outputSettings.numImages);
 
     try {
       const data = await generateProductImage({
         base64Image: garmentBase64,
-        mode: studioMode,
-        gender: studioMode === 'tryon' ? DEFAULT_TRYON_GENDER : undefined,
-        category: studioMode === 'tryon' ? DEFAULT_TRYON_CATEGORY : undefined,
-        humanImage: studioMode === 'tryon'
+        mode: jobMode,
+        gender: jobMode === 'tryon' ? DEFAULT_TRYON_GENDER : undefined,
+        category: jobMode === 'tryon' ? DEFAULT_TRYON_CATEGORY : undefined,
+        humanImage: jobMode === 'tryon'
           ? (humanBase64 ?? selectedModelUrl ?? (DEFAULT_STUDIO_MODEL_URL || undefined))
           : undefined,
-        userWish: tryOnPrompt.trim() || undefined,
+        userWish,
         platform: 'instagram',
-        format: 'story',
+        format: aspectRatioToLegacyFormat(outputSettings.aspectRatio),
+        aspectRatio: outputSettings.aspectRatio,
+        resolution: outputSettings.resolution,
+        qualityMode: outputSettings.qualityMode,
+        numImages: outputSettings.numImages,
         extractText: false,
         includeText: false,
         lang: currentLanguage,
       });
 
-      applyCreditsAndToast(data.creditsRemaining);
-      setImageUrl(data.imageUrl);
+      applyCreditsAndToast(data.creditsRemaining, data.creditsCharged ?? creditCost);
 
-      if (data.imageUrl) {
+      const urls = (data.imageUrls?.length
+        ? data.imageUrls
+        : data.imageUrl
+          ? [data.imageUrl]
+          : []
+      ).filter(Boolean);
+
+      for (const url of urls) {
         addGalleryItem({
-          imageUrl: data.imageUrl,
+          imageUrl: url,
           originalImageUrl: previewSource,
           hashtags: data.hashtags,
         });
+      }
+      if (urls.length) {
         refreshHistory();
+      }
+
+      // Only bind result to UI if user is still on the mode that started this job.
+      if (jobId === generationIdRef.current && studioModeRef.current === jobMode) {
+        setResultVariantUrls(urls);
+        setImageUrl(urls[0] ?? null);
+      } else if (urls.length) {
+        showToast(t('studio.readyInGallery'), 'success');
       }
     } catch (err) {
       if (err instanceof ApiError && err.statusCode === 402) {
@@ -293,16 +351,24 @@ export default function App() {
         }
         return;
       }
-      showAlert(resolveApiError(err), 'error');
+      if (jobId === generationIdRef.current && studioModeRef.current === jobMode) {
+        showAlert(resolveApiError(err), 'error');
+      }
     } finally {
-      setLoading(false);
+      if (jobId === generationIdRef.current) {
+        setLoading(false);
+        setRunningMode(null);
+      }
     }
   }, [
+    loading,
     hasCredits,
     canGenerate,
     garmentBase64,
     garmentPreviewUrl,
     tryOnPrompt,
+    selectedPromptPresets,
+    outputSettings,
     humanBase64,
     selectedModelUrl,
     studioMode,
@@ -333,7 +399,9 @@ export default function App() {
     ? t('studio.running')
     : !hasCredits
       ? t('pricing.buyCredits')
-      : t('studio.run');
+      : generationCreditCost > 1
+        ? t('studio.runWithCredits', { count: generationCreditCost })
+        : t('studio.run');
 
   return (
     <AppShell
@@ -363,8 +431,9 @@ export default function App() {
 
         <fieldset className="min-w-0 border-0 p-0">
           <TryOnWorkspace
-            disabled={loading}
+            disabled={loading && runningMode === studioMode}
             studioMode={studioMode}
+            runningMode={runningMode}
             onStudioModeChange={handleStudioModeChange}
             garmentBase64={garmentBase64}
             garmentPreviewUrl={garmentPreviewUrl}
@@ -375,6 +444,8 @@ export default function App() {
             selectedModelUrl={selectedModelUrl}
             prompt={tryOnPrompt}
             onPromptChange={setTryOnPrompt}
+            selectedPromptPresets={selectedPromptPresets}
+            onSelectedPromptPresetsChange={setSelectedPromptPresets}
             onGarmentLoaded={handleGarmentImageLoaded}
             onGarmentClear={handleGarmentImageClear}
             onGarmentValidationError={setGarmentFileError}
@@ -387,7 +458,11 @@ export default function App() {
             canRun={canGenerate || !hasCredits}
             running={loading}
             runLabel={generateButtonLabel}
+            outputSettings={outputSettings}
+            onOutputSettingsChange={setOutputSettings}
             resultImageUrl={imageUrl}
+            resultVariantUrls={resultVariantUrls}
+            onSelectVariant={setImageUrl}
             historyItems={historyItems}
             onSelectHistory={handleSelectHistory}
             onBackToSetup={handleBackToSetup}
@@ -396,11 +471,11 @@ export default function App() {
         </fieldset>
 
         <div className="mt-4 flex justify-end gap-2">
-          {(imageUrl || loading) && (
+          {(imageUrl || (loading && runningMode === studioMode)) && (
             <button
               type="button"
               onClick={handleBackToSetup}
-              disabled={loading}
+              disabled={loading && runningMode === studioMode}
               className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-500 transition hover:border-zinc-300 hover:bg-zinc-50 hover:text-zinc-900 disabled:opacity-50"
             >
               {t('studio.newGeneration')}
@@ -409,7 +484,7 @@ export default function App() {
           <button
             type="button"
             onClick={handleReset}
-            disabled={loading}
+            disabled={loading && runningMode === studioMode}
             className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-500 transition hover:border-zinc-300 hover:bg-zinc-50 hover:text-zinc-900 disabled:opacity-50"
           >
             {t('form.reset')}

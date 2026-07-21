@@ -12,3 +12,4 @@ dist-ssr/
 # Backend test/debug images
 backend/test-*.png
 backend/debug_*.png
+backend/tmp/

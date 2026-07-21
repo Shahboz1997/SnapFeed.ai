@@ -156,12 +156,27 @@ function mapRuntimeError(error) {
   return createError(name ? `${name}: ${message}` : message, 502);
 }
 
-function pickOutput(output) {
+function pickOutputs(output) {
   if (!Array.isArray(output)) {
-    return null;
+    return [];
   }
-  const item = output.find((value) => typeof value === 'string' && value.trim());
-  return item ? item.trim() : null;
+  return output
+    .filter((value) => typeof value === 'string' && value.trim())
+    .map((value) => value.trim());
+}
+
+function pickOutput(output) {
+  return pickOutputs(output)[0] ?? null;
+}
+
+function buildOutputPayload(outputs, extra = {}) {
+  const first = outputs[0];
+  return {
+    outputs,
+    remoteUrl: first && !first.startsWith('data:') ? first : null,
+    imageData: first && first.startsWith('data:') ? first : null,
+    ...extra,
+  };
 }
 
 function buildV16Inputs({
@@ -213,29 +228,43 @@ function buildMaxInputs({
   aspectRatio,
   resolution,
   generationMode,
+  numImages,
   seed,
   returnBase64,
 }) {
-  const resolvedResolution = ['1k', '2k', '4k'].includes(resolution) ? resolution : '1k';
-  let resolvedMode = String(generationMode || 'balanced').toLowerCase();
+  const resolvedResolution = resolution === 'auto' || !resolution
+    ? null
+    : (['1k', '2k', '4k'].includes(resolution) ? resolution : '1k');
+
+  let resolvedMode = generationMode == null || generationMode === '' || generationMode === 'auto'
+    ? null
+    : String(generationMode).toLowerCase();
   if (resolvedMode === 'performance') {
     resolvedMode = 'fast';
   }
-  if (!['fast', 'balanced', 'quality'].includes(resolvedMode)) {
+  if (resolvedMode && !['fast', 'balanced', 'quality'].includes(resolvedMode)) {
     resolvedMode = 'balanced';
   }
 
   const inputs = {
     model_image: modelImage,
     product_image: garmentImage,
-    resolution: resolvedResolution,
-    generation_mode: resolvedMode,
     output_format: (process.env.FASHN_OUTPUT_FORMAT || 'png').toLowerCase() === 'jpeg'
       ? 'jpeg'
       : 'png',
-    num_images: Math.min(4, Math.max(1, Number(process.env.FASHN_NUM_IMAGES) || 1)),
+    num_images: Math.min(4, Math.max(1, Number(numImages) || Number(process.env.FASHN_NUM_IMAGES) || 1)),
     return_base64: returnBase64,
   };
+
+  if (resolvedResolution) {
+    inputs.resolution = resolvedResolution;
+  } else {
+    inputs.resolution = '1k';
+  }
+
+  if (resolvedMode) {
+    inputs.generation_mode = resolvedMode;
+  }
 
   if (prompt && typeof prompt === 'string' && prompt.trim()) {
     inputs.prompt = prompt.trim().slice(0, 500);
@@ -264,16 +293,25 @@ export async function runFashnTryOn({
   mode,
   prompt = '',
   aspectRatio = null,
+  resolution = null,
+  generationMode = null,
+  numImages = null,
 } = {}) {
   const modelName = getFashnModelName();
-  const resolution = (process.env.FASHN_TRYON_RESOLUTION || '1k').trim().toLowerCase();
+  const resolvedResolution = (
+    resolution
+    || process.env.FASHN_TRYON_RESOLUTION
+    || '1k'
+  ).trim().toLowerCase();
   const returnBase64 = envBool('FASHN_RETURN_BASE64', false);
   const seedRaw = process.env.FASHN_SEED;
   const seed = seedRaw !== undefined && seedRaw !== ''
     ? Number(seedRaw)
     : undefined;
 
-  const prepResolution = modelName === 'tryon-max' ? resolution : '1k';
+  const prepResolution = modelName === 'tryon-max'
+    ? (['1k', '2k', '4k'].includes(resolvedResolution) ? resolvedResolution : '1k')
+    : '1k';
 
   const [preparedModel, preparedGarment] = await Promise.all([
     prepareFashnImageInput(modelImage, { fieldName: 'model_image', resolution: prepResolution }),
@@ -283,12 +321,16 @@ export async function runFashnTryOn({
   let requestBody;
 
   if (modelName === 'tryon-v1.6') {
-    const v16Mode = mode || process.env.FASHN_TRYON_MODE || 'quality';
+    const v16Mode = mode
+      || (generationMode && generationMode !== 'auto' ? generationMode : null)
+      || process.env.FASHN_TRYON_MODE
+      || 'quality';
+    const mappedV16 = v16Mode === 'fast' ? 'performance' : v16Mode;
     const inputs = buildV16Inputs({
       modelImage: preparedModel,
       garmentImage: preparedGarment,
       category,
-      mode: v16Mode,
+      mode: mappedV16,
       seed,
       returnBase64,
     });
@@ -298,7 +340,8 @@ export async function runFashnTryOn({
       + ` garment_photo_type=${inputs.garment_photo_type}`,
     );
   } else {
-    const generationMode = mode
+    const resolvedGenerationMode = generationMode
+      || mode
       || process.env.FASHN_TRYON_GENERATION_MODE
       || process.env.FASHN_TRYON_MODE
       || 'quality';
@@ -307,15 +350,16 @@ export async function runFashnTryOn({
       garmentImage: preparedGarment,
       prompt,
       aspectRatio,
-      resolution,
-      generationMode,
+      resolution: resolvedResolution,
+      generationMode: resolvedGenerationMode,
+      numImages,
       seed,
       returnBase64,
     });
     requestBody = { model_name: 'tryon-max', inputs };
     console.log(
-      `[fashn] Starting tryon-max resolution=${inputs.resolution} mode=${inputs.generation_mode}`
-      + ` promptLen=${(inputs.prompt || '').length}`,
+      `[fashn] Starting tryon-max resolution=${inputs.resolution} mode=${inputs.generation_mode || 'auto'}`
+      + ` ratio=${inputs.aspect_ratio || 'default'} n=${inputs.num_images}`,
     );
   }
 
@@ -332,23 +376,21 @@ export async function runFashnTryOn({
     throw mapRuntimeError(response.error);
   }
 
-  const output = pickOutput(response.output);
-  if (!output) {
+  const outputs = pickOutputs(response.output);
+  if (!outputs.length) {
     throw createError('FASHN completed without an output image.', 502);
   }
 
   console.log(
-    `[fashn] Done id=${response.id} credits=${response.creditsUsed ?? 'n/a'}`,
+    `[fashn] Done id=${response.id} credits=${response.creditsUsed ?? 'n/a'} n=${outputs.length}`,
   );
 
-  return {
-    remoteUrl: output.startsWith('data:') ? null : output,
-    imageData: output.startsWith('data:') ? output : null,
+  return buildOutputPayload(outputs, {
     predictionId: response.id,
     modelUsed: modelName,
     creditsUsed: response.creditsUsed ?? null,
     category: modelName === 'tryon-v1.6' ? mapCategory(category) : 'auto',
-  };
+  });
 }
 
 /**
@@ -372,10 +414,14 @@ export async function runFashnPackshot({
   productImage,
   prompt = '',
   aspectRatio = null,
+  resolution = null,
+  generationMode = null,
+  numImages = null,
   imageContext = null,
 } = {}) {
-  const resolution = (
-    process.env.FASHN_PACKSHOT_RESOLUTION
+  const resolvedResolution = (
+    resolution
+    || process.env.FASHN_PACKSHOT_RESOLUTION
     || process.env.FASHN_TRYON_RESOLUTION
     || '1k'
   ).trim().toLowerCase();
@@ -385,35 +431,48 @@ export async function runFashnPackshot({
     ? Number(seedRaw)
     : undefined;
 
-  let generationMode = (
-    process.env.FASHN_PACKSHOT_GENERATION_MODE
+  let resolvedMode = (
+    generationMode
+    || process.env.FASHN_PACKSHOT_GENERATION_MODE
     || process.env.FASHN_TRYON_GENERATION_MODE
     || process.env.FASHN_TRYON_MODE
     || 'quality'
-  ).trim().toLowerCase();
-  if (generationMode === 'performance') {
-    generationMode = 'fast';
+  );
+  if (typeof resolvedMode === 'string') {
+    resolvedMode = resolvedMode.trim().toLowerCase();
   }
-  if (!['fast', 'balanced', 'quality'].includes(generationMode)) {
-    generationMode = 'quality';
+  if (resolvedMode === 'performance') {
+    resolvedMode = 'fast';
   }
+  if (resolvedMode === 'auto') {
+    resolvedMode = null;
+  } else if (!['fast', 'balanced', 'quality'].includes(resolvedMode)) {
+    resolvedMode = 'quality';
+  }
+
+  const prepResolution = ['1k', '2k', '4k'].includes(resolvedResolution)
+    ? resolvedResolution
+    : '1k';
 
   const preparedProduct = await prepareFashnImageInput(productImage, {
     fieldName: 'product_image',
-    resolution,
+    resolution: prepResolution,
   });
 
   /** @type {Record<string, unknown>} */
   const inputs = {
     product_image: preparedProduct,
-    resolution: ['1k', '2k', '4k'].includes(resolution) ? resolution : '1k',
-    generation_mode: generationMode,
+    resolution: prepResolution,
     output_format: (process.env.FASHN_OUTPUT_FORMAT || 'png').toLowerCase() === 'jpeg'
       ? 'jpeg'
       : 'png',
-    num_images: Math.min(4, Math.max(1, Number(process.env.FASHN_NUM_IMAGES) || 1)),
+    num_images: Math.min(4, Math.max(1, Number(numImages) || Number(process.env.FASHN_NUM_IMAGES) || 1)),
     return_base64: returnBase64,
   };
+
+  if (resolvedMode) {
+    inputs.generation_mode = resolvedMode;
+  }
 
   if (prompt && typeof prompt === 'string' && prompt.trim()) {
     inputs.prompt = prompt.trim().slice(0, 500);
@@ -427,7 +486,7 @@ export async function runFashnPackshot({
   if (imageContext && typeof imageContext === 'string' && imageContext.trim()) {
     inputs.image_context = await prepareFashnImageInput(imageContext.trim(), {
       fieldName: 'image_context',
-      resolution,
+      resolution: prepResolution,
     });
   }
 
@@ -436,7 +495,8 @@ export async function runFashnPackshot({
   }
 
   console.log(
-    `[fashn] Starting packshot resolution=${inputs.resolution} mode=${inputs.generation_mode}`
+    `[fashn] Starting packshot resolution=${inputs.resolution} mode=${inputs.generation_mode || 'auto'}`
+    + ` ratio=${inputs.aspect_ratio || 'default'} n=${inputs.num_images}`
     + ` promptLen=${(inputs.prompt || '').length}`,
   );
 
@@ -455,22 +515,20 @@ export async function runFashnPackshot({
     throw mapRuntimeError(response.error);
   }
 
-  const output = pickOutput(response.output);
-  if (!output) {
+  const outputs = pickOutputs(response.output);
+  if (!outputs.length) {
     throw createError('FASHN packshot completed without an output image.', 502);
   }
 
   console.log(
-    `[fashn] Packshot done id=${response.id} credits=${response.creditsUsed ?? 'n/a'}`,
+    `[fashn] Packshot done id=${response.id} credits=${response.creditsUsed ?? 'n/a'} n=${outputs.length}`,
   );
 
-  return {
-    remoteUrl: output.startsWith('data:') ? null : output,
-    imageData: output.startsWith('data:') ? output : null,
+  return buildOutputPayload(outputs, {
     predictionId: response.id,
     modelUsed: 'packshot',
     creditsUsed: response.creditsUsed ?? null,
-  };
+  });
 }
 
 /**
@@ -481,12 +539,16 @@ export async function runFashnProductToModel({
   productImage,
   prompt = '',
   aspectRatio = null,
+  resolution = null,
+  generationMode = null,
+  numImages = null,
   imagePrompt = null,
   faceReference = null,
   backgroundReference = null,
 } = {}) {
-  const resolution = (
-    process.env.FASHN_PTM_RESOLUTION
+  const resolvedResolution = (
+    resolution
+    || process.env.FASHN_PTM_RESOLUTION
     || process.env.FASHN_TRYON_RESOLUTION
     || '1k'
   ).trim().toLowerCase();
@@ -496,35 +558,48 @@ export async function runFashnProductToModel({
     ? Number(seedRaw)
     : undefined;
 
-  let generationMode = (
-    process.env.FASHN_PTM_GENERATION_MODE
+  let resolvedMode = (
+    generationMode
+    || process.env.FASHN_PTM_GENERATION_MODE
     || process.env.FASHN_TRYON_GENERATION_MODE
     || process.env.FASHN_TRYON_MODE
     || 'quality'
-  ).trim().toLowerCase();
-  if (generationMode === 'performance') {
-    generationMode = 'fast';
+  );
+  if (typeof resolvedMode === 'string') {
+    resolvedMode = resolvedMode.trim().toLowerCase();
   }
-  if (!['fast', 'balanced', 'quality'].includes(generationMode)) {
-    generationMode = 'quality';
+  if (resolvedMode === 'performance') {
+    resolvedMode = 'fast';
   }
+  if (resolvedMode === 'auto') {
+    resolvedMode = null;
+  } else if (!['fast', 'balanced', 'quality'].includes(resolvedMode)) {
+    resolvedMode = 'quality';
+  }
+
+  const prepResolution = ['1k', '2k', '4k'].includes(resolvedResolution)
+    ? resolvedResolution
+    : '1k';
 
   const preparedProduct = await prepareFashnImageInput(productImage, {
     fieldName: 'product_image',
-    resolution,
+    resolution: prepResolution,
   });
 
   /** @type {Record<string, unknown>} */
   const inputs = {
     product_image: preparedProduct,
-    resolution: ['1k', '2k', '4k'].includes(resolution) ? resolution : '1k',
-    generation_mode: generationMode,
+    resolution: prepResolution,
     output_format: (process.env.FASHN_OUTPUT_FORMAT || 'png').toLowerCase() === 'jpeg'
       ? 'jpeg'
       : 'png',
-    num_images: Math.min(4, Math.max(1, Number(process.env.FASHN_NUM_IMAGES) || 1)),
+    num_images: Math.min(4, Math.max(1, Number(numImages) || Number(process.env.FASHN_NUM_IMAGES) || 1)),
     return_base64: returnBase64,
   };
+
+  if (resolvedMode) {
+    inputs.generation_mode = resolvedMode;
+  }
 
   if (prompt && typeof prompt === 'string' && prompt.trim()) {
     inputs.prompt = prompt.trim().slice(0, 500);
@@ -538,14 +613,14 @@ export async function runFashnProductToModel({
   if (imagePrompt && typeof imagePrompt === 'string' && imagePrompt.trim()) {
     inputs.image_prompt = await prepareFashnImageInput(imagePrompt.trim(), {
       fieldName: 'image_prompt',
-      resolution,
+      resolution: prepResolution,
     });
   }
 
   if (faceReference && typeof faceReference === 'string' && faceReference.trim()) {
     inputs.face_reference = await prepareFashnImageInput(faceReference.trim(), {
       fieldName: 'face_reference',
-      resolution,
+      resolution: prepResolution,
     });
     inputs.face_reference_mode = 'match_reference';
   }
@@ -553,7 +628,7 @@ export async function runFashnProductToModel({
   if (backgroundReference && typeof backgroundReference === 'string' && backgroundReference.trim()) {
     inputs.background_reference = await prepareFashnImageInput(backgroundReference.trim(), {
       fieldName: 'background_reference',
-      resolution,
+      resolution: prepResolution,
     });
   }
 
@@ -562,7 +637,8 @@ export async function runFashnProductToModel({
   }
 
   console.log(
-    `[fashn] Starting product-to-model resolution=${inputs.resolution} mode=${inputs.generation_mode}`
+    `[fashn] Starting product-to-model resolution=${inputs.resolution} mode=${inputs.generation_mode || 'auto'}`
+    + ` ratio=${inputs.aspect_ratio || 'default'} n=${inputs.num_images}`
     + ` promptLen=${(inputs.prompt || '').length}`,
   );
 
@@ -580,20 +656,18 @@ export async function runFashnProductToModel({
     throw mapRuntimeError(response.error);
   }
 
-  const output = pickOutput(response.output);
-  if (!output) {
+  const outputs = pickOutputs(response.output);
+  if (!outputs.length) {
     throw createError('FASHN product-to-model completed without an output image.', 502);
   }
 
   console.log(
-    `[fashn] Product-to-model done id=${response.id} credits=${response.creditsUsed ?? 'n/a'}`,
+    `[fashn] Product-to-model done id=${response.id} credits=${response.creditsUsed ?? 'n/a'} n=${outputs.length}`,
   );
 
-  return {
-    remoteUrl: output.startsWith('data:') ? null : output,
-    imageData: output.startsWith('data:') ? output : null,
+  return buildOutputPayload(outputs, {
     predictionId: response.id,
     modelUsed: 'product-to-model',
     creditsUsed: response.creditsUsed ?? null,
-  };
+  });
 }

@@ -1,3 +1,4 @@
+import { creditCostForNumImages } from '../constants/generationCredits.js';
 import { getCredits, isCreditsEnabled } from '../services/credits.js';
 import {
   getGuestCreditsRemaining,
@@ -11,15 +12,19 @@ export async function requireCredits(req, res, next) {
     return next();
   }
 
+  const creditCost = creditCostForNumImages(req.body?.numImages);
+  req.creditCost = creditCost;
+
   try {
     if (req.user?.id) {
       const credits = await getCredits(req.user.id);
 
-      if (credits <= 0) {
+      if (credits < creditCost) {
         return res.status(402).json({
           error: 'Insufficient credits.',
           messageKey: 'api.insufficientCredits',
           credits,
+          creditCost,
         });
       }
 
@@ -42,11 +47,12 @@ export async function requireCredits(req, res, next) {
 
     const credits = await getGuestCreditsRemaining(guestKey);
 
-    if (credits <= 0) {
+    if (credits < creditCost) {
       return res.status(402).json({
         error: 'Insufficient credits.',
         messageKey: 'api.insufficientCredits',
-        credits: 0,
+        credits,
+        creditCost,
       });
     }
 

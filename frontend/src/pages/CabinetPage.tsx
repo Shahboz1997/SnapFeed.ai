@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Zap } from 'lucide-react';
 import {
+  formatDepositAmount,
   listDepositRequests,
   type DepositRequestItem,
   type DepositRequestStatus,
@@ -240,7 +241,7 @@ export default function CabinetPage() {
                         <span className="mr-2 text-[10px] font-semibold uppercase text-zinc-400 sm:hidden">
                           {t('pricing.billingAmount')}
                         </span>
-                        ${item.amount}
+                        {formatDepositAmount(item.amount, item.currency)}
                       </span>
                       <span>
                         <StatusBadge status={item.status} />

@@ -16,7 +16,7 @@
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
   --safe-area-left: env(safe-area-inset-left, 0px);
   --tab-bar-height: 3.75rem;
-  --studio-dock-height: 12.5rem;
+  --studio-dock-height: 17rem;
 }
 
 html {

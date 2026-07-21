@@ -57,15 +57,17 @@ function getMemoryGuestCreditsRemaining(guestKey) {
   return Math.max(0, GUEST_MAX_GENERATIONS - used);
 }
 
-function consumeMemoryGuestCredit(guestKey) {
+function consumeMemoryGuestCredit(guestKey, amount = 1) {
+  const cost = Math.max(1, Math.floor(Number(amount) || 1));
   const used = memoryGuestUsage.get(guestKey) ?? 0;
+  const remaining = GUEST_MAX_GENERATIONS - used;
 
-  if (used >= GUEST_MAX_GENERATIONS) {
+  if (remaining < cost) {
     throw createError('Insufficient credits.', 402);
   }
 
-  memoryGuestUsage.set(guestKey, used + 1);
-  return GUEST_MAX_GENERATIONS - used - 1;
+  memoryGuestUsage.set(guestKey, used + cost);
+  return GUEST_MAX_GENERATIONS - used - cost;
 }
 
 export function resolveGuestKey(req) {
@@ -116,8 +118,9 @@ export async function getGuestCreditsRemaining(guestKey) {
   return Math.max(0, max - used);
 }
 
-export async function consumeGuestCredit(guestKey, ipAddress = null) {
+export async function consumeGuestCredit(guestKey, ipAddress = null, amount = 1) {
   const supabase = getSupabaseAdmin();
+  const cost = Math.max(1, Math.floor(Number(amount) || 1));
 
   if (!supabase || !guestKey) {
     return null;
@@ -125,7 +128,7 @@ export async function consumeGuestCredit(guestKey, ipAddress = null) {
 
   const remainingBefore = await getGuestCreditsRemaining(guestKey);
 
-  if (remainingBefore <= 0) {
+  if (remainingBefore < cost) {
     throw createError('Insufficient credits.', 402);
   }
 
@@ -142,7 +145,7 @@ export async function consumeGuestCredit(guestKey, ipAddress = null) {
       readError.message || readError,
     );
     logGuestTableMissingOnce();
-    return consumeMemoryGuestCredit(guestKey);
+    return consumeMemoryGuestCredit(guestKey, cost);
   }
 
   const now = new Date().toISOString();
@@ -153,7 +156,7 @@ export async function consumeGuestCredit(guestKey, ipAddress = null) {
       .insert({
         fingerprint_hash: guestKey,
         ip_address: ipAddress,
-        generations_used: 1,
+        generations_used: cost,
         max_generations: GUEST_MAX_GENERATIONS,
         last_seen_at: now,
       })
@@ -162,27 +165,27 @@ export async function consumeGuestCredit(guestKey, ipAddress = null) {
 
     if (error) {
       if (error.code === '23505') {
-        return consumeGuestCredit(guestKey, ipAddress);
+        return consumeGuestCredit(guestKey, ipAddress, cost);
       }
       console.warn(
         '[guestCredits] consumeGuestCredit insert failed, using memory fallback:',
         error.message || error,
       );
       logGuestTableMissingOnce();
-      return consumeMemoryGuestCredit(guestKey);
+      return consumeMemoryGuestCredit(guestKey, cost);
     }
 
     return Math.max(0, data.max_generations - data.generations_used);
   }
 
-  if (existing.generations_used >= existing.max_generations) {
+  if (existing.generations_used + cost > existing.max_generations) {
     throw createError('Insufficient credits.', 402);
   }
 
   const { data, error } = await supabase
     .from('guest_usage')
     .update({
-      generations_used: existing.generations_used + 1,
+      generations_used: existing.generations_used + cost,
       ip_address: ipAddress,
       last_seen_at: now,
     })
@@ -197,15 +200,21 @@ export async function consumeGuestCredit(guestKey, ipAddress = null) {
       error.message || error,
     );
     logGuestTableMissingOnce();
-    return consumeMemoryGuestCredit(guestKey);
+    return consumeMemoryGuestCredit(guestKey, cost);
   }
 
   if (!data) {
-    return consumeGuestCredit(guestKey, ipAddress);
+    return consumeGuestCredit(guestKey, ipAddress, cost);
   }
 
   const totalAllowance = data.max_generations;
   return Math.max(0, totalAllowance - data.generations_used);
+}
+
+function isMissingColumnError(error, column) {
+  const message = error?.message || '';
+  return new RegExp(column, 'i').test(message)
+    && /column|schema cache/i.test(message);
 }
 
 export async function transferGuestCreditsToUser(userId, guestKey) {
@@ -215,46 +224,67 @@ export async function transferGuestCreditsToUser(userId, guestKey) {
     return { transferred: 0, credits: null };
   }
 
-  const { data: profile, error: profileError } = await supabase
+  let claimColumnAvailable = true;
+  let { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('credits, guest_fingerprint_claimed')
     .eq('id', userId)
     .maybeSingle();
 
+  // Older profiles schema without guest_fingerprint_claimed.
+  if (profileError && isMissingColumnError(profileError, 'guest_fingerprint_claimed')) {
+    claimColumnAvailable = false;
+    console.warn('[guest-credits] guest_fingerprint_claimed missing — transfer without claim lock');
+    ({ data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('credits')
+      .eq('id', userId)
+      .maybeSingle());
+  }
+
   if (profileError) {
+    console.error('[guest-credits] load profile failed:', profileError.message);
     throw createError('Failed to load profile.', 500);
   }
 
-  if (profile?.guest_fingerprint_claimed) {
+  if (claimColumnAvailable && profile?.guest_fingerprint_claimed) {
     return { transferred: 0, credits: profile.credits ?? 0 };
   }
 
   const remaining = await getGuestCreditsRemaining(guestKey);
 
   if (remaining <= 0) {
-    await supabase
-      .from('profiles')
-      .update({ guest_fingerprint_claimed: guestKey })
-      .eq('id', userId)
-      .is('guest_fingerprint_claimed', null);
+    if (claimColumnAvailable) {
+      await supabase
+        .from('profiles')
+        .update({ guest_fingerprint_claimed: guestKey })
+        .eq('id', userId)
+        .is('guest_fingerprint_claimed', null);
+    }
 
     return { transferred: 0, credits: profile?.credits ?? 0 };
   }
 
   const newCredits = (profile?.credits ?? 0) + remaining;
+  const updatePayload = claimColumnAvailable
+    ? { credits: newCredits, guest_fingerprint_claimed: guestKey }
+    : { credits: newCredits };
 
-  const { data: updatedProfile, error: updateError } = await supabase
+  let updateQuery = supabase
     .from('profiles')
-    .update({
-      credits: newCredits,
-      guest_fingerprint_claimed: guestKey,
-    })
-    .eq('id', userId)
-    .is('guest_fingerprint_claimed', null)
+    .update(updatePayload)
+    .eq('id', userId);
+
+  if (claimColumnAvailable) {
+    updateQuery = updateQuery.is('guest_fingerprint_claimed', null);
+  }
+
+  const { data: updatedProfile, error: updateError } = await updateQuery
     .select('credits')
     .maybeSingle();
 
   if (updateError) {
+    console.error('[guest-credits] transfer failed:', updateError.message);
     throw createError('Failed to transfer guest credits.', 500);
   }
 

@@ -9,24 +9,59 @@ import {
 import { AnimatePresence, LayoutGroup, motion } from 'framer-motion';
 import {
   ArrowLeft,
+  Check,
   ChevronDown,
   ChevronUp,
   Download,
+  Gem,
+  Grid2x2,
   ImageIcon,
+  Layers,
   Maximize2,
   Package,
   Pencil,
   Play,
   RefreshCw,
+  Scale,
+  Settings2,
   Shirt,
+  SlidersHorizontal,
   Sparkles,
   Upload,
   UserRound,
   X,
+  Zap,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { downloadImageBlob, triggerBlobDownload } from '../api/downloadImage';
-import { STUDIO_MODE_EXAMPLES, TRYON_MODEL_FAN, TRYON_PRODUCT_FAN } from '../constants/studioModeExamples';
+import {
+  STUDIO_PROMPT_PRESET_KEYS,
+  type StudioPromptPresetKey,
+} from '../constants/studioPromptPresets';
+import {
+  STUDIO_MODE_EXAMPLES,
+  PACKSHOT_FAN,
+  PACKSHOT_SAMPLE_PRODUCT,
+  PRODUCT_TO_MODEL_FAN,
+  PRODUCT_TO_MODEL_SAMPLE_PRODUCT,
+  TRYON_MODEL_FAN,
+  TRYON_PRODUCT_FAN,
+} from '../constants/studioModeExamples';
+import {
+  DEFAULT_STUDIO_OUTPUT_SETTINGS,
+  STUDIO_ASPECT_RATIOS,
+  STUDIO_QUALITY_MODES,
+  STUDIO_RESOLUTIONS,
+  STUDIO_VARIANT_COUNTS,
+  creditCostForVariantCount,
+  resolutionLabel,
+  resolutionMenuLabel,
+  type StudioAspectRatio,
+  type StudioOutputSettings,
+  type StudioQualityMode,
+  type StudioResolution,
+  type StudioVariantCount,
+} from '../constants/studioOutputSettings';
 import type { GalleryItem } from '../lib/galleryStorage';
 import { compressImageForUpload } from '../utils/compressImageForUpload';
 import { resolveImageUrl } from '../utils/resolveImageUrl';
@@ -61,6 +96,8 @@ export type StudioMode = 'tryon' | 'packshot' | 'product-to-model';
 type TryOnWorkspaceProps = {
   disabled?: boolean;
   studioMode?: StudioMode;
+  /** Mode that started the in-flight job; used so switching tabs leaves the waiting view. */
+  runningMode?: StudioMode | null;
   onStudioModeChange?: (mode: StudioMode) => void;
   garmentBase64: string | null;
   garmentPreviewUrl: string | null;
@@ -71,6 +108,8 @@ type TryOnWorkspaceProps = {
   selectedModelUrl: string | null;
   prompt: string;
   onPromptChange: (value: string) => void;
+  selectedPromptPresets?: StudioPromptPresetKey[];
+  onSelectedPromptPresetsChange?: (keys: StudioPromptPresetKey[]) => void;
   onGarmentLoaded: (base64: string, previewUrl: string) => void;
   onGarmentClear: () => void;
   onGarmentValidationError: (message: string) => void;
@@ -83,21 +122,16 @@ type TryOnWorkspaceProps = {
   canRun: boolean;
   running?: boolean;
   runLabel: string;
+  outputSettings?: StudioOutputSettings;
+  onOutputSettingsChange?: (settings: StudioOutputSettings) => void;
   resultImageUrl?: string | null;
+  resultVariantUrls?: string[];
+  onSelectVariant?: (url: string) => void;
   historyItems?: TryOnHistoryItem[];
   onSelectHistory?: (item: TryOnHistoryItem) => void;
   onBackToSetup?: () => void;
   onNotify?: (message: string, type: 'success' | 'warning' | 'error') => void;
 };
-
-const PROMPT_PRESET_KEYS = [
-  'studioLight',
-  'softShadows',
-  'lookbook',
-  'fullBody',
-  'cleanBg',
-  'naturalFit',
-] as const;
 
 const MODE_ORDER: StudioMode[] = ['product-to-model', 'tryon', 'packshot'];
 
@@ -124,6 +158,7 @@ function isImageFile(file: File) {
 export default function TryOnWorkspace({
   disabled = false,
   studioMode = 'tryon',
+  runningMode = null,
   onStudioModeChange,
   garmentBase64,
   garmentPreviewUrl,
@@ -134,6 +169,8 @@ export default function TryOnWorkspace({
   selectedModelUrl,
   prompt,
   onPromptChange,
+  selectedPromptPresets = [],
+  onSelectedPromptPresetsChange,
   onGarmentLoaded,
   onGarmentClear,
   onGarmentValidationError,
@@ -146,7 +183,11 @@ export default function TryOnWorkspace({
   canRun,
   running = false,
   runLabel,
+  outputSettings = DEFAULT_STUDIO_OUTPUT_SETTINGS,
+  onOutputSettingsChange,
   resultImageUrl = null,
+  resultVariantUrls = [],
+  onSelectVariant,
   historyItems = [],
   onSelectHistory,
   onBackToSetup,
@@ -155,6 +196,7 @@ export default function TryOnWorkspace({
   const { t } = useTranslation();
   const garmentInputRef = useRef<HTMLInputElement>(null);
   const humanInputRef = useRef<HTMLInputElement>(null);
+  const studioDockRef = useRef<HTMLDivElement>(null);
   const [garmentDragging, setGarmentDragging] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -165,8 +207,37 @@ export default function TryOnWorkspace({
   const modelPreviewUrl = humanPreviewUrl || selectedModelUrl;
   const hasGarment = Boolean(garmentBase64 || garmentPreviewUrl);
   const hasModel = Boolean(humanBase64 || selectedModelUrl);
-  const inSession = running || Boolean(resultImageUrl);
+  const waitingInThisMode = running && runningMode === studioMode;
+  const inSession = waitingInThisMode || Boolean(resultImageUrl);
   const displayResultUrl = resolveImageUrl(resultImageUrl);
+
+  useEffect(() => {
+    const dock = studioDockRef.current;
+    if (!dock || typeof ResizeObserver === 'undefined') return undefined;
+
+    const syncDockHeight = () => {
+      const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
+      if (isDesktop) {
+        document.documentElement.style.removeProperty('--studio-dock-height');
+        return;
+      }
+      const height = Math.ceil(dock.getBoundingClientRect().height);
+      if (height > 0) {
+        document.documentElement.style.setProperty('--studio-dock-height', `${height}px`);
+      }
+    };
+
+    syncDockHeight();
+    const observer = new ResizeObserver(syncDockHeight);
+    observer.observe(dock);
+    window.addEventListener('resize', syncDockHeight);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', syncDockHeight);
+      document.documentElement.style.removeProperty('--studio-dock-height');
+    };
+  }, []);
 
   async function handleFile(file: File | undefined, kind: 'garment' | 'human') {
     if (!file || disabled) return;
@@ -227,6 +298,30 @@ export default function TryOnWorkspace({
     }
   }
 
+  async function handleFanGarmentPick(url: string = PRODUCT_TO_MODEL_SAMPLE_PRODUCT) {
+    if (disabled) return;
+    setUploading(true);
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('fetch failed');
+      const blob = await response.blob();
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          if (typeof reader.result === 'string') resolve(reader.result);
+          else reject(new Error('read failed'));
+        };
+        reader.onerror = () => reject(new Error('read failed'));
+        reader.readAsDataURL(blob);
+      });
+      onGarmentLoaded(dataUrl, dataUrl);
+    } catch {
+      onGarmentValidationError(t('ecommerce.readFailed'));
+    } finally {
+      setUploading(false);
+    }
+  }
+
   async function handleFanModelPick(url: string) {
     if (disabled) return;
     setUploading(true);
@@ -267,14 +362,14 @@ export default function TryOnWorkspace({
     }
   }
 
-  function appendPreset(label: string) {
-    const trimmed = prompt.trim();
-    if (!trimmed) {
-      onPromptChange(label);
-      return;
-    }
-    if (trimmed.toLowerCase().includes(label.toLowerCase())) return;
-    onPromptChange(`${trimmed}, ${label}`);
+  function togglePromptPreset(key: StudioPromptPresetKey) {
+    if (!onSelectedPromptPresetsChange) return;
+    const active = selectedPromptPresets.includes(key);
+    onSelectedPromptPresetsChange(
+      active
+        ? selectedPromptPresets.filter((item) => item !== key)
+        : [...selectedPromptPresets, key],
+    );
   }
 
   const modeMeta: Record<StudioMode, { icon: ReactNode; label: string; example: (typeof STUDIO_MODE_EXAMPLES)[StudioMode] }> = {
@@ -330,6 +425,8 @@ export default function TryOnWorkspace({
           running={running}
           disabled={disabled}
           resultImageUrl={displayResultUrl}
+          resultVariantUrls={resultVariantUrls}
+          onSelectVariant={onSelectVariant}
           historyItems={historyItems}
           activeResultUrl={resultImageUrl}
           downloading={downloading}
@@ -353,8 +450,36 @@ export default function TryOnWorkspace({
           label={t('studio.productLabel')}
           emptyTitle={t('studio.uploadProduct')}
           emptyHint={t('studio.dropHint')}
-          emptySubhint={t('studio.productOnlyHint')}
+          emptySubhint={
+            studioMode === 'packshot'
+              ? t('studio.modePackshotDesc')
+              : t('studio.productOnlyHint')
+          }
           previewUrl={hasGarment ? garmentPreviewUrl : null}
+          exampleFan={
+            studioMode === 'product-to-model'
+              ? PRODUCT_TO_MODEL_FAN
+              : studioMode === 'packshot'
+                ? PACKSHOT_FAN
+                : undefined
+          }
+          onExamplePick={
+            studioMode === 'product-to-model'
+              ? (url) => {
+                  const garmentUrl = url.includes('sample-result')
+                    ? PRODUCT_TO_MODEL_SAMPLE_PRODUCT
+                    : url;
+                  void handleFanGarmentPick(garmentUrl);
+                }
+              : studioMode === 'packshot'
+                ? (url) => {
+                    const garmentUrl = url.includes('packshot-after')
+                      ? PACKSHOT_SAMPLE_PRODUCT
+                      : url;
+                    void handleFanGarmentPick(garmentUrl);
+                  }
+                : undefined
+          }
           error={garmentFileError}
           onDragOver={(e) => {
             e.preventDefault();
@@ -457,7 +582,10 @@ export default function TryOnWorkspace({
       )}
 
       {/* Control dock — sticky chat-style input above iOS tab bar on phones */}
-      <div className="studio-dock-mobile fixed inset-x-0 z-40 border-t border-zinc-200/80 bg-white/95 px-3 pt-2.5 shadow-[0_-12px_40px_rgb(24_24_27/0.08)] backdrop-blur-xl lg:static lg:z-auto lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none lg:backdrop-blur-none">
+      <div
+        ref={studioDockRef}
+        className="studio-dock-mobile fixed inset-x-0 z-40 border-t border-zinc-200/80 bg-white/95 px-3 pt-2.5 shadow-[0_-12px_40px_rgb(24_24_27/0.08)] backdrop-blur-xl lg:static lg:z-auto lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none lg:backdrop-blur-none"
+      >
         <div className="glass-panel mx-auto w-full max-w-6xl rounded-2xl border border-zinc-200/60 bg-white/90 p-2.5 shadow-xl shadow-zinc-200/40 sm:p-3 lg:rounded-3xl lg:bg-white/70 lg:p-4">
           <LayoutGroup>
             <div className="relative mb-2.5 flex gap-1 overflow-x-auto scrollbar-none rounded-2xl border border-zinc-200/60 bg-zinc-100/80 p-1 snap-x snap-mandatory lg:mb-3 lg:flex-wrap lg:overflow-visible lg:snap-none">
@@ -468,7 +596,6 @@ export default function TryOnWorkspace({
                   <ModeTab
                     key={mode}
                     active={active}
-                    disabled={disabled || running}
                     onClick={() => onStudioModeChange?.(mode)}
                     icon={meta.icon}
                     label={meta.label}
@@ -514,16 +641,20 @@ export default function TryOnWorkspace({
             <motion.button
               type="button"
               onClick={onRun}
-              disabled={(!canRun && !running) || (disabled && !running)}
-              aria-busy={running}
-              whileTap={running ? undefined : { scale: 0.98 }}
+              disabled={
+                waitingInThisMode
+                  ? false
+                  : (!canRun || disabled || running)
+              }
+              aria-busy={waitingInThisMode}
+              whileTap={waitingInThisMode ? undefined : { scale: 0.98 }}
               className={`run-btn-shimmer relative inline-flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/20 disabled:cursor-not-allowed disabled:opacity-40 lg:h-12 lg:w-auto lg:min-w-[9rem] lg:gap-2 lg:px-6 lg:text-sm lg:font-semibold ${
-                running
+                waitingInThisMode
                   ? 'bg-zinc-100 text-zinc-600'
                   : 'bg-zinc-900 text-white hover:bg-zinc-800'
               }`}
             >
-              {running ? (
+              {waitingInThisMode ? (
                 <>
                   <span className="meditative-spinner !h-5 !w-5" />
                   <span className="hidden lg:inline">{runLabel}</span>
@@ -538,16 +669,22 @@ export default function TryOnWorkspace({
           </div>
 
           <div className="mt-2 hidden flex-wrap gap-1.5 lg:flex">
-            {PROMPT_PRESET_KEYS.map((key) => {
+            {STUDIO_PROMPT_PRESET_KEYS.map((key) => {
               const label = t(`studio.promptPresets.${key}`);
+              const selected = selectedPromptPresets.includes(key);
               return (
                 <motion.button
                   key={key}
                   type="button"
                   disabled={disabled && !running}
+                  aria-pressed={selected}
                   whileTap={{ scale: 0.96 }}
-                  onClick={() => appendPreset(label)}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200/60 bg-white px-3 py-1.5 text-xs font-medium text-zinc-500 transition hover:border-zinc-300 hover:bg-zinc-50 hover:text-zinc-900 disabled:opacity-50"
+                  onClick={() => togglePromptPreset(key)}
+                  className={
+                    selected
+                      ? 'inline-flex items-center gap-1.5 rounded-full border border-zinc-900 bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white transition disabled:opacity-50'
+                      : 'inline-flex items-center gap-1.5 rounded-full border border-zinc-200/60 bg-white px-3 py-1.5 text-xs font-medium text-zinc-500 transition hover:border-zinc-300 hover:bg-zinc-50 hover:text-zinc-900 disabled:opacity-50'
+                  }
                 >
                   <ImageIcon className="h-3 w-3 opacity-70" />
                   {label}
@@ -556,25 +693,32 @@ export default function TryOnWorkspace({
             })}
           </div>
 
-          <div className="mt-2.5 hidden flex-wrap gap-2 lg:flex">
-            <MetaPill label={t('studio.ratio')} value="3:4" />
-            <MetaPill label={t('studio.resolution')} value="1K" />
-            <MetaPill label={t('studio.mode')} value={t('studio.modeFast')} />
-            <MetaPill label="#" value="1" />
+          <div className="mt-2.5 flex flex-wrap gap-2">
+            <StudioOutputControls
+              settings={outputSettings}
+              disabled={disabled && !running}
+              onChange={(next) => onOutputSettingsChange?.(next)}
+            />
           </div>
 
           {/* Mobile: horizontal preset chips under prompt */}
           <div className="mt-2 flex gap-1.5 overflow-x-auto scrollbar-none pb-0.5 lg:hidden">
-            {PROMPT_PRESET_KEYS.map((key) => {
+            {STUDIO_PROMPT_PRESET_KEYS.map((key) => {
               const label = t(`studio.promptPresets.${key}`);
+              const selected = selectedPromptPresets.includes(key);
               return (
                 <motion.button
                   key={key}
                   type="button"
                   disabled={disabled && !running}
+                  aria-pressed={selected}
                   whileTap={{ scale: 0.96 }}
-                  onClick={() => appendPreset(label)}
-                  className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-zinc-200/60 bg-zinc-50 px-3 py-1.5 text-xs font-medium text-zinc-500 transition active:bg-zinc-100 disabled:opacity-50"
+                  onClick={() => togglePromptPreset(key)}
+                  className={
+                    selected
+                      ? 'inline-flex shrink-0 items-center gap-1.5 rounded-full border border-zinc-900 bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white transition disabled:opacity-50'
+                      : 'inline-flex shrink-0 items-center gap-1.5 rounded-full border border-zinc-200/60 bg-zinc-50 px-3 py-1.5 text-xs font-medium text-zinc-500 transition active:bg-zinc-100 disabled:opacity-50'
+                  }
                 >
                   {label}
                 </motion.button>
@@ -597,6 +741,7 @@ function DropZone({
   emptySubhint,
   previewUrl,
   exampleFan,
+  onExamplePick,
   error,
   onDragOver,
   onDragLeave,
@@ -615,6 +760,7 @@ function DropZone({
   emptySubhint?: string;
   previewUrl: string | null;
   exampleFan?: readonly string[];
+  onExamplePick?: (url: string) => void;
   error: string | null;
   onDragOver: (e: DragEvent<HTMLDivElement>) => void;
   onDragLeave: () => void;
@@ -685,7 +831,11 @@ function DropZone({
           ) : (
             <>
               {exampleFan?.length ? (
-                <ExampleFan images={exampleFan} />
+                <ExampleFan
+                  images={exampleFan}
+                  onPick={onExamplePick}
+                  disabled={disabled}
+                />
               ) : (
                 <motion.span
                   animate={{
@@ -727,8 +877,9 @@ function ExampleFan({
   onPick?: (url: string) => void;
   disabled?: boolean;
 }) {
-  const rotations = [-14, 0, 14];
-  const offsets = [-42, 0, 42];
+  const count = Math.min(images.length, 3);
+  const rotations = count === 2 ? [-10, 10] : [-14, 0, 14];
+  const offsets = count === 2 ? [-30, 30] : [-42, 0, 42];
 
   return (
     <div className="relative mb-1 flex h-36 w-full max-w-[220px] items-center justify-center sm:h-40">
@@ -738,7 +889,7 @@ function ExampleFan({
           'absolute h-32 w-[4.6rem] overflow-hidden rounded-xl border border-white bg-zinc-100 shadow-lg shadow-zinc-300/50 sm:h-36 sm:w-20';
         const style = {
           transform: `translateX(${offsets[index] ?? 0}px) rotate(${rotations[index] ?? 0}deg)`,
-          zIndex: index === 1 ? 3 : 1,
+          zIndex: count === 2 ? index + 1 : index === 1 ? 3 : 1,
         };
 
         if (interactive) {
@@ -776,6 +927,8 @@ function SessionLayout({
   running,
   disabled,
   resultImageUrl,
+  resultVariantUrls = [],
+  onSelectVariant,
   historyItems,
   activeResultUrl,
   downloading,
@@ -795,6 +948,8 @@ function SessionLayout({
   running: boolean;
   disabled: boolean;
   resultImageUrl: string | null;
+  resultVariantUrls?: string[];
+  onSelectVariant?: (url: string) => void;
   historyItems: TryOnHistoryItem[];
   activeResultUrl: string | null;
   downloading: boolean;
@@ -810,6 +965,9 @@ function SessionLayout({
 }) {
   const { t } = useTranslation();
   const locked = running || disabled;
+  const variantUrls = resultVariantUrls.length > 1
+    ? resultVariantUrls
+    : [];
 
   return (
     <div
@@ -887,6 +1045,31 @@ function SessionLayout({
                 )}
               </IconButton>
             </div>
+            {variantUrls.length > 0 ? (
+              <div className="absolute bottom-3 left-3 z-10 flex gap-1.5 rounded-2xl border border-zinc-200/70 bg-white/90 p-1.5 shadow-sm backdrop-blur-md">
+                {variantUrls.map((url, index) => {
+                  const thumb = resolveImageUrl(url);
+                  const active = url === activeResultUrl || resolveImageUrl(url) === resultImageUrl;
+                  return (
+                    <button
+                      key={`${url.slice(0, 48)}-${index}`}
+                      type="button"
+                      disabled={locked}
+                      onClick={() => onSelectVariant?.(url)}
+                      aria-label={t('studio.variantN', { n: index + 1 })}
+                      aria-pressed={active}
+                      className={`h-14 w-10 overflow-hidden rounded-xl border transition ${
+                        active
+                          ? 'border-zinc-900 ring-2 ring-zinc-900/20'
+                          : 'border-zinc-200/80 opacity-80 hover:opacity-100'
+                      }`}
+                    >
+                      <img src={thumb || url} alt="" className="h-full w-full object-cover object-top" />
+                    </button>
+                  );
+                })}
+              </div>
+            ) : null}
           </>
         ) : null}
       </div>
@@ -943,26 +1126,26 @@ function SessionLayout({
                           <img src={thumb} alt="" className="h-full w-full object-cover object-top" />
                         ) : null}
                       </button>
-                      <div className="pointer-events-none absolute inset-x-0 bottom-0 flex translate-y-1 items-center justify-center gap-1 bg-gradient-to-t from-white/95 to-transparent p-1.5 opacity-0 transition group-hover:translate-y-0 group-hover:opacity-100">
+                      <div className="pointer-events-none absolute inset-x-0 bottom-0 flex translate-y-0 items-center justify-center gap-1 bg-gradient-to-t from-white/95 to-transparent p-1.5 opacity-100 transition lg:translate-y-1 lg:opacity-0 lg:group-hover:translate-y-0 lg:group-hover:opacity-100 lg:group-focus-within:translate-y-0 lg:group-focus-within:opacity-100">
                         <HistoryAction
                           label={t('preview.download')}
                           onClick={() => onDownload(item.imageUrl)}
                         >
-                          <Download className="h-3 w-3" />
+                          <Download className="h-3.5 w-3.5" />
                         </HistoryAction>
                         {thumb ? (
                           <HistoryAction
                             label={t('studio.openLightbox')}
                             onClick={() => onOpenLightbox(thumb)}
                           >
-                            <Maximize2 className="h-3 w-3" />
+                            <Maximize2 className="h-3.5 w-3.5" />
                           </HistoryAction>
                         ) : null}
                         <HistoryAction
                           label={t('studio.reusePrompt')}
                           onClick={() => onReusePrompt(item.hashtags)}
                         >
-                          <RefreshCw className="h-3 w-3" />
+                          <RefreshCw className="h-3.5 w-3.5" />
                         </HistoryAction>
                       </div>
                     </div>
@@ -1087,7 +1270,7 @@ function HistoryAction({
         e.stopPropagation();
         onClick();
       }}
-      className="pointer-events-auto flex h-6 w-6 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-700 shadow-sm transition hover:border-zinc-300 hover:text-zinc-900"
+      className="pointer-events-auto flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-700 shadow-sm transition hover:border-zinc-300 hover:text-zinc-900"
     >
       {children}
     </button>
@@ -1238,12 +1421,347 @@ function ActionChip({
   );
 }
 
-function MetaPill({ label, value }: { label: string; value: string }) {
+function AspectRatioGlyph({ ratio }: { ratio: string }) {
+  const [w, h] = ratio.split(':').map(Number);
+  const safeW = w > 0 ? w : 1;
+  const safeH = h > 0 ? h : 1;
+  const max = 14;
+  const scale = max / Math.max(safeW, safeH);
+  const width = Math.max(6, Math.round(safeW * scale));
+  const height = Math.max(6, Math.round(safeH * scale));
+
   return (
-    <div className="inline-flex items-center gap-2 rounded-full border border-zinc-200/60 bg-zinc-50 px-3 py-2 text-xs font-medium text-zinc-500">
-      <span className="text-zinc-400">{label}</span>
-      <span className="font-semibold text-zinc-900">{value}</span>
+    <span
+      aria-hidden
+      className="inline-block shrink-0 rounded-[2px] border border-current opacity-70"
+      style={{ width, height }}
+    />
+  );
+}
+
+function StudioMenu({
+  open,
+  align = 'left',
+  children,
+}: {
+  open: boolean;
+  align?: 'left' | 'right';
+  children: ReactNode;
+}) {
+  if (!open) return null;
+
+  return (
+    <div
+      role="listbox"
+      className={`absolute bottom-full z-50 mb-2 min-w-[11rem] overflow-hidden rounded-2xl border border-zinc-200/80 bg-white p-1.5 shadow-xl shadow-zinc-200/60 ${
+        align === 'right' ? 'right-0' : 'left-0'
+      }`}
+    >
+      {children}
     </div>
+  );
+}
+
+function StudioMenuItem({
+  active,
+  onClick,
+  children,
+}: {
+  active?: boolean;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      role="option"
+      aria-selected={active}
+      onClick={onClick}
+      className={`flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-sm transition ${
+        active
+          ? 'bg-zinc-100 text-zinc-900'
+          : 'text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900'
+      }`}
+    >
+      <span className="min-w-0 flex-1">{children}</span>
+      {active ? <Check className="h-3.5 w-3.5 shrink-0 text-zinc-900" /> : null}
+    </button>
+  );
+}
+
+function StudioChipButton({
+  disabled,
+  open,
+  onClick,
+  icon,
+  label,
+  ariaLabel,
+}: {
+  disabled?: boolean;
+  open: boolean;
+  onClick: () => void;
+  icon: ReactNode;
+  label: string;
+  ariaLabel: string;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      aria-haspopup="listbox"
+      aria-expanded={open}
+      aria-label={ariaLabel}
+      onClick={onClick}
+      className={`inline-flex h-9 items-center gap-1.5 rounded-xl border px-2.5 text-xs font-semibold transition disabled:opacity-50 ${
+        open
+          ? 'border-zinc-300 bg-zinc-100 text-zinc-900'
+          : 'border-zinc-200/70 bg-white text-zinc-600 hover:border-zinc-300 hover:text-zinc-900'
+      }`}
+    >
+      <span className="text-zinc-400">{icon}</span>
+      <span>{label}</span>
+      <ChevronDown className={`h-3 w-3 text-zinc-400 transition ${open ? 'rotate-180' : ''}`} />
+    </button>
+  );
+}
+
+function qualityModeLabel(
+  mode: StudioQualityMode,
+  t: (key: string) => string,
+): string {
+  switch (mode) {
+    case 'auto':
+      return t('studio.qualityModes.auto');
+    case 'fast':
+      return t('studio.qualityModes.fast');
+    case 'balanced':
+      return t('studio.qualityModes.balanced');
+    case 'quality':
+      return t('studio.qualityModes.quality');
+    default:
+      return mode;
+  }
+}
+
+function qualityModeDesc(
+  mode: StudioQualityMode,
+  t: (key: string) => string,
+): string {
+  switch (mode) {
+    case 'auto':
+      return t('studio.qualityModes.autoDesc');
+    case 'fast':
+      return t('studio.qualityModes.fastDesc');
+    case 'balanced':
+      return t('studio.qualityModes.balancedDesc');
+    case 'quality':
+      return t('studio.qualityModes.qualityDesc');
+    default:
+      return '';
+  }
+}
+
+function qualityModeIcon(mode: StudioQualityMode) {
+  switch (mode) {
+    case 'auto':
+      return <Settings2 className="h-4 w-4 text-zinc-400" />;
+    case 'fast':
+      return <Zap className="h-4 w-4 text-zinc-400" />;
+    case 'balanced':
+      return <Scale className="h-4 w-4 text-zinc-400" />;
+    case 'quality':
+      return <Gem className="h-4 w-4 text-zinc-400" />;
+    default:
+      return <SlidersHorizontal className="h-4 w-4 text-zinc-400" />;
+  }
+}
+
+function StudioSettingGroup({
+  open,
+  onClose,
+  children,
+}: {
+  open: boolean;
+  onClose: () => void;
+  children: ReactNode;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return undefined;
+
+    function handlePointerDown(event: MouseEvent) {
+      if (ref.current && !ref.current.contains(event.target as Node)) {
+        onClose();
+      }
+    }
+
+    function handleKey(event: KeyboardEvent) {
+      if (event.key === 'Escape') onClose();
+    }
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleKey);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleKey);
+    };
+  }, [open, onClose]);
+
+  return <div ref={ref} className="relative">{children}</div>;
+}
+
+function StudioOutputControls({
+  settings,
+  disabled,
+  onChange,
+}: {
+  settings: StudioOutputSettings;
+  disabled?: boolean;
+  onChange: (next: StudioOutputSettings) => void;
+}) {
+  const { t } = useTranslation();
+  const [openMenu, setOpenMenu] = useState<'ratio' | 'resolution' | 'mode' | 'variants' | null>(null);
+
+  function patch(partial: Partial<StudioOutputSettings>) {
+    onChange({ ...settings, ...partial });
+    setOpenMenu(null);
+  }
+
+  const closeMenu = () => setOpenMenu(null);
+
+  const modeTriggerLabel = settings.qualityMode === 'auto'
+    ? t('studio.mode')
+    : qualityModeLabel(settings.qualityMode, t);
+
+  const resolutionTriggerLabel = settings.resolution === 'auto'
+    ? t('studio.resolution')
+    : resolutionLabel(settings.resolution);
+
+  const variantsTriggerLabel = settings.numImages === 3
+    ? t('studio.variantsThree')
+    : t('studio.variantsOne');
+
+  return (
+    <>
+      <StudioSettingGroup open={openMenu === 'ratio'} onClose={closeMenu}>
+        <StudioChipButton
+          disabled={disabled}
+          open={openMenu === 'ratio'}
+          onClick={() => setOpenMenu((v) => (v === 'ratio' ? null : 'ratio'))}
+          icon={<AspectRatioGlyph ratio={settings.aspectRatio} />}
+          label={settings.aspectRatio}
+          ariaLabel={t('studio.ratio')}
+        />
+        <StudioMenu open={openMenu === 'ratio'}>
+          {STUDIO_ASPECT_RATIOS.map((ratio) => (
+            <StudioMenuItem
+              key={ratio}
+              active={settings.aspectRatio === ratio}
+              onClick={() => patch({ aspectRatio: ratio as StudioAspectRatio })}
+            >
+              <span className="flex items-center gap-2.5">
+                <AspectRatioGlyph ratio={ratio} />
+                <span className="font-medium text-zinc-900">{ratio}</span>
+              </span>
+            </StudioMenuItem>
+          ))}
+        </StudioMenu>
+      </StudioSettingGroup>
+
+      <StudioSettingGroup open={openMenu === 'resolution'} onClose={closeMenu}>
+        <StudioChipButton
+          disabled={disabled}
+          open={openMenu === 'resolution'}
+          onClick={() => setOpenMenu((v) => (v === 'resolution' ? null : 'resolution'))}
+          icon={<Grid2x2 className="h-3.5 w-3.5" />}
+          label={resolutionTriggerLabel}
+          ariaLabel={t('studio.resolution')}
+        />
+        <StudioMenu open={openMenu === 'resolution'}>
+          {STUDIO_RESOLUTIONS.map((value) => (
+            <StudioMenuItem
+              key={value}
+              active={settings.resolution === value}
+              onClick={() => patch({ resolution: value as StudioResolution })}
+            >
+              <span className="font-medium text-zinc-900">{resolutionMenuLabel(value)}</span>
+            </StudioMenuItem>
+          ))}
+        </StudioMenu>
+      </StudioSettingGroup>
+
+      <StudioSettingGroup open={openMenu === 'variants'} onClose={closeMenu}>
+        <StudioChipButton
+          disabled={disabled}
+          open={openMenu === 'variants'}
+          onClick={() => setOpenMenu((v) => (v === 'variants' ? null : 'variants'))}
+          icon={<Layers className="h-3.5 w-3.5" />}
+          label={variantsTriggerLabel}
+          ariaLabel={t('studio.variants')}
+        />
+        <StudioMenu open={openMenu === 'variants'}>
+          {STUDIO_VARIANT_COUNTS.map((count) => {
+            const cost = creditCostForVariantCount(count);
+            return (
+              <StudioMenuItem
+                key={count}
+                active={settings.numImages === count}
+                onClick={() => patch({ numImages: count as StudioVariantCount })}
+              >
+                <span className="flex w-full items-center justify-between gap-4">
+                  <span className="font-medium text-zinc-900">
+                    {count === 3 ? t('studio.variantsThree') : t('studio.variantsOne')}
+                  </span>
+                  <span className="text-xs text-zinc-500">
+                    {t('studio.creditsCost', { count: cost })}
+                  </span>
+                </span>
+              </StudioMenuItem>
+            );
+          })}
+        </StudioMenu>
+      </StudioSettingGroup>
+
+      <StudioSettingGroup open={openMenu === 'mode'} onClose={closeMenu}>
+        <StudioChipButton
+          disabled={disabled}
+          open={openMenu === 'mode'}
+          onClick={() => setOpenMenu((v) => (v === 'mode' ? null : 'mode'))}
+          icon={<SlidersHorizontal className="h-3.5 w-3.5" />}
+          label={modeTriggerLabel}
+          ariaLabel={t('studio.mode')}
+        />
+        <StudioMenu open={openMenu === 'mode'} align="right">
+          <div className="w-[min(16rem,calc(100vw-1.5rem))]">
+            {STUDIO_QUALITY_MODES.map((mode) => (
+              <StudioMenuItem
+                key={mode}
+                active={settings.qualityMode === mode}
+                onClick={() => patch({ qualityMode: mode as StudioQualityMode })}
+              >
+                <span className="flex items-start gap-2.5">
+                  <span className="mt-0.5">{qualityModeIcon(mode)}</span>
+                  <span className="min-w-0">
+                    <span className="flex items-center gap-1.5 font-semibold text-zinc-900">
+                      {qualityModeLabel(mode, t)}
+                      {mode === 'quality' ? (
+                        <span className="rounded bg-zinc-900 px-1 py-px text-[9px] font-bold uppercase tracking-wide text-white">
+                          Pro
+                        </span>
+                      ) : null}
+                    </span>
+                    <span className="mt-0.5 block text-xs font-normal leading-snug text-zinc-500">
+                      {qualityModeDesc(mode, t)}
+                    </span>
+                  </span>
+                </span>
+              </StudioMenuItem>
+            ))}
+          </div>
+        </StudioMenu>
+      </StudioSettingGroup>
+    </>
   );
 }
 

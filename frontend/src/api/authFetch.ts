@@ -11,7 +11,16 @@ export async function authFetch(url: string, options: RequestInit = {}): Promise
 
   if (isSupabaseConfigured()) {
     const supabase = getSupabaseClient();
-    const { data: { session } } = await supabase!.auth.getSession();
+    let { data: { session } } = await supabase!.auth.getSession();
+
+    // Refresh if missing/expired so backend JWT verify does not get a stale token.
+    const expiresAtMs = session?.expires_at ? session.expires_at * 1000 : 0;
+    const needsRefresh = !session?.access_token || (expiresAtMs > 0 && expiresAtMs <= Date.now() + 60_000);
+    if (needsRefresh) {
+      const { data } = await supabase!.auth.refreshSession();
+      session = data.session ?? session;
+    }
+
     const token = session?.access_token;
 
     if (token) {

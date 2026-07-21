@@ -67,7 +67,105 @@ export function resolveManualWish(rawWish) {
     return trimmed.slice(0, PRODUCT_IMAGE_MAX_PROMPT_LENGTH);
   }
 
-  return sanitizeUserWish(trimmed);
+  return sanitizeUserWish(expandStudioStyleWish(trimmed));
+}
+
+/**
+ * Map localized studio chip labels → English phrases FASHN follows reliably.
+ * Runs before sanitize so non-Latin labels are still recognized.
+ */
+const STUDIO_STYLE_REPLACEMENTS = [
+  {
+    en: 'bright professional studio lighting',
+    patterns: [
+      /bright professional studio lighting/gi,
+      /студийный свет/gi,
+      /\bstudio light\b/gi,
+      /studiya yorug['’`]?ligi/gi,
+      /нури студия/gi,
+    ],
+  },
+  {
+    en: 'soft natural shadows',
+    patterns: [
+      /soft natural shadows/gi,
+      /мягкие тени/gi,
+      /\bsoft shadows\b/gi,
+      /yumshoq soyalar/gi,
+      /сояҳои нарм/gi,
+      /сояхои нарм/gi,
+    ],
+  },
+  {
+    en: 'editorial lookbook pose and styling',
+    patterns: [
+      /editorial lookbook pose and styling/gi,
+      /лукбук-поза/gi,
+      /лукбук поза/gi,
+      /\blookbook pose\b/gi,
+      /lookbook poza/gi,
+      /позаи lookbook/gi,
+    ],
+  },
+  {
+    en: 'full body framing head to toe',
+    patterns: [
+      /full body framing head to toe/gi,
+      /в полный рост/gi,
+      /\bfull body\b/gi,
+      /to['’`]?liq bo['’`]?y/gi,
+      /қадди пурра/gi,
+      /кадди пурра/gi,
+    ],
+  },
+  {
+    en: 'clean minimal studio background',
+    patterns: [
+      /clean minimal studio background/gi,
+      /чистый фон/gi,
+      /\bclean background\b/gi,
+      /toza fon/gi,
+      /заминаи тоза/gi,
+    ],
+  },
+  {
+    en: 'natural realistic clothing fit and fabric drape',
+    patterns: [
+      /natural realistic clothing fit and fabric drape/gi,
+      /естественная посадка/gi,
+      /\bnatural fit\b/gi,
+      /tabiiy o['’`]?tirish/gi,
+      /ҷойгиршавии табиӣ/gi,
+      /чойгиршавии табии/gi,
+    ],
+  },
+];
+
+export function expandStudioStyleWish(text) {
+  if (typeof text !== 'string' || !text.trim()) {
+    return '';
+  }
+
+  let result = text;
+  for (const { en, patterns } of STUDIO_STYLE_REPLACEMENTS) {
+    for (const pattern of patterns) {
+      result = result.replace(pattern, en);
+    }
+  }
+
+  const seen = new Set();
+  const parts = result
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .filter((part) => {
+      const key = part.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+  return parts.join(', ').replace(/\s+/g, ' ').trim();
 }
 
 export function buildAnalysisFromCatalogPrompt(catalogPrompt, manualWish, lang) {
@@ -690,12 +788,13 @@ const TWO_PIECE_HINT =
 /**
  * Short styling prompt for FASHN tryon-max (max 500 chars).
  * Do NOT pass long lookbook / Flux prompts — FASHN expects brief wear instructions.
+ * User style wish is prioritized so studio preset chips actually affect output.
  * @see https://docs.fashn.ai/api-reference/tryon-max
  */
 export function buildFashnTryOnPrompt({ category, description, manualWish } = {}) {
   const parts = [];
   const desc = typeof description === 'string' ? description.trim() : '';
-  const wish = typeof manualWish === 'string' ? manualWish.trim() : '';
+  const wish = expandStudioStyleWish(typeof manualWish === 'string' ? manualWish.trim() : '');
   const normalizedCategory = normalizeClothingCategoryFromVision(category);
   const looksLikeTwoPiece = TWO_PIECE_HINT.test(desc) || TWO_PIECE_HINT.test(wish);
 
@@ -709,8 +808,12 @@ export function buildFashnTryOnPrompt({ category, description, manualWish } = {}
     parts.push('wear only the top garment from the product photo');
   }
 
+  if (wish && !isCatalogPrompt(wish)) {
+    parts.push(wish.slice(0, 220));
+  }
+
   if (desc && desc.toLowerCase() !== 'clothing garment for virtual try-on') {
-    const compact = desc.replace(/\s+/g, ' ').slice(0, 220);
+    const compact = desc.replace(/\s+/g, ' ').slice(0, 160);
     parts.push(`exact match to product: ${compact}`);
   }
 
@@ -718,12 +821,7 @@ export function buildFashnTryOnPrompt({ category, description, manualWish } = {}
     'preserve exact fabric color, print scale, and texture',
     'natural cloth drape with soft contact shadows where fabric meets skin',
     'keep sleeve volume, ruffles, and hem length identical to the product photo',
-    'bright even catalog studio lighting',
   );
-
-  if (wish && !isCatalogPrompt(wish) && wish.length < 160) {
-    parts.push(wish);
-  }
 
   return parts.join('. ').replace(/\s+/g, ' ').trim().slice(0, 500);
 }

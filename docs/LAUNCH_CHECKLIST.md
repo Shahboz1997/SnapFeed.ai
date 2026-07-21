@@ -16,9 +16,11 @@
 ### Backend (`backend/.env`)
 
 - [ ] `OPENAI_API_KEY` (+ при необходимости `OPENAI_PROJECT_ID`)
-- [ ] `REPLICATE_*` — модели генерации (см. `backend/.env.example`)
+- [ ] `REPLICATE_API_TOKEN` — генерация product/text (см. `backend/.env.example`)
+- [ ] `FASHN_API_KEY` — Studio try-on / packshot / product-to-model
+- [ ] `PUBLIC_API_URL` — публичный HTTPS URL API (для human photo URL в try-on)
 - [ ] `CORS_ORIGIN` — URL фронтенда (например `https://snap-feed-ai.vercel.app`)
-- [ ] `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` — для auth и списания кредитов
+- [ ] `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` — **обязательно в production** (иначе API не стартует)
 - [ ] `GUEST_MAX_GENERATIONS=3` — лимит для гостей (опционально)
 
 ### Supabase

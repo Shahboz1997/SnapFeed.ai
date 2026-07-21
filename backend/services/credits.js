@@ -1,3 +1,4 @@
+import { normalizeCreditCost } from '../constants/generationCredits.js';
 import { getSupabaseAdmin, isSupabaseConfigured } from '../config/supabase.js';
 import { createError } from '../utils/errors.js';
 import { consumeGuestCredit, isGuestCreditsEnabled } from './guestCredits.js';
@@ -30,8 +31,9 @@ export async function getCredits(userId) {
   return data.credits ?? 0;
 }
 
-export async function consumeCredit(userId) {
+export async function consumeCredit(userId, amount = 1) {
   const supabase = getSupabaseAdmin();
+  const cost = normalizeCreditCost(amount);
 
   if (!supabase || !userId) {
     return null;
@@ -39,13 +41,13 @@ export async function consumeCredit(userId) {
 
   const currentCredits = await getCredits(userId);
 
-  if (currentCredits <= 0) {
+  if (currentCredits < cost) {
     throw createError('Insufficient credits.', 402);
   }
 
   const { data, error } = await supabase
     .from('profiles')
-    .update({ credits: currentCredits - 1 })
+    .update({ credits: currentCredits - cost })
     .eq('id', userId)
     .eq('credits', currentCredits)
     .select('credits')
@@ -62,23 +64,30 @@ export async function consumeCredit(userId) {
   return data.credits;
 }
 
-export async function consumeCreditIfConfigured(userId) {
+export async function consumeCreditIfConfigured(userId, amount = 1) {
   if (!isCreditsEnabled() || !userId) {
     return null;
   }
 
-  return consumeCredit(userId);
+  return consumeCredit(userId, amount);
 }
 
 export async function finishGenerationResponse(res, req, body, statusCode = 200) {
+  const creditCost = normalizeCreditCost(req.creditCost);
+  body.creditsCharged = creditCost;
+
   if (req.user?.id) {
-    const creditsRemaining = await consumeCreditIfConfigured(req.user.id);
+    const creditsRemaining = await consumeCreditIfConfigured(req.user.id, creditCost);
 
     if (creditsRemaining !== null) {
       body.creditsRemaining = creditsRemaining;
     }
   } else if (isGuestCreditsEnabled() && req.guestKey) {
-    const creditsRemaining = await consumeGuestCredit(req.guestKey, req.guestIp ?? null);
+    const creditsRemaining = await consumeGuestCredit(
+      req.guestKey,
+      req.guestIp ?? null,
+      creditCost,
+    );
 
     if (creditsRemaining !== null) {
       body.creditsRemaining = creditsRemaining;

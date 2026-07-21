@@ -17,6 +17,10 @@ services:
         sync: false
       - key: REPLICATE_API_TOKEN
         sync: false
+      - key: FASHN_API_KEY
+        sync: false
+      - key: PUBLIC_API_URL
+        sync: false
       - key: CORS_ORIGIN
         sync: false
       - key: OPENAI_TIMEOUT_MS
@@ -32,7 +36,7 @@ services:
       - key: IMAGE_UPSCALE_FACTOR
         value: "2"
       - key: NODE_OPTIONS
-        value: "--max-old-space-size=460"
+        value: "--max-old-space-size=768"
       - key: PRODUCT_PIPELINE_MODE
         value: native
       - key: REPLICATE_NANO_BANANA_MODEL
@@ -53,3 +57,19 @@ services:
         sync: false
       - key: GUEST_MAX_GENERATIONS
         value: "3"
+      - key: FASHN_CREDITS_ENDPOINT_ENABLED
+        value: "false"
+      - key: ADMIN_NOTIFY_EMAIL
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM
+        sync: false
+      - key: MANUAL_PAYMENT_DETAILS
+        sync: false
+      - key: MANUAL_PAYMENT_DETAILS_USD
+        sync: false
+      - key: MANUAL_PAYMENT_DETAILS_UZS
+        sync: false
+      - key: MANUAL_PAYMENT_DETAILS_TJS
+        sync: false

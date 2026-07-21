@@ -1,7 +1,15 @@
 import { authApiFetch } from './authFetch';
 import { ApiError } from './generateImage';
+import {
+  formatDepositAmount,
+  normalizeDepositCurrency,
+  type DepositCurrency,
+} from '../constants/depositCurrency';
 
-export type DepositPlanName = 'starter' | 'pro' | 'business';
+export type { DepositCurrency };
+export { formatDepositAmount };
+
+export type DepositPlanName = 'single' | 'starter' | 'pro' | 'business';
 
 export type DepositRequestStatus = 'pending' | 'approved' | 'rejected';
 
@@ -9,6 +17,7 @@ export interface CreateDepositRequestResult {
   success: true;
   requestId: string;
   amount: number;
+  currency: DepositCurrency;
   credits: number;
   planName: DepositPlanName;
   planLabel: string;
@@ -20,6 +29,7 @@ export interface DepositRequestItem {
   id: string;
   planName: DepositPlanName;
   amount: number;
+  currency: DepositCurrency;
   status: DepositRequestStatus;
   createdAt: string;
 }
@@ -41,10 +51,11 @@ async function readError(response: Response): Promise<ApiError> {
 
 export async function createDepositRequest(
   planName: DepositPlanName,
+  currency: DepositCurrency = 'RUB',
 ): Promise<CreateDepositRequestResult> {
   const response = await authApiFetch('/api/auth/create-deposit-request', {
     method: 'POST',
-    body: JSON.stringify({ planName }),
+    body: JSON.stringify({ planName, currency }),
   });
 
   if (!response.ok) {
@@ -56,7 +67,10 @@ export async function createDepositRequest(
     throw new ApiError('Invalid deposit response.', 500, 'pricing.depositCreateFailed');
   }
 
-  return data;
+  return {
+    ...data,
+    currency: normalizeDepositCurrency(data.currency),
+  };
 }
 
 export async function listDepositRequests(): Promise<DepositRequestItem[]> {
@@ -69,5 +83,21 @@ export async function listDepositRequests(): Promise<DepositRequestItem[]> {
   }
 
   const data = await response.json() as { requests?: DepositRequestItem[] };
-  return Array.isArray(data.requests) ? data.requests : [];
+  return Array.isArray(data.requests)
+    ? data.requests.map((item) => ({
+      ...item,
+      currency: normalizeDepositCurrency(item.currency),
+    }))
+    : [];
+}
+
+export async function notifyDepositPaid(requestId: string): Promise<void> {
+  const response = await authApiFetch('/api/auth/notify-deposit-paid', {
+    method: 'POST',
+    body: JSON.stringify({ requestId }),
+  });
+
+  if (!response.ok) {
+    throw await readError(response);
+  }
 }

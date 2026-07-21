@@ -48,7 +48,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative min-h-[100dvh] overflow-hidden bg-white px-4 py-10 text-slate-900">
+    <div className="relative h-[100dvh] overflow-y-auto overscroll-y-contain bg-white px-4 py-10 text-slate-900">
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden="true">
         <div className="absolute -right-16 -top-16 h-[280px] w-[280px] rounded-full bg-indigo-200/30 blur-[100px]" />
         <div className="absolute -bottom-20 -left-16 h-[260px] w-[260px] rounded-full bg-purple-200/20 blur-[100px]" />

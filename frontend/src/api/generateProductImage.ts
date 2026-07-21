@@ -1,5 +1,10 @@
 import type { ProductGenerationMode } from '../constants/productGenerationPresets';
 import type { TryOnCategory, TryOnGender } from '../constants/tryOnOptions';
+import type {
+  StudioAspectRatio,
+  StudioQualityMode,
+  StudioResolution,
+} from '../constants/studioOutputSettings';
 import { ApiError } from './generateImage';
 import type { AspectRatio, Platform } from './generateImage';
 import { authApiFetch } from './authFetch';
@@ -17,6 +22,12 @@ export interface GenerateProductImageRequest {
   humanImage?: string;
   platform: Platform;
   format: AspectRatio;
+  /** FASHN aspect ratio, e.g. "3:4". Falls back to format mapping when omitted. */
+  aspectRatio?: StudioAspectRatio;
+  resolution?: StudioResolution;
+  qualityMode?: StudioQualityMode;
+  /** 1 = single image (1 credit); 3 = variants (2 credits). */
+  numImages?: 1 | 3;
   extractText?: boolean;
   includeText?: boolean;
   overlayText?: string;
@@ -36,6 +47,8 @@ export interface GenerateProductImageResponse {
   fallbackReason: ProductFallbackReason | null;
   requestedMode?: ProductGenerationMode;
   creditsRemaining?: number;
+  creditsCharged?: number;
+  imageUrls?: string[];
 }
 
 export async function generateProductImage(
@@ -57,6 +70,10 @@ export async function generateProductImage(
         humanImage: request.mode === 'tryon' ? request.humanImage : undefined,
         platform: request.platform,
         format: request.format,
+        aspectRatio: request.aspectRatio,
+        resolution: request.resolution,
+        qualityMode: request.qualityMode,
+        numImages: request.numImages,
         extractText: request.extractText === true,
         includeText: request.includeText === true,
         overlayText: request.overlayText?.trim() || undefined,
@@ -121,6 +138,11 @@ export async function generateProductImage(
   return {
     success: data.success,
     imageUrl: data.imageUrl,
+    imageUrls: Array.isArray(data.imageUrls) && data.imageUrls.length
+      ? data.imageUrls.filter((url): url is string => typeof url === 'string' && Boolean(url))
+      : data.imageUrl
+        ? [data.imageUrl]
+        : [],
     optimizedPrompt: data.optimizedPrompt,
     hashtags: data.hashtags,
     extractedText: null,
@@ -128,5 +150,6 @@ export async function generateProductImage(
     fallbackReason: data.fallbackReason ?? null,
     requestedMode: data.requestedMode,
     creditsRemaining: data.creditsRemaining,
+    creditsCharged: data.creditsCharged,
   };
 }

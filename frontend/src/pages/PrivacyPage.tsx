@@ -9,7 +9,7 @@ export default function PrivacyPage() {
   const supportEmail = getSupportEmail();
 
   return (
-    <div className="min-h-[100dvh] bg-white text-slate-900">
+    <div className="h-[100dvh] overflow-y-auto overscroll-y-contain bg-white text-slate-900">
       <Header credits={0} />
 
       <main className="mx-auto max-w-2xl px-4 pt-24 pb-12 sm:px-6">

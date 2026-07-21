@@ -3,29 +3,31 @@ import { ArrowLeft, Check, CheckCheck, Copy, X, Zap } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
   createDepositRequest,
+  formatDepositAmount,
+  notifyDepositPaid,
   type CreateDepositRequestResult,
+  type DepositCurrency,
   type DepositPlanName,
 } from '../api/depositRequests';
 import { ApiError } from '../api/generateImage';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { GUEST_CREDITS_INITIAL } from '../constants/guestCredits';
+import {
+  DEPOSIT_CURRENCIES,
+  PRICING_TIERS,
+  currencyFromLang,
+  formatPerCredit,
+  langFromCurrency,
+  tierAmountForCurrency,
+  type PricingTierPrices,
+} from '../constants/depositCurrency';
 import BottomSheet from './BottomSheet';
 import Spinner from './Spinner';
 
-interface PricingTier {
-  id: DepositPlanName;
-  credits: number;
-  price: string;
-  popular?: boolean;
-}
+type PricingTier = PricingTierPrices;
 
-// Keep in sync with backend/constants/pricingTiers.js
-const TIERS: PricingTier[] = [
-  { id: 'starter', credits: 10, price: '$9' },
-  { id: 'pro', credits: 50, price: '$29', popular: true },
-  { id: 'business', credits: 200, price: '$99' },
-];
+const TIERS: PricingTier[] = PRICING_TIERS;
 
 interface PricingModalProps {
   open: boolean;
@@ -89,7 +91,7 @@ function TiltCard({
 }
 
 export default function PricingModal({ open, onClose, credits = 0, welcome = false }: PricingModalProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { showToast } = useToast();
   const { user, authEnabled, signInWithGoogle } = useAuth();
   const [signingIn, setSigningIn] = useState(false);
@@ -98,6 +100,8 @@ export default function PricingModal({ open, onClose, credits = 0, welcome = fal
   const [createError, setCreateError] = useState<string | null>(null);
   const [invoice, setInvoice] = useState<CreateDepositRequestResult | null>(null);
   const [copied, setCopied] = useState(false);
+  const [notifyingPaid, setNotifyingPaid] = useState(false);
+  const [currency, setCurrency] = useState<DepositCurrency>(() => currencyFromLang(i18n.language));
 
   useEffect(() => {
     if (!open) {
@@ -107,8 +111,19 @@ export default function PricingModal({ open, onClose, credits = 0, welcome = fal
       setCreateError(null);
       setInvoice(null);
       setCopied(false);
+      setNotifyingPaid(false);
+      return;
     }
-  }, [open]);
+    setCurrency(currencyFromLang(i18n.language));
+  }, [open, i18n.language]);
+
+  function handleCurrencyChange(next: DepositCurrency) {
+    setCurrency(next);
+    const lang = langFromCurrency(next);
+    if (currencyFromLang(i18n.language) !== next) {
+      void i18n.changeLanguage(lang);
+    }
+  }
 
   async function handleGoogleSignIn() {
     setSigningIn(true);
@@ -127,7 +142,7 @@ export default function PricingModal({ open, onClose, credits = 0, welcome = fal
     setCreateError(null);
 
     try {
-      const result = await createDepositRequest(tier.id);
+      const result = await createDepositRequest(tier.id, currency);
       setInvoice(result);
     } catch (err) {
       if (err instanceof ApiError && err.messageKey) {
@@ -155,9 +170,25 @@ export default function PricingModal({ open, onClose, credits = 0, welcome = fal
     }
   }
 
-  function handleNotifyPaid() {
-    showToast(t('pricing.paidNotifyToast'), 'success');
-    onClose();
+  async function handleNotifyPaid() {
+    if (!invoice?.requestId || notifyingPaid) return;
+    setNotifyingPaid(true);
+    try {
+      await notifyDepositPaid(invoice.requestId);
+      showToast(t('pricing.paidNotifyToast'), 'success');
+      onClose();
+    } catch (err) {
+      if (err instanceof ApiError && err.messageKey) {
+        const translated = t(err.messageKey);
+        showToast(translated !== err.messageKey ? translated : err.message, 'error');
+      } else if (err instanceof Error) {
+        showToast(err.message, 'error');
+      } else {
+        showToast(t('pricing.paidNotifyFailed'), 'error');
+      }
+    } finally {
+      setNotifyingPaid(false);
+    }
   }
 
   return (
@@ -265,7 +296,7 @@ export default function PricingModal({ open, onClose, credits = 0, welcome = fal
               <div className="rounded-2xl border border-zinc-200/60 bg-zinc-50 p-4">
                 <p className="text-[11px] uppercase tracking-wide text-zinc-500">{t('pricing.invoiceAmount')}</p>
                 <p className="mt-1 text-2xl font-bold tabular-nums text-zinc-900">
-                  ${invoice.amount}
+                  {formatDepositAmount(invoice.amount, invoice.currency)}
                 </p>
               </div>
             </div>
@@ -300,10 +331,18 @@ export default function PricingModal({ open, onClose, credits = 0, welcome = fal
 
             <button
               type="button"
-              onClick={handleNotifyPaid}
-              className="flex w-full items-center justify-center rounded-2xl bg-zinc-900 px-5 py-3.5 text-base font-semibold text-white transition hover:bg-zinc-800 sm:text-sm"
+              onClick={() => void handleNotifyPaid()}
+              disabled={notifyingPaid}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3.5 text-base font-semibold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60 sm:text-sm"
             >
-              {t('pricing.iPaidButton')}
+              {notifyingPaid ? (
+                <>
+                  <Spinner className="h-4 w-4" />
+                  {t('pricing.iPaidSending')}
+                </>
+              ) : (
+                t('pricing.iPaidButton')
+              )}
             </button>
 
             <p className="text-center text-xs text-zinc-400">{t('pricing.invoiceFooter')}</p>
@@ -339,7 +378,31 @@ export default function PricingModal({ open, onClose, credits = 0, welcome = fal
             )}
 
             <div className="mb-5 rounded-xl border border-zinc-200/60 bg-zinc-50 px-4 py-3 text-sm leading-relaxed text-zinc-500">
-              {t('pricing.manualPaymentNotice')}
+              {t(`pricing.manualPaymentNotice.${currency}`)}
+            </div>
+
+            <div
+              className="mb-4 flex flex-wrap gap-1 rounded-xl border border-zinc-200/70 bg-white p-1"
+              role="group"
+              aria-label={t('pricing.currency')}
+            >
+              {DEPOSIT_CURRENCIES.map((code) => {
+                const active = currency === code;
+                return (
+                  <button
+                    key={code}
+                    type="button"
+                    onClick={() => handleCurrencyChange(code)}
+                    className={`min-w-[4.25rem] flex-1 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold transition sm:text-xs ${
+                      active
+                        ? 'bg-zinc-900 text-white'
+                        : 'text-zinc-500 hover:text-zinc-900'
+                    }`}
+                  >
+                    {t(`pricing.currencyLabel.${code}`)}
+                  </button>
+                );
+              })}
             </div>
 
             {createError && (
@@ -349,35 +412,46 @@ export default function PricingModal({ open, onClose, credits = 0, welcome = fal
             )}
 
             <div className="space-y-3">
-              {TIERS.map((tier) => (
-                <TiltCard key={tier.id} popular={tier.popular}>
-                  {tier.popular && (
-                    <span className="absolute -top-2.5 left-4 rounded-md border border-zinc-900/20 bg-white px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-zinc-900 backdrop-blur-md">
-                      {t('pricing.popular')}
-                    </span>
-                  )}
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-semibold text-zinc-900">
-                        {t('pricing.creditsPack', { count: tier.credits })}
-                      </p>
-                      <p className="text-xs text-zinc-500">{tier.price}</p>
+              {TIERS.map((tier) => {
+                const amount = tierAmountForCurrency(tier, currency);
+                const perCredit = amount / tier.credits;
+                return (
+                  <TiltCard key={tier.id} popular={tier.popular}>
+                    {tier.popular && (
+                      <span className="absolute -top-2.5 left-4 rounded-md border border-zinc-900/20 bg-white px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-zinc-900 backdrop-blur-md">
+                        {t('pricing.popular')}
+                      </span>
+                    )}
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold text-zinc-900">
+                          {t('pricing.creditsPack', { count: tier.credits })}
+                        </p>
+                        <p className="text-xs text-zinc-500">
+                          {formatDepositAmount(amount, currency)}
+                        </p>
+                        <p className="mt-0.5 text-[10px] text-zinc-400">
+                          {t('pricing.perCreditApprox', {
+                            price: formatPerCredit(perCredit, currency),
+                          })}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        disabled={Boolean(creatingPlan)}
+                        onClick={() => void handleSelectPlan(tier)}
+                        className={`inline-flex min-h-11 min-w-[6.5rem] items-center justify-center rounded-xl px-4 py-2 text-xs font-semibold transition disabled:opacity-60 ${
+                          tier.popular
+                            ? 'bg-zinc-900 text-white hover:bg-zinc-800'
+                            : 'border border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50'
+                        }`}
+                      >
+                        {creatingPlan === tier.id ? <Spinner /> : t('pricing.selectPlan')}
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      disabled={Boolean(creatingPlan)}
-                      onClick={() => void handleSelectPlan(tier)}
-                      className={`inline-flex min-h-11 min-w-[6.5rem] items-center justify-center rounded-xl px-4 py-2 text-xs font-semibold transition disabled:opacity-60 ${
-                        tier.popular
-                          ? 'bg-zinc-900 text-white hover:bg-zinc-800'
-                          : 'border border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50'
-                      }`}
-                    >
-                      {creatingPlan === tier.id ? <Spinner /> : t('pricing.selectPlan')}
-                    </button>
-                  </div>
-                </TiltCard>
-              ))}
+                  </TiltCard>
+                );
+              })}
             </div>
 
             <p className="mt-5 text-center text-xs text-zinc-400">{t('pricing.hint')}</p>

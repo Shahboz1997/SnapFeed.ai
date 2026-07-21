@@ -141,19 +141,19 @@ export default function GalleryPage() {
                     className="aspect-[3/4] w-full object-cover"
                     loading="lazy"
                   />
-                  <div className="absolute inset-x-0 bottom-0 flex items-center justify-end gap-1.5 bg-gradient-to-t from-white/95 to-transparent p-3 opacity-0 transition group-hover:opacity-100">
+                  <div className="absolute inset-x-0 bottom-0 flex items-center justify-end gap-1.5 bg-gradient-to-t from-white/95 to-transparent p-3 opacity-100 transition lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-within:opacity-100">
                     <button
                       type="button"
                       disabled={Boolean(downloadingId)}
                       onClick={() => void handleDownload(item)}
-                      className="rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-zinc-700 backdrop-blur-md transition hover:border-zinc-300 hover:bg-zinc-50 disabled:opacity-50"
+                      className="min-h-9 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-zinc-700 backdrop-blur-md transition hover:border-zinc-300 hover:bg-zinc-50 disabled:opacity-50"
                     >
                       {isDownloading ? t('preview.downloading') : t('gallery.download')}
                     </button>
                     <button
                       type="button"
                       onClick={() => handleRemove(item.id)}
-                      className="rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-zinc-700 backdrop-blur-md transition hover:border-zinc-300 hover:bg-zinc-50"
+                      className="min-h-9 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-zinc-700 backdrop-blur-md transition hover:border-zinc-300 hover:bg-zinc-50"
                     >
                       {t('gallery.remove')}
                     </button>

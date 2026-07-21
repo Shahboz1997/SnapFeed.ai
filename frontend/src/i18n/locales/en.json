@@ -21,7 +21,48 @@
     "tryOnDesc": "Visualize how an outfit looks on you or a model.",
     "galleryBadge": "Library",
     "galleryTitle": "Gallery",
-    "galleryDesc": "Browse your recent try-on results."
+    "galleryDesc": "Browse your recent try-on results.",
+    "photoTipsTitle": "How to photograph for best results",
+    "photoTipsSubtitle": "Clear photos help the AI place clothes more realistically.",
+    "photoTipsAvoid": "Avoid hangers, clothes on the floor, extreme poses, hair covering the outfit, and photos with more than one person.",
+    "photoTips": {
+      "personFull": {
+        "title": "Full body or ¾",
+        "desc": "Keep the outfit fully in frame — head to toe or three-quarter works best."
+      },
+      "personPose": {
+        "title": "Fitted clothes, natural pose",
+        "desc": "Stand facing the camera or slightly angled. Fitted clothing helps the AI read your silhouette."
+      },
+      "aspectRatio": {
+        "title": "Shoot in 2:3",
+        "desc": "A tall portrait frame (2:3) gives the most balanced try-on results."
+      },
+      "garmentShape": {
+        "title": "Show the garment shape",
+        "desc": "Even light and a simple background — the full item should be visible."
+      }
+    },
+    "garmentRankTitle": "Best garment photo types",
+    "garmentRankSubtitle": "From strongest to weakest for virtual try-on.",
+    "garmentRank": {
+      "best": {
+        "label": "Best",
+        "desc": "On a model — natural shape and lighting"
+      },
+      "good": {
+        "label": "Good",
+        "desc": "Ghost mannequin — clear proportions"
+      },
+      "ok": {
+        "label": "OK",
+        "desc": "Flat-lay — works, less depth"
+      },
+      "avoid": {
+        "label": "Avoid",
+        "desc": "On a hanger or the floor"
+      }
+    }
   },
   "studio": {
     "eyebrow": "Studio",
@@ -60,6 +101,7 @@
     "history": "History",
     "historyEmpty": "No generations yet",
     "running": "Running",
+    "readyInGallery": "Ready — saved to Gallery",
     "waitTips": {
       "fitting": "Fitting the garment on the model…",
       "lighting": "Matching studio lighting…",
@@ -75,6 +117,22 @@
     "mode": "Mode",
     "modeBalanced": "Balanced",
     "modeFast": "Fast",
+    "variants": "Variants",
+    "variantsOne": "1 image",
+    "variantsThree": "3 variants",
+    "variantN": "Variant {{n}}",
+    "creditsCost": "{{count}} cr.",
+    "runWithCredits": "Run · {{count}} cr.",
+    "qualityModes": {
+      "auto": "Auto",
+      "autoDesc": "Automatically selects the optimal mode",
+      "fast": "Fast",
+      "fastDesc": "Prioritizes shorter generation times",
+      "balanced": "Balanced",
+      "balancedDesc": "A middle ground for speed and quality",
+      "quality": "Quality",
+      "qualityDesc": "Prioritizes higher image quality"
+    },
     "promptPlaceholder": "Optional: add instructions (e.g. remove scarf, tuck shirt)",
     "run": "Run",
     "loading": "Creating your try-on…",
@@ -294,7 +352,7 @@
     "tryOnFallbackVerification": "Could not verify the product type. A standard product photo was created instead of try-on."
   },
   "toasts": {
-    "creditDeducted": "✨ Success! 1 credit deducted.",
+    "creditDeducted": "✨ Success! {{count}} credit(s) deducted.",
     "success": "Success",
     "error": "Error",
     "info": "Info"
@@ -310,7 +368,9 @@
     "authRequired": "Please sign in to generate images.",
     "authInvalid": "Your session expired. Please sign in again.",
     "insufficientCredits": "You have no credits left. Top up your balance to continue.",
-    "fingerprintRequired": "Could not verify your browser session. Please refresh the page."
+    "fingerprintRequired": "Could not verify your browser session. Please refresh the page.",
+    "rateLimited": "Too many requests. Please try again later.",
+    "authUnavailable": "Authentication is temporarily unavailable."
   },
   "auth": {
     "signIn": "Sign in",
@@ -340,14 +400,28 @@
   "pricing": {
     "title": "Get more credits",
     "description": "You've used your free generations. Choose a credit pack to keep creating.",
-    "creditsPack": "{{count}} credits",
+    "creditsPack_one": "{{count}} credit",
+    "creditsPack_other": "{{count}} credits",
+    "perCreditApprox": "≈ {{price}} / generation",
+    "currency": "Currency",
+    "currencyLabel": {
+      "RUB": "₽ RU",
+      "USD": "$ EN",
+      "UZS": "soʻm UZ",
+      "TJS": "с. TG"
+    },
+    "manualPaymentNotice": {
+      "RUB": "Choose a pack — invoice with SBP / card / crypto details. Credits after payment check.",
+      "USD": "Choose a pack — invoice with card / crypto / PayPal details. Credits after payment check.",
+      "UZS": "Choose a pack — invoice with card / crypto details (UZS). Credits after payment check.",
+      "TJS": "Choose a pack — invoice with card / crypto details (TJS). Credits after payment check."
+    },
     "buyButton": "Buy pack",
     "buyCredits": "Buy credits",
     "upgrade": "Upgrade",
     "popular": "Popular",
     "close": "Close",
     "hint": "Credits are added within 10–15 minutes after we verify your transfer.",
-    "manualPaymentNotice": "Choose a pack to get an invoice with transfer details (SBP / card / crypto). Credits are added after we verify your payment.",
     "contactButton": "Contact",
     "topUpTitle": "Top up balance",
     "topUpDescription": "Choose a pack in the generator or contact us directly.",
@@ -373,7 +447,10 @@
     "copied": "Copied",
     "copyFailed": "Could not copy to clipboard",
     "iPaidButton": "I paid — notify admin",
+    "iPaidSending": "Sending notification…",
     "paidNotifyToast": "Request submitted. Credits will be added within 10–15 minutes after payment review.",
+    "paidNotifyFailed": "Could not notify admin. Try again or contact support.",
+    "paidNotifyNotConfigured": "Notifications are temporarily unavailable. Contact support after paying.",
     "invoiceFooter": "Keep the receipt until credits appear in your account.",
     "billingHistory": "Top-up history",
     "billingEmpty": "No deposit requests yet.",

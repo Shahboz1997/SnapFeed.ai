@@ -312,7 +312,7 @@ export async function generatePostImage(req, res, next) {
     const cachedData = cache.get(cacheKey);
 
     if (cachedData) {
-      return res.json({
+      return finishGenerationResponse(res, req, {
         success: true,
         ...cachedData,
         fromCache: true,

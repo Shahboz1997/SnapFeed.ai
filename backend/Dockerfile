@@ -17,7 +17,7 @@ COPY . .
 ENV NODE_ENV=production
 ENV PRODUCT_BG_REMOVAL_BACKEND=replicate
 ENV IMAGE_UPSCALE_ENABLED=false
-ENV NODE_OPTIONS=--max-old-space-size=460
+ENV NODE_OPTIONS=--max-old-space-size=768
 
 EXPOSE 5000
 

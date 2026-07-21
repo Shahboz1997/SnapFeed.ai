@@ -34,6 +34,7 @@ import { generateProductImageWithFlux } from '../services/imageGeneration.js';
 import { isFashnConfigured, runFashnTryOn, runFashnPackshot, runFashnProductToModel } from '../services/fashnTryOn.js';
 import { prepareFashnProductImage } from '../services/fashnGarmentPrep.js';
 import { finishGenerationResponse } from '../services/credits.js';
+import { creditCostForNumImages } from '../constants/generationCredits.js';
 import { getDefaultHashtags, getLanguageName, normalizeLangCode } from '../utils/languages.js';
 import cache from '../utils/cache.js';
 import { saveImageBuffer } from '../utils/imageStorage.js';
@@ -205,6 +206,7 @@ function resolveRequestedMode(generationMode, presetMode) {
 
 function buildImageGenerationResponse({
   imageUrl,
+  imageUrls = null,
   optimizedPrompt,
   hashtags,
   branchUsed,
@@ -216,9 +218,14 @@ function buildImageGenerationResponse({
     ? fallbackReason
     : null;
 
+  const urls = Array.isArray(imageUrls) && imageUrls.length
+    ? imageUrls.filter((url) => typeof url === 'string' && url.trim())
+    : (typeof imageUrl === 'string' && imageUrl ? [imageUrl] : []);
+
   return {
     success: true,
-    imageUrl,
+    imageUrl: urls[0] ?? imageUrl ?? null,
+    imageUrls: urls,
     optimizedPrompt,
     hashtags,
     extractedText,
@@ -359,6 +366,57 @@ function buildProductImageCacheKey(
     .createHash('md5')
     .update(`${base64Sample}${wish}${format}${lang}${includeText}${cacheVersion}${generationMode}${tryOnUiSuffix}`)
     .digest('hex');
+}
+
+const FASHN_ASPECT_RATIOS = new Set([
+  '1:1', '2:3', '3:2', '3:4', '4:3', '4:5', '5:4', '9:16', '16:9',
+  'square', 'story',
+]);
+
+function parseFashnAspectRatio(aspectRatio, format) {
+  if (typeof aspectRatio === 'string' && aspectRatio.trim()) {
+    const normalized = aspectRatio.trim().toLowerCase();
+    if (FASHN_ASPECT_RATIOS.has(normalized)) {
+      return normalized;
+    }
+  }
+  return format || null;
+}
+
+function parseFashnResolution(resolution) {
+  if (typeof resolution !== 'string' || !resolution.trim()) {
+    return null;
+  }
+  const normalized = resolution.trim().toLowerCase();
+  if (normalized === 'auto' || normalized === '1k' || normalized === '2k' || normalized === '4k') {
+    return normalized;
+  }
+  if (normalized === '1mp') return '1k';
+  if (normalized === '4mp') return '2k';
+  if (normalized === '16mp') return '4k';
+  return null;
+}
+
+function parseFashnQualityMode(qualityMode) {
+  if (typeof qualityMode !== 'string' || !qualityMode.trim()) {
+    return null;
+  }
+  const normalized = qualityMode.trim().toLowerCase();
+  if (normalized === 'auto' || normalized === 'fast' || normalized === 'balanced' || normalized === 'quality') {
+    return normalized;
+  }
+  if (normalized === 'performance') return 'fast';
+  return null;
+}
+
+function parseFashnNumImages(numImages) {
+  const n = Number(numImages);
+  if (!Number.isFinite(n)) return null;
+  return Math.min(4, Math.max(1, Math.round(n)));
+}
+
+function buildFashnOutputCacheSuffix(aspectRatio, resolution, qualityMode, numImages) {
+  return `|ar:${aspectRatio || ''}|res:${resolution || ''}|qm:${qualityMode || ''}|n:${numImages || 1}`;
 }
 
 function resolveGenerationMode(mode) {
@@ -754,6 +812,37 @@ async function downloadTryOnResult(finalImageUrl) {
   return finalImageUrl;
 }
 
+async function resolveFashnImageUrls(result) {
+  const rawOutputs = Array.isArray(result?.outputs) && result.outputs.length
+    ? result.outputs
+    : result?.imageData
+      ? [result.imageData]
+      : result?.remoteUrl
+        ? [result.remoteUrl]
+        : [];
+
+  if (!rawOutputs.length) {
+    throw createError('FASHN completed without an output image.', 502);
+  }
+
+  const urls = [];
+  for (const item of rawOutputs) {
+    if (typeof item !== 'string' || !item.trim()) continue;
+    const trimmed = item.trim();
+    if (trimmed.startsWith('data:')) {
+      urls.push(trimmed);
+    } else {
+      urls.push(await downloadTryOnResult(trimmed));
+    }
+  }
+
+  if (!urls.length) {
+    throw createError('FASHN completed without an output image.', 502);
+  }
+
+  return urls;
+}
+
 async function generateTryOnHashtags(refinedPrompt, category, lang) {
   const languageName = getLanguageName(lang);
 
@@ -804,7 +893,16 @@ function buildUiOnlyClothingMeta(uiGender, uiCategory, manualWish) {
   };
 }
 
-async function executeFashnTryOn(base64Image, clothingMeta, manualWish, humanImage = null, aspectRatio = null) {
+async function executeFashnTryOn(
+  base64Image,
+  clothingMeta,
+  manualWish,
+  humanImage = null,
+  aspectRatio = null,
+  resolution = null,
+  qualityMode = null,
+  numImages = null,
+) {
   const garmentHash = crypto.createHash('md5').update(getBase64HashInput(base64Image)).digest('hex');
   const humanImg = await resolveFinalHumanImage(humanImage, clothingMeta, manualWish, garmentHash);
   const category = clothingMeta.category ?? clothingMeta.visionCategory ?? 'auto';
@@ -826,16 +924,22 @@ async function executeFashnTryOn(base64Image, clothingMeta, manualWish, humanIma
     category,
     prompt,
     aspectRatio,
+    resolution,
+    generationMode: qualityMode,
+    numImages,
   });
 
-  if (result.imageData) {
-    return result.imageData;
-  }
-
-  return downloadTryOnResult(result.remoteUrl);
+  return resolveFashnImageUrls(result);
 }
 
-async function executeFashnPackshot(base64Image, manualWish, aspectRatio = null) {
+async function executeFashnPackshot(
+  base64Image,
+  manualWish,
+  aspectRatio = null,
+  resolution = null,
+  qualityMode = null,
+  numImages = null,
+) {
   const prompt = typeof manualWish === 'string' ? manualWish.trim() : '';
   console.log(`[fashn] product → packshot, promptLen=${prompt.length}`);
 
@@ -843,16 +947,22 @@ async function executeFashnPackshot(base64Image, manualWish, aspectRatio = null)
     productImage: base64Image,
     prompt,
     aspectRatio,
+    resolution,
+    generationMode: qualityMode,
+    numImages,
   });
 
-  if (result.imageData) {
-    return result.imageData;
-  }
-
-  return downloadTryOnResult(result.remoteUrl);
+  return resolveFashnImageUrls(result);
 }
 
-async function executeFashnProductToModel(base64Image, manualWish, aspectRatio = null) {
+async function executeFashnProductToModel(
+  base64Image,
+  manualWish,
+  aspectRatio = null,
+  resolution = null,
+  qualityMode = null,
+  numImages = null,
+) {
   const prompt = typeof manualWish === 'string' ? manualWish.trim() : '';
   console.log(`[fashn] product → product-to-model, promptLen=${prompt.length}`);
 
@@ -860,23 +970,33 @@ async function executeFashnProductToModel(base64Image, manualWish, aspectRatio =
     productImage: base64Image,
     prompt,
     aspectRatio,
+    resolution,
+    generationMode: qualityMode,
+    numImages,
   });
 
-  if (result.imageData) {
-    return result.imageData;
-  }
-
-  return downloadTryOnResult(result.remoteUrl);
+  return resolveFashnImageUrls(result);
 }
 
 export async function generateProductImage(req, res, next) {
   try {
-    const { base64Image: bodyBase64Image, image, userWish, catalogPrompt: bodyCatalogPrompt, platform, format, extractText, lang, includeText, overlayText, mode, gender, category, humanImage } = req.body;
+    const { base64Image: bodyBase64Image, image, userWish, catalogPrompt: bodyCatalogPrompt, platform, format, extractText, lang, includeText, overlayText, mode, gender, category, humanImage, aspectRatio, resolution, qualityMode, numImages } = req.body;
     const base64Image = (typeof image === 'string' && image.trim())
       ? image.trim()
       : (typeof bodyBase64Image === 'string' ? bodyBase64Image.trim() : '');
     const normalizedLang = normalizeLangCode(lang);
     const generationMode = resolveGenerationMode(mode);
+    const fashnAspectRatio = parseFashnAspectRatio(aspectRatio, format);
+    const fashnResolution = parseFashnResolution(resolution);
+    const fashnQualityMode = parseFashnQualityMode(qualityMode);
+    const fashnNumImages = parseFashnNumImages(numImages);
+    req.creditCost = creditCostForNumImages(fashnNumImages);
+    const fashnOutputCacheSuffix = buildFashnOutputCacheSuffix(
+      fashnAspectRatio,
+      fashnResolution,
+      fashnQualityMode,
+      fashnNumImages,
+    );
 
     if (
       generationMode !== 'tryon'
@@ -959,7 +1079,7 @@ export async function generateProductImage(req, res, next) {
       const cachedOcr = cache.get(ocrCacheKey);
 
       if (cachedOcr) {
-        return res.json({
+        return finishGenerationResponse(res, req, {
           ...cachedOcr,
           fromCache: true,
         });
@@ -984,7 +1104,7 @@ export async function generateProductImage(req, res, next) {
       const cachedProduct = cache.get(productCacheKey);
 
       if (cachedProduct) {
-        return res.status(200).json({
+        return finishGenerationResponse(res, req, {
           ...enrichCachedImageResponse(cachedProduct),
           fromCache: true,
         });
@@ -1000,13 +1120,16 @@ export async function generateProductImage(req, res, next) {
         shouldIncludeText,
         PRODUCT_TO_MODEL_CACHE_VERSION,
         'product-to-model',
-        '',
+        fashnOutputCacheSuffix,
       );
 
-      const imageUrl = await executeFashnProductToModel(
+      const imageUrls = await executeFashnProductToModel(
         base64Image,
         manualWish || 'fashion model wearing the product, full body, studio photoshoot, real person',
-        format,
+        fashnAspectRatio,
+        fashnResolution,
+        fashnQualityMode,
+        fashnNumImages,
       );
       const hashtags = await generateTryOnHashtags(
         manualWish || 'fashion product on model',
@@ -1015,7 +1138,8 @@ export async function generateProductImage(req, res, next) {
       );
 
       const responseData = buildImageGenerationResponse({
-        imageUrl,
+        imageUrl: imageUrls[0],
+        imageUrls,
         optimizedPrompt: manualWish || 'Fashion model wearing the product, full body studio photoshoot',
         hashtags,
         branchUsed: 'product-to-model',
@@ -1036,10 +1160,17 @@ export async function generateProductImage(req, res, next) {
         shouldIncludeText,
         PACKSHOT_CACHE_VERSION,
         'packshot',
-        '',
+        fashnOutputCacheSuffix,
       );
 
-      const imageUrl = await executeFashnPackshot(base64Image, manualWish, format);
+      const imageUrls = await executeFashnPackshot(
+        base64Image,
+        manualWish,
+        fashnAspectRatio,
+        fashnResolution,
+        fashnQualityMode,
+        fashnNumImages,
+      );
       const hashtags = await generateTryOnHashtags(
         manualWish || 'fashion product packshot',
         'packshot',
@@ -1047,7 +1178,8 @@ export async function generateProductImage(req, res, next) {
       );
 
       const responseData = buildImageGenerationResponse({
-        imageUrl,
+        imageUrl: imageUrls[0],
+        imageUrls,
         optimizedPrompt: manualWish || 'Clean commercial fashion packshot',
         hashtags,
         branchUsed: 'packshot',
@@ -1107,16 +1239,26 @@ export async function generateProductImage(req, res, next) {
         shouldIncludeText,
         TRYON_CACHE_VERSION,
         generationMode || 'tryon',
-        tryOnUiCacheSuffix,
+        `${tryOnUiCacheSuffix}${fashnOutputCacheSuffix}`,
       );
 
-      const [imageUrl, hashtags] = await Promise.all([
-        executeFashnTryOn(base64Image, clothingMeta, manualWish, humanImage, format),
+      const [imageUrls, hashtags] = await Promise.all([
+        executeFashnTryOn(
+          base64Image,
+          clothingMeta,
+          manualWish,
+          humanImage,
+          fashnAspectRatio,
+          fashnResolution,
+          fashnQualityMode,
+          fashnNumImages,
+        ),
         generateTryOnHashtags(clothingMeta.refinedPrompt, clothingMeta.category, normalizedLang),
       ]);
 
       const responseData = buildImageGenerationResponse({
-        imageUrl,
+        imageUrl: imageUrls[0],
+        imageUrls,
         optimizedPrompt: clothingMeta.refinedPrompt,
         hashtags,
         branchUsed: 'tryon',

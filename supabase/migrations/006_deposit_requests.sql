@@ -5,8 +5,9 @@
 create table if not exists public.deposit_requests (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.profiles(id) on delete cascade,
-  plan_name text not null check (plan_name in ('starter', 'pro', 'business')),
+  plan_name text not null check (plan_name in ('single', 'starter', 'pro', 'business')),
   amount numeric(10, 2) not null check (amount > 0),
+  currency text not null default 'RUB' check (currency in ('RUB', 'USD', 'UZS', 'TJS')),
   status text not null default 'pending' check (status in ('pending', 'approved', 'rejected')),
   created_at timestamptz not null default now()
 );
