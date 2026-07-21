@@ -65,7 +65,7 @@ export async function createDepositRequest(
       response.status === 401
       && (err.messageKey === 'api.authRequired' || err.messageKey === 'api.authInvalid')
     ) {
-      throw new ApiError(err.message, err.status, 'pricing.authRequired');
+      throw new ApiError(err.message, response.status, 'pricing.authRequired');
     }
     throw err;
   }
