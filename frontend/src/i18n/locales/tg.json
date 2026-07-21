@@ -461,6 +461,7 @@
     "statusApproved": "Тасдиқшуда",
     "statusRejected": "Радшуда",
     "invalidPlan": "Тарифи нодуруст интихоб шуд.",
+    "authRequired": "Барои пардохт боз ба ҳисоб ворид шавед.",
     "depositCreateFailed": "Дархост эҷод нашуд. Бори дигар кӯшиш кунед.",
     "depositLoadFailed": "Таърихи пуркунӣ бор нашуд."
   },

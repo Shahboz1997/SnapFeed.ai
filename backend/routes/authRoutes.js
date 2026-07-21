@@ -125,7 +125,7 @@ router.post('/auth/create-deposit-request', protect, async (req, res, next) => {
     if (!isSupabaseConfigured() || !req.user?.id) {
       return res.status(503).json({
         error: 'Payments are not configured.',
-        messageKey: 'api.authRequired',
+        messageKey: 'api.authUnavailable',
       });
     }
 
@@ -265,7 +265,7 @@ router.post('/auth/notify-deposit-paid', protect, async (req, res, next) => {
     if (!isSupabaseConfigured() || !req.user?.id) {
       return res.status(503).json({
         error: 'Payments are not configured.',
-        messageKey: 'api.authRequired',
+        messageKey: 'api.authUnavailable',
       });
     }
 

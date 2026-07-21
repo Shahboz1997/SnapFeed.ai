@@ -93,11 +93,12 @@ function TiltCard({
 export default function PricingModal({ open, onClose, credits = 0, welcome = false }: PricingModalProps) {
   const { t, i18n } = useTranslation();
   const { showToast } = useToast();
-  const { user, authEnabled, signInWithGoogle } = useAuth();
+  const { user, session, authEnabled, signInWithGoogle } = useAuth();
   const [signingIn, setSigningIn] = useState(false);
   const [signInError, setSignInError] = useState<string | null>(null);
   const [creatingPlan, setCreatingPlan] = useState<DepositPlanName | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
+  const [createErrorNeedsAuth, setCreateErrorNeedsAuth] = useState(false);
   const [invoice, setInvoice] = useState<CreateDepositRequestResult | null>(null);
   const [copied, setCopied] = useState(false);
   const [notifyingPaid, setNotifyingPaid] = useState(false);
@@ -109,6 +110,7 @@ export default function PricingModal({ open, onClose, credits = 0, welcome = fal
       setSignInError(null);
       setCreatingPlan(null);
       setCreateError(null);
+      setCreateErrorNeedsAuth(false);
       setInvoice(null);
       setCopied(false);
       setNotifyingPaid(false);
@@ -140,6 +142,14 @@ export default function PricingModal({ open, onClose, credits = 0, welcome = fal
     if (!user || creatingPlan) return;
     setCreatingPlan(tier.id);
     setCreateError(null);
+    setCreateErrorNeedsAuth(false);
+
+    if (!session?.access_token) {
+      setCreateError(t('pricing.authRequired'));
+      setCreateErrorNeedsAuth(true);
+      setCreatingPlan(null);
+      return;
+    }
 
     try {
       const result = await createDepositRequest(tier.id, currency);
@@ -148,6 +158,11 @@ export default function PricingModal({ open, onClose, credits = 0, welcome = fal
       if (err instanceof ApiError && err.messageKey) {
         const translated = t(err.messageKey);
         setCreateError(translated !== err.messageKey ? translated : err.message);
+        setCreateErrorNeedsAuth(
+          err.messageKey === 'pricing.authRequired'
+          || err.messageKey === 'api.authRequired'
+          || err.messageKey === 'api.authInvalid',
+        );
       } else if (err instanceof Error) {
         setCreateError(err.message);
       } else {
@@ -407,7 +422,17 @@ export default function PricingModal({ open, onClose, credits = 0, welcome = fal
 
             {createError && (
               <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                {createError}
+                <p>{createError}</p>
+                {createErrorNeedsAuth && (
+                  <button
+                    type="button"
+                    onClick={() => void handleGoogleSignIn()}
+                    disabled={!authEnabled || signingIn}
+                    className="mt-3 inline-flex items-center justify-center rounded-lg bg-zinc-900 px-3 py-2 text-xs font-semibold text-white transition hover:bg-zinc-800 disabled:opacity-50"
+                  >
+                    {signingIn ? <Spinner className="h-3.5 w-3.5" /> : t('auth.signInWithGoogle')}
+                  </button>
+                )}
               </div>
             )}
 

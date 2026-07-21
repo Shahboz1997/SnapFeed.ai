@@ -53,7 +53,7 @@ const GARMENT_RANK = [
   },
   {
     key: 'avoid',
-    image: 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&w=600&q=80',
+    image: '/studio-examples/garment-on-hanger.jpg',
   },
 ] as const;
 
@@ -275,7 +275,7 @@ export default function HomePage() {
               className="group relative min-h-[200px] overflow-hidden rounded-2xl border border-zinc-200/70 shadow-sm shadow-zinc-200/40 transition duration-300 hover:-translate-y-0.5 hover:border-zinc-300 hover:shadow-xl hover:shadow-zinc-200/60 sm:min-h-[280px] sm:rounded-3xl"
             >
               <img
-                src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=1200&q=80"
+                src="/studio-examples/tryon-model-1.png"
                 alt=""
                 className="absolute inset-0 h-full w-full object-cover object-top transition duration-500 group-hover:scale-105"
               />
@@ -305,7 +305,7 @@ export default function HomePage() {
               className="group relative min-h-[200px] overflow-hidden rounded-2xl border border-zinc-200/70 shadow-sm shadow-zinc-200/40 transition duration-300 hover:-translate-y-0.5 hover:border-zinc-300 hover:shadow-xl hover:shadow-zinc-200/60 sm:min-h-[280px] sm:rounded-3xl"
             >
               <img
-                src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=1200&q=80"
+                src="/studio-examples/product-to-model-sample-result.png"
                 alt=""
                 className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105"
               />

@@ -461,6 +461,7 @@
     "statusApproved": "Tasdiqlangan",
     "statusRejected": "Rad etilgan",
     "invalidPlan": "Noto'g'ri tarif tanlandi.",
+    "authRequired": "To'lovni rasmiylashtirish uchun qayta tizimga kiring.",
     "depositCreateFailed": "Ariza yaratib bo'lmadi. Qayta urinib ko'ring.",
     "depositLoadFailed": "To'ldirish tarixini yuklab bo'lmadi."
   },

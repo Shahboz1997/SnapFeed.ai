@@ -391,7 +391,7 @@ export default function TryOnWorkspace({
   };
 
   return (
-    <div className="flex w-full flex-col gap-4">
+    <div className="flex w-full flex-col gap-3 sm:gap-4">
       <input
         ref={garmentInputRef}
         type="file"
@@ -492,7 +492,7 @@ export default function TryOnWorkspace({
           onClear={onGarmentClear}
         />
       ) : (
-        <div className="grid min-h-0 grid-cols-1 gap-2.5 sm:gap-3 md:min-h-[420px] md:grid-cols-2">
+        <div className="grid min-h-0 grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3 md:min-h-[420px]">
           <DropZone
             dragging={garmentDragging}
             uploading={uploading}
@@ -515,8 +515,8 @@ export default function TryOnWorkspace({
             showCornerThumb
           />
 
-          <div className="glass-panel relative flex min-h-[240px] flex-col overflow-hidden rounded-2xl border border-zinc-200/60 bg-white shadow-xl shadow-zinc-200/50 sm:rounded-3xl md:min-h-[420px]">
-            <p className="absolute left-4 top-4 z-10 text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+          <div className="glass-panel relative flex min-h-[168px] flex-col overflow-hidden rounded-2xl border border-zinc-200/60 bg-white shadow-xl shadow-zinc-200/50 sm:min-h-[220px] sm:rounded-3xl md:min-h-[420px]">
+            <p className="absolute left-2.5 top-2.5 z-10 text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500 sm:left-4 sm:top-4 sm:text-[11px] sm:tracking-[0.16em]">
               {t('studio.modelLabel')}
             </p>
 
@@ -528,7 +528,7 @@ export default function TryOnWorkspace({
                   className="absolute inset-0 h-full w-full object-cover object-top"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/25 via-transparent to-white/10" />
-                <div className="absolute right-3 top-3 z-10 flex gap-1.5">
+                <div className="absolute right-2 top-2 z-10 flex gap-1 sm:right-3 sm:top-3 sm:gap-1.5">
                   <IconButton
                     disabled={disabled}
                     onClick={() => humanInputRef.current?.click()}
@@ -549,13 +549,13 @@ export default function TryOnWorkspace({
                 </div>
               </>
             ) : (
-              <div className="flex flex-1 flex-col items-center justify-center gap-4 bg-zinc-50/30 px-4 pb-5 pt-12">
+              <div className="flex flex-1 flex-col items-center justify-center gap-2.5 bg-zinc-50/30 px-3 pb-4 pt-9 sm:gap-4 sm:px-4 sm:pb-5 sm:pt-12">
                 <ExampleFan
                   images={TRYON_MODEL_FAN}
                   onPick={(url) => void handleFanModelPick(url)}
                   disabled={disabled}
                 />
-                <div className="flex flex-wrap items-center justify-center gap-2">
+                <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2">
                   <ActionChip disabled={disabled} onClick={() => void handlePasteModel()}>
                     {t('studio.paste')}
                   </ActionChip>
@@ -566,14 +566,14 @@ export default function TryOnWorkspace({
                     {t('studio.upload')}
                   </ActionChip>
                 </div>
-                <p className="max-w-xs text-center text-xs text-zinc-400">
+                <p className="max-w-[16rem] text-center text-[11px] leading-snug text-zinc-400 sm:max-w-xs sm:text-xs">
                   {t('studio.stepPersonHint')}
                 </p>
               </div>
             )}
 
             {humanFileError ? (
-              <p className="absolute bottom-3 left-3 right-3 z-10 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700 backdrop-blur-md">
+              <p className="absolute bottom-2 left-2 right-2 z-10 rounded-xl border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-[11px] text-rose-700 backdrop-blur-md sm:bottom-3 sm:left-3 sm:right-3 sm:px-3 sm:py-2 sm:text-xs">
                 {humanFileError}
               </p>
             ) : null}
@@ -584,11 +584,11 @@ export default function TryOnWorkspace({
       {/* Control dock — sticky chat-style input above iOS tab bar on phones */}
       <div
         ref={studioDockRef}
-        className="studio-dock-mobile fixed inset-x-0 z-40 border-t border-zinc-200/80 bg-white/95 px-3 pt-2.5 shadow-[0_-12px_40px_rgb(24_24_27/0.08)] backdrop-blur-xl lg:static lg:z-auto lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none lg:backdrop-blur-none"
+        className="studio-dock-mobile fixed inset-x-0 z-40 border-t border-zinc-200/80 bg-white/95 px-2 pt-2 shadow-[0_-12px_40px_rgb(24_24_27/0.08)] backdrop-blur-xl sm:px-3 sm:pt-2.5 lg:static lg:z-auto lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none lg:backdrop-blur-none"
       >
-        <div className="glass-panel mx-auto w-full max-w-6xl rounded-2xl border border-zinc-200/60 bg-white/90 p-2.5 shadow-xl shadow-zinc-200/40 sm:p-3 lg:rounded-3xl lg:bg-white/70 lg:p-4">
+        <div className="glass-panel mx-auto w-full max-w-6xl rounded-2xl border border-zinc-200/60 bg-white/90 p-2 shadow-xl shadow-zinc-200/40 sm:p-3 lg:rounded-3xl lg:bg-white/70 lg:p-4">
           <LayoutGroup>
-            <div className="relative mb-2.5 flex gap-1 overflow-x-auto scrollbar-none rounded-2xl border border-zinc-200/60 bg-zinc-100/80 p-1 snap-x snap-mandatory lg:mb-3 lg:flex-wrap lg:overflow-visible lg:snap-none">
+            <div className="relative mb-2 flex gap-0.5 overflow-x-auto scrollbar-none rounded-xl border border-zinc-200/60 bg-zinc-100/80 p-0.5 snap-x snap-mandatory sm:mb-2.5 sm:gap-1 sm:rounded-2xl sm:p-1 lg:mb-3 lg:flex-wrap lg:overflow-visible lg:snap-none">
               {MODE_ORDER.map((mode) => {
                 const meta = modeMeta[mode];
                 const active = studioMode === mode;
@@ -606,17 +606,17 @@ export default function TryOnWorkspace({
             </div>
           </LayoutGroup>
 
-          <div className="flex items-end gap-2">
+          <div className="flex items-end gap-1.5 sm:gap-2">
             <div className="min-w-0 flex-1">
               <div
-                className={`group relative rounded-2xl border bg-white transition ${
+                className={`group relative rounded-xl border bg-white transition sm:rounded-2xl ${
                   disabled && !running
                     ? 'border-zinc-200/60 opacity-60'
                     : 'border-zinc-200/60 focus-within:border-indigo-500/50 focus-within:ring-4 focus-within:ring-indigo-500/10'
                 }`}
               >
-                <div className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400">
-                  <Sparkles className="h-4 w-4" />
+                <div className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 sm:left-3.5">
+                  <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </div>
                 <input
                   type="text"
@@ -633,7 +633,7 @@ export default function TryOnWorkspace({
                         ? t('studio.packshotPromptPlaceholder')
                         : t('studio.promptPlaceholder')
                   }
-                  className="w-full rounded-2xl bg-transparent py-3.5 pl-10 pr-3 text-base text-zinc-900 placeholder:text-zinc-400 outline-none disabled:cursor-not-allowed lg:text-sm"
+                  className="w-full rounded-xl bg-transparent py-2.5 pl-8 pr-2.5 text-[15px] text-zinc-900 placeholder:text-zinc-400 outline-none disabled:cursor-not-allowed sm:rounded-2xl sm:py-3.5 sm:pl-10 sm:pr-3 sm:text-base lg:text-sm"
                 />
               </div>
             </div>
@@ -648,7 +648,7 @@ export default function TryOnWorkspace({
               }
               aria-busy={waitingInThisMode}
               whileTap={waitingInThisMode ? undefined : { scale: 0.98 }}
-              className={`run-btn-shimmer relative inline-flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/20 disabled:cursor-not-allowed disabled:opacity-40 lg:h-12 lg:w-auto lg:min-w-[9rem] lg:gap-2 lg:px-6 lg:text-sm lg:font-semibold ${
+              className={`run-btn-shimmer relative inline-flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/20 disabled:cursor-not-allowed disabled:opacity-40 sm:h-12 sm:w-12 sm:rounded-2xl lg:h-12 lg:w-auto lg:min-w-[9rem] lg:gap-2 lg:px-6 lg:text-sm lg:font-semibold ${
                 waitingInThisMode
                   ? 'bg-zinc-100 text-zinc-600'
                   : 'bg-zinc-900 text-white hover:bg-zinc-800'
@@ -656,12 +656,12 @@ export default function TryOnWorkspace({
             >
               {waitingInThisMode ? (
                 <>
-                  <span className="meditative-spinner !h-5 !w-5" />
+                  <span className="meditative-spinner !h-4 !w-4 sm:!h-5 sm:!w-5" />
                   <span className="hidden lg:inline">{runLabel}</span>
                 </>
               ) : (
                 <>
-                  <Play className="h-4 w-4 fill-current" />
+                  <Play className="h-3.5 w-3.5 fill-current sm:h-4 sm:w-4" />
                   <span className="hidden lg:inline">{runLabel}</span>
                 </>
               )}
@@ -693,7 +693,7 @@ export default function TryOnWorkspace({
             })}
           </div>
 
-          <div className="mt-2.5 flex flex-wrap gap-2">
+          <div className="mt-2 flex gap-1.5 overflow-x-auto scrollbar-none pb-0.5 sm:mt-2.5 sm:gap-2">
             <StudioOutputControls
               settings={outputSettings}
               disabled={disabled && !running}
@@ -702,7 +702,7 @@ export default function TryOnWorkspace({
           </div>
 
           {/* Mobile: horizontal preset chips under prompt */}
-          <div className="mt-2 flex gap-1.5 overflow-x-auto scrollbar-none pb-0.5 lg:hidden">
+          <div className="mt-1.5 flex gap-1.5 overflow-x-auto scrollbar-none pb-0.5 sm:mt-2 lg:hidden">
             {STUDIO_PROMPT_PRESET_KEYS.map((key) => {
               const label = t(`studio.promptPresets.${key}`);
               const selected = selectedPromptPresets.includes(key);
@@ -716,8 +716,8 @@ export default function TryOnWorkspace({
                   onClick={() => togglePromptPreset(key)}
                   className={
                     selected
-                      ? 'inline-flex shrink-0 items-center gap-1.5 rounded-full border border-zinc-900 bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white transition disabled:opacity-50'
-                      : 'inline-flex shrink-0 items-center gap-1.5 rounded-full border border-zinc-200/60 bg-zinc-50 px-3 py-1.5 text-xs font-medium text-zinc-500 transition active:bg-zinc-100 disabled:opacity-50'
+                      ? 'inline-flex shrink-0 items-center gap-1 rounded-full border border-zinc-900 bg-zinc-900 px-2.5 py-1 text-[11px] font-medium text-white transition disabled:opacity-50 sm:gap-1.5 sm:px-3 sm:py-1.5 sm:text-xs'
+                      : 'inline-flex shrink-0 items-center gap-1 rounded-full border border-zinc-200/60 bg-zinc-50 px-2.5 py-1 text-[11px] font-medium text-zinc-500 transition active:bg-zinc-100 disabled:opacity-50 sm:gap-1.5 sm:px-3 sm:py-1.5 sm:text-xs'
                   }
                 >
                   {label}
@@ -781,12 +781,12 @@ function DropZone({
           : '0 0 0 1px rgb(228 228 231 / 0.6)',
       }}
       transition={{ type: 'spring', stiffness: 380, damping: 28 }}
-      className="glass-panel relative min-h-[240px] overflow-hidden rounded-2xl border border-zinc-200/60 bg-white shadow-xl shadow-zinc-200/50 sm:rounded-3xl md:min-h-[420px]"
+      className="glass-panel relative min-h-[168px] overflow-hidden rounded-2xl border border-zinc-200/60 bg-white shadow-xl shadow-zinc-200/50 sm:min-h-[220px] sm:rounded-3xl md:min-h-[420px]"
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}
     >
-      <p className="absolute left-3 top-3 z-10 text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500 sm:left-4 sm:top-4 sm:text-[11px]">
+      <p className="absolute left-2.5 top-2.5 z-10 text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500 sm:left-4 sm:top-4 sm:text-[11px] sm:tracking-[0.16em]">
         {label}
       </p>
 
@@ -795,14 +795,14 @@ function DropZone({
           <img
             src={previewUrl}
             alt=""
-            className="absolute inset-0 h-full w-full object-contain p-5 sm:p-8"
+            className="absolute inset-0 h-full w-full object-contain p-3 sm:p-8"
           />
           {showCornerThumb ? (
-            <div className="absolute left-3 top-3 h-14 w-11 overflow-hidden rounded-lg border border-zinc-200/60 shadow-sm">
+            <div className="absolute left-2.5 top-2.5 h-11 w-9 overflow-hidden rounded-lg border border-zinc-200/60 shadow-sm sm:left-3 sm:top-3 sm:h-14 sm:w-11">
               <img src={previewUrl} alt="" className="h-full w-full object-cover" />
             </div>
           ) : null}
-          <div className="absolute right-3 top-3 flex gap-1.5">
+          <div className="absolute right-2 top-2 flex gap-1 sm:right-3 sm:top-3 sm:gap-1.5">
             <IconButton disabled={disabled} onClick={onReplace} label={t('ecommerce.replace')}>
               <Pencil className="h-3.5 w-3.5" />
             </IconButton>
@@ -816,15 +816,15 @@ function DropZone({
           type="button"
           disabled={disabled || uploading}
           onClick={onBrowse}
-          className="flex h-full min-h-[240px] w-full flex-col items-center justify-center gap-2.5 border-2 border-dashed border-zinc-300 bg-zinc-50/30 px-4 text-center transition hover:bg-zinc-100 active:bg-zinc-100 disabled:opacity-50 sm:gap-3 sm:px-6 md:min-h-[420px]"
+          className="flex h-full min-h-[168px] w-full flex-col items-center justify-center gap-2 border-2 border-dashed border-zinc-300 bg-zinc-50/30 px-3 text-center transition hover:bg-zinc-100 active:bg-zinc-100 disabled:opacity-50 sm:min-h-[220px] sm:gap-3 sm:px-6 md:min-h-[420px]"
         >
           {uploading ? (
             <>
-              <div className="relative flex h-16 w-16 items-center justify-center">
+              <div className="relative flex h-12 w-12 items-center justify-center sm:h-16 sm:w-16">
                 <span className="meditative-spinner" />
               </div>
-              <span className="text-sm font-medium text-zinc-600">{t('studio.uploading')}</span>
-              <div className="mt-2 h-2 w-40 overflow-hidden rounded-full bg-zinc-200">
+              <span className="text-xs font-medium text-zinc-600 sm:text-sm">{t('studio.uploading')}</span>
+              <div className="mt-1 h-1.5 w-28 overflow-hidden rounded-full bg-zinc-200 sm:mt-2 sm:h-2 sm:w-40">
                 <div className="skeleton-shimmer h-full w-full rounded-full" />
               </div>
             </>
@@ -842,17 +842,19 @@ function DropZone({
                     scale: dragging ? 1.15 : 1,
                     color: dragging ? '#6366f1' : '#71717a',
                   }}
-                  className="flex h-14 w-14 items-center justify-center rounded-2xl border border-dashed border-zinc-300 bg-zinc-50/30"
+                  className="flex h-11 w-11 items-center justify-center rounded-2xl border border-dashed border-zinc-300 bg-zinc-50/30 sm:h-14 sm:w-14"
                 >
-                  <Upload className="h-6 w-6" />
+                  <Upload className="h-5 w-5 sm:h-6 sm:w-6" />
                 </motion.span>
               )}
-              <span className="rounded-full border border-zinc-200/60 bg-white px-4 py-2 text-sm font-semibold text-zinc-900">
+              <span className="rounded-full border border-zinc-200/60 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-900 sm:px-4 sm:py-2 sm:text-sm">
                 {emptyTitle}
               </span>
-              <span className="text-xs text-zinc-500">{emptyHint}</span>
+              <span className="max-w-[14rem] text-[11px] leading-snug text-zinc-500 sm:max-w-none sm:text-xs">
+                {emptyHint}
+              </span>
               {emptySubhint ? (
-                <span className="max-w-sm text-xs text-zinc-400">{emptySubhint}</span>
+                <span className="max-w-sm text-[11px] text-zinc-400 sm:text-xs">{emptySubhint}</span>
               ) : null}
             </>
           )}
@@ -860,7 +862,7 @@ function DropZone({
       )}
 
       {error ? (
-        <p className="absolute bottom-3 left-3 right-3 z-10 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700 backdrop-blur-md">
+        <p className="absolute bottom-2 left-2 right-2 z-10 rounded-xl border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-[11px] text-rose-700 backdrop-blur-md sm:bottom-3 sm:left-3 sm:right-3 sm:px-3 sm:py-2 sm:text-xs">
           {error}
         </p>
       ) : null}
@@ -879,14 +881,14 @@ function ExampleFan({
 }) {
   const count = Math.min(images.length, 3);
   const rotations = count === 2 ? [-10, 10] : [-14, 0, 14];
-  const offsets = count === 2 ? [-30, 30] : [-42, 0, 42];
+  const offsets = count === 2 ? [-24, 24] : [-34, 0, 34];
 
   return (
-    <div className="relative mb-1 flex h-36 w-full max-w-[220px] items-center justify-center sm:h-40">
+    <div className="relative mb-0.5 flex h-28 w-full max-w-[170px] items-center justify-center sm:mb-1 sm:h-40 sm:max-w-[220px]">
       {images.slice(0, 3).map((src, index) => {
         const interactive = Boolean(onPick);
         const className =
-          'absolute h-32 w-[4.6rem] overflow-hidden rounded-xl border border-white bg-zinc-100 shadow-lg shadow-zinc-300/50 sm:h-36 sm:w-20';
+          'absolute h-24 w-[3.5rem] overflow-hidden rounded-lg border border-white bg-zinc-100 shadow-lg shadow-zinc-300/50 sm:h-36 sm:w-20 sm:rounded-xl';
         const style = {
           transform: `translateX(${offsets[index] ?? 0}px) rotate(${rotations[index] ?? 0}deg)`,
           zIndex: count === 2 ? index + 1 : index === 1 ? 3 : 1,
@@ -1006,7 +1008,7 @@ function SessionLayout({
         ) : null}
       </div>
 
-      <div className="glass-panel relative flex min-h-[280px] items-center justify-center overflow-hidden rounded-2xl border border-zinc-200/60 bg-white shadow-xl shadow-zinc-200/50 sm:rounded-3xl md:min-h-[460px]">
+      <div className="glass-panel relative flex min-h-[220px] items-center justify-center overflow-hidden rounded-2xl border border-zinc-200/60 bg-white shadow-xl shadow-zinc-200/50 sm:min-h-[280px] sm:rounded-3xl md:min-h-[460px]">
         {running ? (
           <GenerationWaitingShowcase />
         ) : resultImageUrl ? (
@@ -1206,10 +1208,10 @@ function GenerationWaitingShowcase() {
 
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-zinc-900/55 via-zinc-900/10 to-zinc-900/20" />
 
-      <div className="absolute inset-x-0 bottom-0 z-10 flex flex-col items-center gap-3 px-6 pb-7 pt-16 text-center">
-        <div className="flex items-center gap-2.5 rounded-full border border-white/25 bg-white/15 px-3.5 py-1.5 backdrop-blur-md">
+      <div className="absolute inset-x-0 bottom-0 z-10 flex flex-col items-center gap-2 px-4 pb-5 pt-12 text-center sm:gap-3 sm:px-6 sm:pb-7 sm:pt-16">
+        <div className="flex items-center gap-2 rounded-full border border-white/25 bg-white/15 px-3 py-1.5 backdrop-blur-md sm:gap-2.5 sm:px-3.5">
           <span className="meditative-spinner !h-4 !w-4 !border-2 !border-white/30 !border-t-white" />
-          <span className="text-xs font-semibold uppercase tracking-[0.14em] text-white/90">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/90 sm:text-xs">
             {t('studio.running')}
           </span>
         </div>
@@ -1221,7 +1223,7 @@ function GenerationWaitingShowcase() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.35 }}
-            className="max-w-sm text-sm font-medium text-white/90"
+            className="max-w-sm text-xs font-medium text-white/90 sm:text-sm"
           >
             {t(WAIT_TIP_KEYS[tipIndex])}
           </motion.p>
@@ -1338,7 +1340,7 @@ function ModeTab({
   const showPreview = Boolean(example && (hasSplit || hasSingle || example.descriptionKey));
 
   return (
-    <div className="group relative min-w-[7.5rem] shrink-0 snap-start flex-1 sm:min-w-0">
+    <div className="group relative min-w-[5.75rem] shrink-0 snap-start flex-1 sm:min-w-[7rem] lg:min-w-0">
       {showPreview && example ? (
         <div
           className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-3 hidden w-[min(18rem,calc(100vw-2rem))] -translate-x-1/2 opacity-0 transition duration-150 group-hover:opacity-100 group-focus-within:opacity-100 lg:block"
@@ -1374,19 +1376,19 @@ function ModeTab({
         type="button"
         disabled={disabled}
         onClick={onClick}
-        className={`relative z-10 flex w-full items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold transition disabled:opacity-50 ${
+        className={`relative z-10 flex w-full items-center justify-center gap-1 rounded-lg px-2 py-2 text-[11px] font-semibold transition disabled:opacity-50 sm:gap-2 sm:rounded-xl sm:px-3 sm:py-2.5 sm:text-sm ${
           active ? 'text-zinc-900' : 'text-zinc-500 hover:text-zinc-900'
         }`}
       >
         {active ? (
           <motion.span
             layoutId="studio-mode-pill"
-            className="absolute inset-0 rounded-xl border border-zinc-200/50 bg-white shadow-sm"
+            className="absolute inset-0 rounded-lg border border-zinc-200/50 bg-white shadow-sm sm:rounded-xl"
             transition={{ type: 'spring', stiffness: 420, damping: 34 }}
           />
         ) : null}
-        <span className="relative z-10 flex items-center gap-2">
-          {icon}
+        <span className="relative z-10 flex min-w-0 items-center gap-1 sm:gap-2">
+          <span className="hidden sm:inline-flex">{icon}</span>
           <span className="truncate">{label}</span>
         </span>
       </button>
@@ -1410,7 +1412,7 @@ function ActionChip({
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className={`rounded-full border px-4 py-2 text-sm font-semibold transition disabled:opacity-50 ${
+      className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition disabled:opacity-50 sm:px-4 sm:py-2 sm:text-sm ${
         active
           ? 'border-zinc-900 bg-zinc-900 text-white'
           : 'border-zinc-200/60 bg-white text-zinc-600 hover:border-zinc-300 hover:text-zinc-900'
@@ -1453,7 +1455,7 @@ function StudioMenu({
   return (
     <div
       role="listbox"
-      className={`absolute bottom-full z-50 mb-2 min-w-[11rem] overflow-hidden rounded-2xl border border-zinc-200/80 bg-white p-1.5 shadow-xl shadow-zinc-200/60 ${
+      className={`absolute bottom-full z-50 mb-2 max-h-[min(50dvh,22rem)] min-w-[10rem] max-w-[min(18rem,calc(100vw-1.25rem))] overflow-y-auto overflow-x-hidden rounded-2xl border border-zinc-200/80 bg-white p-1.5 shadow-xl shadow-zinc-200/60 ${
         align === 'right' ? 'right-0' : 'left-0'
       }`}
     >
@@ -1477,7 +1479,7 @@ function StudioMenuItem({
       role="option"
       aria-selected={active}
       onClick={onClick}
-      className={`flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-sm transition ${
+      className={`flex w-full items-center gap-2 rounded-xl px-2 py-2 text-left text-xs transition sm:gap-2.5 sm:px-2.5 sm:text-sm ${
         active
           ? 'bg-zinc-100 text-zinc-900'
           : 'text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900'
@@ -1512,14 +1514,14 @@ function StudioChipButton({
       aria-expanded={open}
       aria-label={ariaLabel}
       onClick={onClick}
-      className={`inline-flex h-9 items-center gap-1.5 rounded-xl border px-2.5 text-xs font-semibold transition disabled:opacity-50 ${
+      className={`inline-flex h-8 shrink-0 items-center gap-1 rounded-lg border px-2 text-[11px] font-semibold transition disabled:opacity-50 sm:h-9 sm:gap-1.5 sm:rounded-xl sm:px-2.5 sm:text-xs ${
         open
           ? 'border-zinc-300 bg-zinc-100 text-zinc-900'
           : 'border-zinc-200/70 bg-white text-zinc-600 hover:border-zinc-300 hover:text-zinc-900'
       }`}
     >
       <span className="text-zinc-400">{icon}</span>
-      <span>{label}</span>
+      <span className="whitespace-nowrap">{label}</span>
       <ChevronDown className={`h-3 w-3 text-zinc-400 transition ${open ? 'rotate-180' : ''}`} />
     </button>
   );
@@ -1733,7 +1735,7 @@ function StudioOutputControls({
           ariaLabel={t('studio.mode')}
         />
         <StudioMenu open={openMenu === 'mode'} align="right">
-          <div className="w-[min(16rem,calc(100vw-1.5rem))]">
+          <div className="w-[min(15rem,calc(100vw-1.5rem))]">
             {STUDIO_QUALITY_MODES.map((mode) => (
               <StudioMenuItem
                 key={mode}
@@ -1782,7 +1784,7 @@ function IconButton({
       disabled={disabled}
       onClick={onClick}
       aria-label={label}
-      className="flex h-9 w-9 items-center justify-center rounded-full border border-zinc-200 bg-white/90 text-zinc-700 shadow-sm backdrop-blur-md transition hover:border-zinc-300 hover:text-zinc-900 disabled:opacity-50"
+      className="flex h-8 w-8 items-center justify-center rounded-full border border-zinc-200 bg-white/90 text-zinc-700 shadow-sm backdrop-blur-md transition hover:border-zinc-300 hover:text-zinc-900 disabled:opacity-50 sm:h-9 sm:w-9"
     >
       {children}
     </button>

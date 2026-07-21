@@ -462,6 +462,7 @@
     "statusApproved": "Approved",
     "statusRejected": "Rejected",
     "invalidPlan": "Invalid plan selected.",
+    "authRequired": "Sign in again to complete payment.",
     "depositCreateFailed": "Could not create a deposit request. Please try again.",
     "depositLoadFailed": "Could not load deposit history."
   },

@@ -419,7 +419,7 @@ export default function App() {
         welcome={pricingWelcome}
       />
 
-      <main className="mobile-sticky-offset relative mx-auto flex w-full max-w-6xl flex-col px-3 py-4 sm:px-6 sm:py-5 lg:px-8">
+      <main className="mobile-sticky-offset relative mx-auto flex w-full max-w-6xl flex-col px-2.5 py-3 sm:px-6 sm:py-5 lg:px-8">
         {alert && (
           <AlertBanner
             message={alert.message}

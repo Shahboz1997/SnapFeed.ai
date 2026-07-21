@@ -59,7 +59,15 @@ export async function createDepositRequest(
   });
 
   if (!response.ok) {
-    throw await readError(response);
+    const err = await readError(response);
+    // Generation copy ("sign in to generate images") is wrong in the billing modal.
+    if (
+      response.status === 401
+      && (err.messageKey === 'api.authRequired' || err.messageKey === 'api.authInvalid')
+    ) {
+      throw new ApiError(err.message, err.status, 'pricing.authRequired');
+    }
+    throw err;
   }
 
   const data = await response.json() as CreateDepositRequestResult;
