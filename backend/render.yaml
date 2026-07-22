@@ -56,7 +56,7 @@ services:
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
       - key: GUEST_MAX_GENERATIONS
-        value: "3"
+        value: "1"
       - key: FASHN_CREDITS_ENDPOINT_ENABLED
         value: "false"
       - key: ADMIN_NOTIFY_EMAIL

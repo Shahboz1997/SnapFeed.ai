@@ -257,7 +257,7 @@ generate-image / generate-product-image
 
 | Актор | Лимит | Идентификация |
 |-------|-------|---------------|
-| Гость | 3 (настраивается `GUEST_MAX_GENERATIONS`) | SHA-256 fingerprint или IP |
+| Гость | 1 (настраивается `GUEST_MAX_GENERATIONS`) | SHA-256 fingerprint или IP |
 | Пользователь | `profiles.credits` | Supabase JWT |
 | Без Supabase | Без лимитов | — |
 

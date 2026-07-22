@@ -88,6 +88,7 @@ const ALLOWED_IMAGE_HOST_SUFFIXES = [
   'openai.com',
   'replicate.delivery',
   'replicate.com',
+  '.supabase.co',
 ];
 
 export function isAllowedImageUrl(imageUrl) {

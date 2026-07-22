@@ -7,8 +7,20 @@ import {
 } from '../services/guestCredits.js';
 import { getClientIp } from '../utils/clientIp.js';
 
+function hasBearerToken(req) {
+  const header = req.headers.authorization;
+  return typeof header === 'string' && header.startsWith('Bearer ') && header.length > 7;
+}
+
 export async function requireCredits(req, res, next) {
   if (!isCreditsEnabled() && !isGuestCreditsEnabled()) {
+    return next();
+  }
+
+  // OCR / text-extraction endpoints do not bill.
+  if (req.body?.extractText === true) {
+    req.creditCost = 0;
+    req.skipCreditCharge = true;
     return next();
   }
 
@@ -16,6 +28,14 @@ export async function requireCredits(req, res, next) {
   req.creditCost = creditCost;
 
   try {
+    // Token was sent but optionalAuth could not verify it — do not silently bill as guest.
+    if (hasBearerToken(req) && !req.user?.id) {
+      return res.status(401).json({
+        error: 'Invalid or expired token.',
+        messageKey: 'api.authInvalid',
+      });
+    }
+
     if (req.user?.id) {
       const credits = await getCredits(req.user.id);
 

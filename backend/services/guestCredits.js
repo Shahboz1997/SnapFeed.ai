@@ -4,9 +4,9 @@ import { createError } from '../utils/errors.js';
 import { getClientIp } from '../utils/clientIp.js';
 
 export const GUEST_MAX_GENERATIONS = Number.parseInt(
-  process.env.GUEST_MAX_GENERATIONS || '3',
+  process.env.GUEST_MAX_GENERATIONS || '1',
   10,
-) || 3;
+) || 1;
 
 const FINGERPRINT_PATTERN = /^[a-f0-9]{64}$/i;
 
@@ -265,7 +265,10 @@ export async function transferGuestCreditsToUser(userId, guestKey) {
     return { transferred: 0, credits: profile?.credits ?? 0 };
   }
 
-  const newCredits = (profile?.credits ?? 0) + remaining;
+  // Welcome credit is already granted on signup — do not stack guest remainder on top.
+  const currentCredits = profile?.credits ?? 0;
+  const newCredits = Math.max(currentCredits, remaining);
+  const transferred = Math.max(0, newCredits - currentCredits);
   const updatePayload = claimColumnAvailable
     ? { credits: newCredits, guest_fingerprint_claimed: guestKey }
     : { credits: newCredits };
@@ -312,5 +315,5 @@ export async function transferGuestCreditsToUser(userId, guestKey) {
       .eq('fingerprint_hash', guestKey);
   }
 
-  return { transferred: remaining, credits: updatedProfile.credits };
+  return { transferred, credits: updatedProfile.credits };
 }

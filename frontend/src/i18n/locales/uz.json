@@ -157,6 +157,7 @@
     "emptyTitle": "Hali natija yo‘q",
     "emptyDesc": "Studiya natijalari bu yerda saqlanadi.",
     "emptyCta": "Studiyaga o‘tish",
+    "loading": "Galereya yuklanmoqda…",
     "download": "Yuklab olish",
     "remove": "O‘chirish"
   },
@@ -346,6 +347,8 @@
     "error": "Nimadir noto'g'ri ketdi. Qayta urinib ko'ring.",
     "downloadSuccess": "Rasm saqlandi!",
     "downloadWarning": "Rasmni yuklab bo'lmadi. Rasmga o'ng tugma bilan bosing va \"Rasmni saqlash…\" ni tanlang.",
+    "galleryLoadFailed": "Galereyani yuklab bo‘lmadi.",
+    "galleryRemoveFailed": "Rasmni o‘chirib bo‘lmadi.",
     "textExtractSuccess": "Matn muvaffaqiyatli ajratildi!",
     "tryOnFallbackNotClothing": "Bu mahsulot uchun kiydirish mavjud emas (kiyim emas). Oddiy mahsulot fotosi yaratildi.",
     "tryOnFallbackVerification": "Mahsulot turini tekshirib bo'lmadi. Kiydirish o'rniga oddiy mahsulot fotosi yaratildi."
@@ -427,7 +430,7 @@
     "mailSubject": "SnapFeed.ai — {{tier}}",
     "mailBody": "Assalomu alaykum!\n\nMen {{tier}} ({{price}}) paketini sotib olmoqchiman.\nSnapFeed.ai emailim: {{email}}\n\nO'z hisobidan ishlovchi shaxsga to'lashga tayyorman. Rekvizitlarni yuboring.",
     "guestTitle": "Bepul generatsiyalar tugadi",
-    "guestDescription": "Siz {{count}} ta bepul mehmon generatsiyasidan foydalandingiz. Akkaunt ochish va kredit sotib olish uchun Google orqali kiring.",
+    "guestDescription": "Siz bepul mehmon generatsiyasidan foydalandingiz. Akkaunt ochish va kredit sotib olish uchun Google orqali kiring.",
     "guestBenefit1": "Ro'yxatdan o'tmasdan {{count}} ta bepul generatsiya",
     "guestBenefit2": "Akkaunt profilingiz va balansingizni saqlaydi",
     "guestBenefit3": "Istalgan vaqtda balansni to'ldirish mumkin",

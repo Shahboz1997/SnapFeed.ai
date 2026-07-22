@@ -1,11 +1,13 @@
 import {
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type ChangeEvent,
   type DragEvent,
   type ReactNode,
 } from 'react';
+import { createPortal } from 'react-dom';
 import { AnimatePresence, LayoutGroup, motion } from 'framer-motion';
 import {
   ArrowLeft,
@@ -391,7 +393,7 @@ export default function TryOnWorkspace({
   };
 
   return (
-    <div className="flex w-full flex-col gap-3 sm:gap-4">
+    <div className="flex w-full min-w-0 flex-col gap-2 sm:gap-3 lg:gap-4">
       <input
         ref={garmentInputRef}
         type="file"
@@ -490,9 +492,11 @@ export default function TryOnWorkspace({
           onBrowse={() => garmentInputRef.current?.click()}
           onReplace={() => garmentInputRef.current?.click()}
           onClear={onGarmentClear}
+          fillStage
         />
       ) : (
-        <div className="grid min-h-0 grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3 md:min-h-[420px]">
+        /* Side-by-side from the smallest phones — stacking wastes the dock/tab viewport */
+        <div className="studio-stage grid min-h-0 grid-cols-2 gap-1.5 sm:gap-3">
           <DropZone
             dragging={garmentDragging}
             uploading={uploading}
@@ -513,10 +517,12 @@ export default function TryOnWorkspace({
             onReplace={() => garmentInputRef.current?.click()}
             onClear={onGarmentClear}
             showCornerThumb
+            stretch
+            compact
           />
 
-          <div className="glass-panel relative flex min-h-[168px] flex-col overflow-hidden rounded-2xl border border-zinc-200/60 bg-white shadow-xl shadow-zinc-200/50 sm:min-h-[220px] sm:rounded-3xl md:min-h-[420px]">
-            <p className="absolute left-2.5 top-2.5 z-10 text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500 sm:left-4 sm:top-4 sm:text-[11px] sm:tracking-[0.16em]">
+          <div className="glass-panel relative flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-zinc-200/60 bg-white shadow-xl shadow-zinc-200/50 sm:rounded-3xl">
+            <p className="absolute left-2 top-2 z-10 text-[9px] font-semibold uppercase tracking-[0.12em] text-zinc-500 sm:left-4 sm:top-4 sm:text-[11px] sm:tracking-[0.16em]">
               {t('studio.modelLabel')}
             </p>
 
@@ -528,7 +534,7 @@ export default function TryOnWorkspace({
                   className="absolute inset-0 h-full w-full object-cover object-top"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/25 via-transparent to-white/10" />
-                <div className="absolute right-2 top-2 z-10 flex gap-1 sm:right-3 sm:top-3 sm:gap-1.5">
+                <div className="absolute right-1.5 top-1.5 z-10 flex gap-1 sm:right-3 sm:top-3 sm:gap-1.5">
                   <IconButton
                     disabled={disabled}
                     onClick={() => humanInputRef.current?.click()}
@@ -549,31 +555,33 @@ export default function TryOnWorkspace({
                 </div>
               </>
             ) : (
-              <div className="flex flex-1 flex-col items-center justify-center gap-2.5 bg-zinc-50/30 px-3 pb-4 pt-9 sm:gap-4 sm:px-4 sm:pb-5 sm:pt-12">
+              <div className="flex flex-1 flex-col items-center justify-center gap-1.5 bg-zinc-50/30 px-1.5 pb-3 pt-7 sm:gap-4 sm:px-4 sm:pb-5 sm:pt-12">
                 <ExampleFan
                   images={TRYON_MODEL_FAN}
                   onPick={(url) => void handleFanModelPick(url)}
                   disabled={disabled}
+                  compact
                 />
-                <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2">
-                  <ActionChip disabled={disabled} onClick={() => void handlePasteModel()}>
+                <div className="flex flex-wrap items-center justify-center gap-1 sm:gap-2">
+                  <ActionChip disabled={disabled} onClick={() => void handlePasteModel()} compact>
                     {t('studio.paste')}
                   </ActionChip>
                   <ActionChip
                     disabled={disabled}
                     onClick={() => humanInputRef.current?.click()}
+                    compact
                   >
                     {t('studio.upload')}
                   </ActionChip>
                 </div>
-                <p className="max-w-[16rem] text-center text-[11px] leading-snug text-zinc-400 sm:max-w-xs sm:text-xs">
+                <p className="hidden max-w-[16rem] text-center text-[11px] leading-snug text-zinc-400 sm:block sm:max-w-xs sm:text-xs">
                   {t('studio.stepPersonHint')}
                 </p>
               </div>
             )}
 
             {humanFileError ? (
-              <p className="absolute bottom-2 left-2 right-2 z-10 rounded-xl border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-[11px] text-rose-700 backdrop-blur-md sm:bottom-3 sm:left-3 sm:right-3 sm:px-3 sm:py-2 sm:text-xs">
+              <p className="absolute bottom-2 left-1.5 right-1.5 z-10 rounded-xl border border-rose-200 bg-rose-50 px-2 py-1 text-[10px] text-rose-700 backdrop-blur-md sm:bottom-3 sm:left-3 sm:right-3 sm:px-3 sm:py-2 sm:text-xs">
                 {humanFileError}
               </p>
             ) : null}
@@ -750,6 +758,9 @@ function DropZone({
   onReplace,
   onClear,
   showCornerThumb,
+  fillStage = false,
+  stretch = false,
+  compact = false,
 }: {
   dragging: boolean;
   uploading: boolean;
@@ -769,8 +780,19 @@ function DropZone({
   onReplace: () => void;
   onClear: () => void;
   showCornerThumb?: boolean;
+  /** Own viewport-aware stage height (single-panel modes). */
+  fillStage?: boolean;
+  /** Stretch to parent stage grid cell (dual-panel try-on). */
+  stretch?: boolean;
+  compact?: boolean;
 }) {
   const { t } = useTranslation();
+
+  const sizeClass = fillStage
+    ? 'studio-stage min-h-0'
+    : stretch
+      ? 'h-full min-h-0'
+      : 'min-h-[168px] sm:min-h-[220px] md:min-h-[420px]';
 
   return (
     <motion.div
@@ -781,12 +803,18 @@ function DropZone({
           : '0 0 0 1px rgb(228 228 231 / 0.6)',
       }}
       transition={{ type: 'spring', stiffness: 380, damping: 28 }}
-      className="glass-panel relative min-h-[168px] overflow-hidden rounded-2xl border border-zinc-200/60 bg-white shadow-xl shadow-zinc-200/50 sm:min-h-[220px] sm:rounded-3xl md:min-h-[420px]"
+      className={`glass-panel relative overflow-hidden rounded-2xl border border-zinc-200/60 bg-white shadow-xl shadow-zinc-200/50 sm:rounded-3xl ${sizeClass}`}
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}
     >
-      <p className="absolute left-2.5 top-2.5 z-10 text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500 sm:left-4 sm:top-4 sm:text-[11px] sm:tracking-[0.16em]">
+      <p
+        className={`absolute z-10 font-semibold uppercase text-zinc-500 ${
+          compact
+            ? 'left-2 top-2 text-[9px] tracking-[0.12em] sm:left-4 sm:top-4 sm:text-[11px] sm:tracking-[0.16em]'
+            : 'left-2.5 top-2.5 text-[10px] tracking-[0.14em] sm:left-4 sm:top-4 sm:text-[11px] sm:tracking-[0.16em]'
+        }`}
+      >
         {label}
       </p>
 
@@ -795,14 +823,24 @@ function DropZone({
           <img
             src={previewUrl}
             alt=""
-            className="absolute inset-0 h-full w-full object-contain p-3 sm:p-8"
+            className={`absolute inset-0 h-full w-full object-contain ${compact ? 'p-2 sm:p-8' : 'p-3 sm:p-8'}`}
           />
           {showCornerThumb ? (
-            <div className="absolute left-2.5 top-2.5 h-11 w-9 overflow-hidden rounded-lg border border-zinc-200/60 shadow-sm sm:left-3 sm:top-3 sm:h-14 sm:w-11">
+            <div
+              className={`absolute overflow-hidden rounded-lg border border-zinc-200/60 shadow-sm ${
+                compact
+                  ? 'left-2 top-2 h-9 w-7 sm:left-3 sm:top-3 sm:h-14 sm:w-11'
+                  : 'left-2.5 top-2.5 h-11 w-9 sm:left-3 sm:top-3 sm:h-14 sm:w-11'
+              }`}
+            >
               <img src={previewUrl} alt="" className="h-full w-full object-cover" />
             </div>
           ) : null}
-          <div className="absolute right-2 top-2 flex gap-1 sm:right-3 sm:top-3 sm:gap-1.5">
+          <div
+            className={`absolute flex gap-1 ${
+              compact ? 'right-1.5 top-1.5 sm:right-3 sm:top-3 sm:gap-1.5' : 'right-2 top-2 sm:right-3 sm:top-3 sm:gap-1.5'
+            }`}
+          >
             <IconButton disabled={disabled} onClick={onReplace} label={t('ecommerce.replace')}>
               <Pencil className="h-3.5 w-3.5" />
             </IconButton>
@@ -816,7 +854,13 @@ function DropZone({
           type="button"
           disabled={disabled || uploading}
           onClick={onBrowse}
-          className="flex h-full min-h-[168px] w-full flex-col items-center justify-center gap-2 border-2 border-dashed border-zinc-300 bg-zinc-50/30 px-3 text-center transition hover:bg-zinc-100 active:bg-zinc-100 disabled:opacity-50 sm:min-h-[220px] sm:gap-3 sm:px-6 md:min-h-[420px]"
+          className={`flex h-full w-full flex-col items-center justify-center border-2 border-dashed border-zinc-300 bg-zinc-50/30 text-center transition hover:bg-zinc-100 active:bg-zinc-100 disabled:opacity-50 ${
+            compact
+              ? 'min-h-0 gap-1.5 px-1.5 pt-6 pb-2 sm:gap-3 sm:px-6 sm:pt-0 sm:pb-0'
+              : fillStage || stretch
+                ? 'min-h-0 gap-2 px-3 sm:gap-3 sm:px-6'
+                : 'min-h-[168px] gap-2 px-3 sm:min-h-[220px] sm:gap-3 sm:px-6 md:min-h-[420px]'
+          }`}
         >
           {uploading ? (
             <>
@@ -835,6 +879,7 @@ function DropZone({
                   images={exampleFan}
                   onPick={onExamplePick}
                   disabled={disabled}
+                  compact={compact}
                 />
               ) : (
                 <motion.span
@@ -847,14 +892,34 @@ function DropZone({
                   <Upload className="h-5 w-5 sm:h-6 sm:w-6" />
                 </motion.span>
               )}
-              <span className="rounded-full border border-zinc-200/60 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-900 sm:px-4 sm:py-2 sm:text-sm">
+              <span
+                className={`rounded-full border border-zinc-200/60 bg-white font-semibold text-zinc-900 ${
+                  compact
+                    ? 'max-w-full truncate px-2 py-1 text-[10px] sm:px-4 sm:py-2 sm:text-sm'
+                    : 'px-3 py-1.5 text-xs sm:px-4 sm:py-2 sm:text-sm'
+                }`}
+              >
                 {emptyTitle}
               </span>
-              <span className="max-w-[14rem] text-[11px] leading-snug text-zinc-500 sm:max-w-none sm:text-xs">
+              <span
+                className={`leading-snug text-zinc-500 ${
+                  compact
+                    ? 'hidden max-w-[9rem] text-[10px] sm:block sm:max-w-none sm:text-xs'
+                    : 'max-w-[14rem] text-[11px] sm:max-w-none sm:text-xs'
+                }`}
+              >
                 {emptyHint}
               </span>
               {emptySubhint ? (
-                <span className="max-w-sm text-[11px] text-zinc-400 sm:text-xs">{emptySubhint}</span>
+                <span
+                  className={`text-zinc-400 ${
+                    compact
+                      ? 'hidden max-w-[10rem] text-[10px] sm:block sm:max-w-sm sm:text-xs'
+                      : 'max-w-sm text-[11px] sm:text-xs'
+                  }`}
+                >
+                  {emptySubhint}
+                </span>
               ) : null}
             </>
           )}
@@ -862,7 +927,13 @@ function DropZone({
       )}
 
       {error ? (
-        <p className="absolute bottom-2 left-2 right-2 z-10 rounded-xl border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-[11px] text-rose-700 backdrop-blur-md sm:bottom-3 sm:left-3 sm:right-3 sm:px-3 sm:py-2 sm:text-xs">
+        <p
+          className={`absolute z-10 rounded-xl border border-rose-200 bg-rose-50 text-rose-700 backdrop-blur-md ${
+            compact
+              ? 'bottom-1.5 left-1.5 right-1.5 px-2 py-1 text-[10px] sm:bottom-3 sm:left-3 sm:right-3 sm:px-3 sm:py-2 sm:text-xs'
+              : 'bottom-2 left-2 right-2 px-2.5 py-1.5 text-[11px] sm:bottom-3 sm:left-3 sm:right-3 sm:px-3 sm:py-2 sm:text-xs'
+          }`}
+        >
           {error}
         </p>
       ) : null}
@@ -874,21 +945,32 @@ function ExampleFan({
   images,
   onPick,
   disabled,
+  compact = false,
 }: {
   images: readonly string[];
   onPick?: (url: string) => void;
   disabled?: boolean;
+  compact?: boolean;
 }) {
   const count = Math.min(images.length, 3);
   const rotations = count === 2 ? [-10, 10] : [-14, 0, 14];
-  const offsets = count === 2 ? [-24, 24] : [-34, 0, 34];
+  const offsets = compact
+    ? (count === 2 ? [-14, 14] : [-20, 0, 20])
+    : (count === 2 ? [-24, 24] : [-34, 0, 34]);
 
   return (
-    <div className="relative mb-0.5 flex h-28 w-full max-w-[170px] items-center justify-center sm:mb-1 sm:h-40 sm:max-w-[220px]">
+    <div
+      className={
+        compact
+          ? 'relative mb-0.5 flex h-20 w-full max-w-[110px] items-center justify-center sm:mb-1 sm:h-40 sm:max-w-[220px]'
+          : 'relative mb-0.5 flex h-28 w-full max-w-[170px] items-center justify-center sm:mb-1 sm:h-40 sm:max-w-[220px]'
+      }
+    >
       {images.slice(0, 3).map((src, index) => {
         const interactive = Boolean(onPick);
-        const className =
-          'absolute h-24 w-[3.5rem] overflow-hidden rounded-lg border border-white bg-zinc-100 shadow-lg shadow-zinc-300/50 sm:h-36 sm:w-20 sm:rounded-xl';
+        const className = compact
+          ? 'absolute h-16 w-11 overflow-hidden rounded-md border border-white bg-zinc-100 shadow-lg shadow-zinc-300/50 sm:h-36 sm:w-20 sm:rounded-xl'
+          : 'absolute h-24 w-[3.5rem] overflow-hidden rounded-lg border border-white bg-zinc-100 shadow-lg shadow-zinc-300/50 sm:h-36 sm:w-20 sm:rounded-xl';
         const style = {
           transform: `translateX(${offsets[index] ?? 0}px) rotate(${rotations[index] ?? 0}deg)`,
           zIndex: count === 2 ? index + 1 : index === 1 ? 3 : 1,
@@ -1008,7 +1090,7 @@ function SessionLayout({
         ) : null}
       </div>
 
-      <div className="glass-panel relative flex min-h-[220px] items-center justify-center overflow-hidden rounded-2xl border border-zinc-200/60 bg-white shadow-xl shadow-zinc-200/50 sm:min-h-[280px] sm:rounded-3xl md:min-h-[460px]">
+      <div className="glass-panel relative flex min-h-[min(var(--studio-stage-height),52dvh)] items-center justify-center overflow-hidden rounded-2xl border border-zinc-200/60 bg-white shadow-xl shadow-zinc-200/50 sm:min-h-[280px] sm:rounded-3xl md:min-h-[460px]">
         {running ? (
           <GenerationWaitingShowcase />
         ) : resultImageUrl ? (
@@ -1401,18 +1483,24 @@ function ActionChip({
   onClick,
   disabled,
   active,
+  compact = false,
 }: {
   children: string;
   onClick: () => void;
   disabled?: boolean;
   active?: boolean;
+  compact?: boolean;
 }) {
   return (
     <button
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition disabled:opacity-50 sm:px-4 sm:py-2 sm:text-sm ${
+      className={`rounded-full border font-semibold transition disabled:opacity-50 ${
+        compact
+          ? 'px-2 py-1 text-[10px] sm:px-4 sm:py-2 sm:text-sm'
+          : 'px-3 py-1.5 text-xs sm:px-4 sm:py-2 sm:text-sm'
+      } ${
         active
           ? 'border-zinc-900 bg-zinc-900 text-white'
           : 'border-zinc-200/60 bg-white text-zinc-600 hover:border-zinc-300 hover:text-zinc-900'
@@ -1438,29 +1526,6 @@ function AspectRatioGlyph({ ratio }: { ratio: string }) {
       className="inline-block shrink-0 rounded-[2px] border border-current opacity-70"
       style={{ width, height }}
     />
-  );
-}
-
-function StudioMenu({
-  open,
-  align = 'left',
-  children,
-}: {
-  open: boolean;
-  align?: 'left' | 'right';
-  children: ReactNode;
-}) {
-  if (!open) return null;
-
-  return (
-    <div
-      role="listbox"
-      className={`absolute bottom-full z-50 mb-2 max-h-[min(50dvh,22rem)] min-w-[10rem] max-w-[min(18rem,calc(100vw-1.25rem))] overflow-y-auto overflow-x-hidden rounded-2xl border border-zinc-200/80 bg-white p-1.5 shadow-xl shadow-zinc-200/60 ${
-        align === 'right' ? 'right-0' : 'left-0'
-      }`}
-    >
-      {children}
-    </div>
   );
 }
 
@@ -1578,24 +1643,94 @@ function qualityModeIcon(mode: StudioQualityMode) {
   }
 }
 
+type StudioMenuCoords = {
+  left?: number;
+  right?: number;
+  minWidth: number;
+  maxWidth: number;
+  maxHeight: number;
+  top?: number;
+  bottom?: number;
+};
+
 function StudioSettingGroup({
   open,
   onClose,
+  align = 'left',
+  trigger,
   children,
 }: {
   open: boolean;
   onClose: () => void;
+  align?: 'left' | 'right';
+  trigger: ReactNode;
   children: ReactNode;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [coords, setCoords] = useState<StudioMenuCoords | null>(null);
+
+  useLayoutEffect(() => {
+    if (!open) {
+      setCoords(null);
+      return undefined;
+    }
+
+    function updatePosition() {
+      const triggerEl = triggerRef.current;
+      if (!triggerEl) return;
+
+      const rect = triggerEl.getBoundingClientRect();
+      const gap = 8;
+      const viewportPad = 10;
+      const maxWidth = Math.min(18 * 16, window.innerWidth - viewportPad * 2);
+      const minWidth = Math.min(Math.max(rect.width, 10 * 16), maxWidth);
+
+      const spaceAbove = rect.top - viewportPad;
+      const spaceBelow = window.innerHeight - rect.bottom - viewportPad;
+      const openAbove = spaceAbove >= Math.min(22 * 16, spaceBelow) || spaceAbove > spaceBelow;
+      const available = openAbove ? spaceAbove - gap : spaceBelow - gap;
+      const maxHeight = Math.max(8 * 16, Math.min(available, Math.min(50 * (window.innerHeight / 100), 22 * 16)));
+
+      const next: StudioMenuCoords = {
+        minWidth,
+        maxWidth,
+        maxHeight,
+      };
+
+      if (align === 'right') {
+        next.right = Math.max(viewportPad, window.innerWidth - rect.right);
+      } else {
+        next.left = Math.max(viewportPad, Math.min(rect.left, window.innerWidth - minWidth - viewportPad));
+      }
+
+      if (openAbove) {
+        next.bottom = window.innerHeight - rect.top + gap;
+      } else {
+        next.top = rect.bottom + gap;
+      }
+
+      setCoords(next);
+    }
+
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+    };
+  }, [open, align]);
 
   useEffect(() => {
     if (!open) return undefined;
 
     function handlePointerDown(event: MouseEvent) {
-      if (ref.current && !ref.current.contains(event.target as Node)) {
-        onClose();
+      const target = event.target as Node;
+      if (triggerRef.current?.contains(target) || menuRef.current?.contains(target)) {
+        return;
       }
+      onClose();
     }
 
     function handleKey(event: KeyboardEvent) {
@@ -1610,7 +1745,34 @@ function StudioSettingGroup({
     };
   }, [open, onClose]);
 
-  return <div ref={ref} className="relative">{children}</div>;
+  return (
+    <>
+      <div ref={triggerRef} className="relative shrink-0">
+        {trigger}
+      </div>
+      {open && coords
+        ? createPortal(
+            <div
+              ref={menuRef}
+              role="listbox"
+              className="fixed z-[80] overflow-y-auto overflow-x-hidden rounded-2xl border border-zinc-200/80 bg-white p-1.5 shadow-xl shadow-zinc-200/60"
+              style={{
+                left: coords.left,
+                right: coords.right,
+                minWidth: coords.minWidth,
+                maxWidth: coords.maxWidth,
+                maxHeight: coords.maxHeight,
+                top: coords.top,
+                bottom: coords.bottom,
+              }}
+            >
+              {children}
+            </div>,
+            document.body,
+          )
+        : null}
+    </>
+  );
 }
 
 function StudioOutputControls({
@@ -1646,122 +1808,135 @@ function StudioOutputControls({
 
   return (
     <>
-      <StudioSettingGroup open={openMenu === 'ratio'} onClose={closeMenu}>
-        <StudioChipButton
-          disabled={disabled}
-          open={openMenu === 'ratio'}
-          onClick={() => setOpenMenu((v) => (v === 'ratio' ? null : 'ratio'))}
-          icon={<AspectRatioGlyph ratio={settings.aspectRatio} />}
-          label={settings.aspectRatio}
-          ariaLabel={t('studio.ratio')}
-        />
-        <StudioMenu open={openMenu === 'ratio'}>
-          {STUDIO_ASPECT_RATIOS.map((ratio) => (
+      <StudioSettingGroup
+        open={openMenu === 'ratio'}
+        onClose={closeMenu}
+        trigger={(
+          <StudioChipButton
+            disabled={disabled}
+            open={openMenu === 'ratio'}
+            onClick={() => setOpenMenu((v) => (v === 'ratio' ? null : 'ratio'))}
+            icon={<AspectRatioGlyph ratio={settings.aspectRatio} />}
+            label={settings.aspectRatio}
+            ariaLabel={t('studio.ratio')}
+          />
+        )}
+      >
+        {STUDIO_ASPECT_RATIOS.map((ratio) => (
+          <StudioMenuItem
+            key={ratio}
+            active={settings.aspectRatio === ratio}
+            onClick={() => patch({ aspectRatio: ratio as StudioAspectRatio })}
+          >
+            <span className="flex items-center gap-2.5">
+              <AspectRatioGlyph ratio={ratio} />
+              <span className="font-medium text-zinc-900">{ratio}</span>
+            </span>
+          </StudioMenuItem>
+        ))}
+      </StudioSettingGroup>
+
+      <StudioSettingGroup
+        open={openMenu === 'resolution'}
+        onClose={closeMenu}
+        trigger={(
+          <StudioChipButton
+            disabled={disabled}
+            open={openMenu === 'resolution'}
+            onClick={() => setOpenMenu((v) => (v === 'resolution' ? null : 'resolution'))}
+            icon={<Grid2x2 className="h-3.5 w-3.5" />}
+            label={resolutionTriggerLabel}
+            ariaLabel={t('studio.resolution')}
+          />
+        )}
+      >
+        {STUDIO_RESOLUTIONS.map((value) => (
+          <StudioMenuItem
+            key={value}
+            active={settings.resolution === value}
+            onClick={() => patch({ resolution: value as StudioResolution })}
+          >
+            <span className="font-medium text-zinc-900">{resolutionMenuLabel(value)}</span>
+          </StudioMenuItem>
+        ))}
+      </StudioSettingGroup>
+
+      <StudioSettingGroup
+        open={openMenu === 'variants'}
+        onClose={closeMenu}
+        trigger={(
+          <StudioChipButton
+            disabled={disabled}
+            open={openMenu === 'variants'}
+            onClick={() => setOpenMenu((v) => (v === 'variants' ? null : 'variants'))}
+            icon={<Layers className="h-3.5 w-3.5" />}
+            label={variantsTriggerLabel}
+            ariaLabel={t('studio.variants')}
+          />
+        )}
+      >
+        {STUDIO_VARIANT_COUNTS.map((count) => {
+          const cost = creditCostForVariantCount(count);
+          return (
             <StudioMenuItem
-              key={ratio}
-              active={settings.aspectRatio === ratio}
-              onClick={() => patch({ aspectRatio: ratio as StudioAspectRatio })}
+              key={count}
+              active={settings.numImages === count}
+              onClick={() => patch({ numImages: count as StudioVariantCount })}
             >
-              <span className="flex items-center gap-2.5">
-                <AspectRatioGlyph ratio={ratio} />
-                <span className="font-medium text-zinc-900">{ratio}</span>
+              <span className="flex w-full items-center justify-between gap-4">
+                <span className="font-medium text-zinc-900">
+                  {count === 3 ? t('studio.variantsThree') : t('studio.variantsOne')}
+                </span>
+                <span className="text-xs text-zinc-500">
+                  {t('studio.creditsCost', { count: cost })}
+                </span>
+              </span>
+            </StudioMenuItem>
+          );
+        })}
+      </StudioSettingGroup>
+
+      <StudioSettingGroup
+        open={openMenu === 'mode'}
+        onClose={closeMenu}
+        align="right"
+        trigger={(
+          <StudioChipButton
+            disabled={disabled}
+            open={openMenu === 'mode'}
+            onClick={() => setOpenMenu((v) => (v === 'mode' ? null : 'mode'))}
+            icon={<SlidersHorizontal className="h-3.5 w-3.5" />}
+            label={modeTriggerLabel}
+            ariaLabel={t('studio.mode')}
+          />
+        )}
+      >
+        <div className="w-full min-w-[min(15rem,calc(100vw-1.5rem))]">
+          {STUDIO_QUALITY_MODES.map((mode) => (
+            <StudioMenuItem
+              key={mode}
+              active={settings.qualityMode === mode}
+              onClick={() => patch({ qualityMode: mode as StudioQualityMode })}
+            >
+              <span className="flex items-start gap-2.5">
+                <span className="mt-0.5">{qualityModeIcon(mode)}</span>
+                <span className="min-w-0">
+                  <span className="flex items-center gap-1.5 font-semibold text-zinc-900">
+                    {qualityModeLabel(mode, t)}
+                    {mode === 'quality' ? (
+                      <span className="rounded bg-zinc-900 px-1 py-px text-[9px] font-bold uppercase tracking-wide text-white">
+                        Pro
+                      </span>
+                    ) : null}
+                  </span>
+                  <span className="mt-0.5 block text-xs font-normal leading-snug text-zinc-500">
+                    {qualityModeDesc(mode, t)}
+                  </span>
+                </span>
               </span>
             </StudioMenuItem>
           ))}
-        </StudioMenu>
-      </StudioSettingGroup>
-
-      <StudioSettingGroup open={openMenu === 'resolution'} onClose={closeMenu}>
-        <StudioChipButton
-          disabled={disabled}
-          open={openMenu === 'resolution'}
-          onClick={() => setOpenMenu((v) => (v === 'resolution' ? null : 'resolution'))}
-          icon={<Grid2x2 className="h-3.5 w-3.5" />}
-          label={resolutionTriggerLabel}
-          ariaLabel={t('studio.resolution')}
-        />
-        <StudioMenu open={openMenu === 'resolution'}>
-          {STUDIO_RESOLUTIONS.map((value) => (
-            <StudioMenuItem
-              key={value}
-              active={settings.resolution === value}
-              onClick={() => patch({ resolution: value as StudioResolution })}
-            >
-              <span className="font-medium text-zinc-900">{resolutionMenuLabel(value)}</span>
-            </StudioMenuItem>
-          ))}
-        </StudioMenu>
-      </StudioSettingGroup>
-
-      <StudioSettingGroup open={openMenu === 'variants'} onClose={closeMenu}>
-        <StudioChipButton
-          disabled={disabled}
-          open={openMenu === 'variants'}
-          onClick={() => setOpenMenu((v) => (v === 'variants' ? null : 'variants'))}
-          icon={<Layers className="h-3.5 w-3.5" />}
-          label={variantsTriggerLabel}
-          ariaLabel={t('studio.variants')}
-        />
-        <StudioMenu open={openMenu === 'variants'}>
-          {STUDIO_VARIANT_COUNTS.map((count) => {
-            const cost = creditCostForVariantCount(count);
-            return (
-              <StudioMenuItem
-                key={count}
-                active={settings.numImages === count}
-                onClick={() => patch({ numImages: count as StudioVariantCount })}
-              >
-                <span className="flex w-full items-center justify-between gap-4">
-                  <span className="font-medium text-zinc-900">
-                    {count === 3 ? t('studio.variantsThree') : t('studio.variantsOne')}
-                  </span>
-                  <span className="text-xs text-zinc-500">
-                    {t('studio.creditsCost', { count: cost })}
-                  </span>
-                </span>
-              </StudioMenuItem>
-            );
-          })}
-        </StudioMenu>
-      </StudioSettingGroup>
-
-      <StudioSettingGroup open={openMenu === 'mode'} onClose={closeMenu}>
-        <StudioChipButton
-          disabled={disabled}
-          open={openMenu === 'mode'}
-          onClick={() => setOpenMenu((v) => (v === 'mode' ? null : 'mode'))}
-          icon={<SlidersHorizontal className="h-3.5 w-3.5" />}
-          label={modeTriggerLabel}
-          ariaLabel={t('studio.mode')}
-        />
-        <StudioMenu open={openMenu === 'mode'} align="right">
-          <div className="w-[min(15rem,calc(100vw-1.5rem))]">
-            {STUDIO_QUALITY_MODES.map((mode) => (
-              <StudioMenuItem
-                key={mode}
-                active={settings.qualityMode === mode}
-                onClick={() => patch({ qualityMode: mode as StudioQualityMode })}
-              >
-                <span className="flex items-start gap-2.5">
-                  <span className="mt-0.5">{qualityModeIcon(mode)}</span>
-                  <span className="min-w-0">
-                    <span className="flex items-center gap-1.5 font-semibold text-zinc-900">
-                      {qualityModeLabel(mode, t)}
-                      {mode === 'quality' ? (
-                        <span className="rounded bg-zinc-900 px-1 py-px text-[9px] font-bold uppercase tracking-wide text-white">
-                          Pro
-                        </span>
-                      ) : null}
-                    </span>
-                    <span className="mt-0.5 block text-xs font-normal leading-snug text-zinc-500">
-                      {qualityModeDesc(mode, t)}
-                    </span>
-                  </span>
-                </span>
-              </StudioMenuItem>
-            ))}
-          </div>
-        </StudioMenu>
+        </div>
       </StudioSettingGroup>
     </>
   );

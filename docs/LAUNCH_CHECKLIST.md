@@ -21,7 +21,7 @@
 - [ ] `PUBLIC_API_URL` — публичный HTTPS URL API (для human photo URL в try-on)
 - [ ] `CORS_ORIGIN` — URL фронтенда (например `https://snap-feed-ai.vercel.app`)
 - [ ] `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` — **обязательно в production** (иначе API не стартует)
-- [ ] `GUEST_MAX_GENERATIONS=3` — лимит для гостей (опционально)
+- [ ] `GUEST_MAX_GENERATIONS=1` — лимит для гостей (опционально)
 
 ### Supabase
 

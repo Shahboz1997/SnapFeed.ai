@@ -1075,6 +1075,7 @@ export async function generateProductImage(req, res, next) {
     let fallbackReason = null;
 
     if (shouldExtractText) {
+      req.skipCreditCharge = true;
       const ocrCacheKey = buildOcrCacheKey(base64Image);
       const cachedOcr = cache.get(ocrCacheKey);
 

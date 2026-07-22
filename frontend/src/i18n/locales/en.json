@@ -157,6 +157,7 @@
     "emptyTitle": "No try-ons yet",
     "emptyDesc": "Results from Studio are saved here automatically.",
     "emptyCta": "Go to Studio",
+    "loading": "Loading gallery…",
     "download": "Download",
     "remove": "Remove"
   },
@@ -347,6 +348,8 @@
     "error": "Something went wrong. Please try again.",
     "downloadSuccess": "Image saved!",
     "downloadWarning": "Could not download the image. Right-click the image and choose \"Save image as…\".",
+    "galleryLoadFailed": "Failed to load gallery.",
+    "galleryRemoveFailed": "Failed to remove image.",
     "textExtractSuccess": "Text extracted successfully!",
     "tryOnFallbackNotClothing": "Try-on is not available for this item (not clothing). A standard product photo was created instead.",
     "tryOnFallbackVerification": "Could not verify the product type. A standard product photo was created instead of try-on."
@@ -428,8 +431,8 @@
     "mailSubject": "SnapFeed.ai — {{tier}}",
     "mailBody": "Hello!\n\nI'd like to buy: {{tier}} ({{price}}).\nMy SnapFeed.ai email: {{email}}\n\nReady to pay to a self-employed provider. Please send payment details.",
     "guestTitle": "Free generations used up",
-    "guestDescription": "You've used your {{count}} free guest generations. Sign in to create an account and purchase credits.",
-    "guestBenefit1": "{{count}} free generations without sign-in",
+    "guestDescription": "You've used your free guest generation. Sign in to create an account and purchase credits.",
+    "guestBenefit1": "{{count}} free generation without sign-in",
     "guestBenefit2": "Account saves your profile and credit balance",
     "guestBenefit3": "Purchase credit packs anytime",
     "welcomeTitle": "Welcome!",

@@ -5,6 +5,7 @@ import helmet from 'helmet';
 import imageRoutes from './routes/imageRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
 import authRoutes from './routes/authRoutes.js';
+import galleryRoutes from './routes/galleryRoutes.js';
 import { isSupabaseConfigured } from './config/supabase.js';
 import {
   getFashnCreditsBalance,
@@ -158,6 +159,7 @@ app.get('/', (_req, res) => {
 });
 
 app.use('/api', authRoutes);
+app.use('/api', galleryRoutes);
 app.use('/api', imageRoutes);
 app.use('/api', chatRoutes);
 

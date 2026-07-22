@@ -31,6 +31,7 @@ import {
   composeStudioUserWish,
   type StudioPromptPresetKey,
 } from './constants/studioPromptPresets';
+import { fetchCloudGallery } from './api/cloudGallery';
 import { addGalleryItem, listGalleryItems } from './lib/galleryStorage';
 
 interface AlertState {
@@ -134,33 +135,54 @@ export default function App() {
     setAlert({ message, type });
   }
 
-  function refreshHistory() {
-    setHistoryItems(listGalleryItems());
+  async function refreshHistory() {
+    if (!user) {
+      setHistoryItems(listGalleryItems());
+      return;
+    }
+
+    try {
+      const cloudItems = await fetchCloudGallery(24);
+      setHistoryItems(cloudItems);
+    } catch {
+      // Keep current strip if cloud gallery is temporarily unavailable.
+    }
   }
 
+  useEffect(() => {
+    if (authLoading) return;
+    void refreshHistory();
+  }, [user, authLoading]);
+
   function applyCreditsAndToast(creditsRemaining?: number, creditCost = 1) {
+    const charged = Math.max(0, Math.floor(Number(creditCost) || 0));
+
     if (user) {
       if (typeof creditsRemaining === 'number') {
         updateCredits(creditsRemaining);
-      } else if (typeof profile?.credits === 'number') {
-        updateCredits(Math.max(0, profile.credits - creditCost));
+      } else if (charged > 0 && typeof profile?.credits === 'number') {
+        updateCredits(Math.max(0, profile.credits - charged));
       }
-      showToast(t('toasts.creditDeducted', { count: creditCost }));
+      if (charged > 0) {
+        showToast(t('toasts.creditDeducted', { count: charged }));
+      }
       return;
     }
 
     if (typeof creditsRemaining === 'number') {
       setGuestCredits(creditsRemaining);
       writeGuestCreditsToStorage(creditsRemaining);
-    } else {
+    } else if (charged > 0) {
       setGuestCredits((current) => {
-        const newCredits = Math.max(0, (current ?? 0) - creditCost);
+        const newCredits = Math.max(0, (current ?? 0) - charged);
         writeGuestCreditsToStorage(newCredits);
         return newCredits;
       });
     }
 
-    showToast(t('toasts.creditDeducted', { count: creditCost }));
+    if (charged > 0) {
+      showToast(t('toasts.creditDeducted', { count: charged }));
+    }
   }
 
   function resolveApiError(err: unknown): string {
@@ -322,15 +344,18 @@ export default function App() {
           : []
       ).filter(Boolean);
 
-      for (const url of urls) {
-        addGalleryItem({
-          imageUrl: url,
-          originalImageUrl: previewSource,
-          hashtags: data.hashtags,
-        });
+      // Guests keep a browser gallery; logged-in users get cloud persistence on the server.
+      if (!user) {
+        for (const url of urls) {
+          addGalleryItem({
+            imageUrl: url,
+            originalImageUrl: previewSource,
+            hashtags: data.hashtags,
+          });
+        }
       }
       if (urls.length) {
-        refreshHistory();
+        void refreshHistory();
       }
 
       // Only bind result to UI if user is still on the mode that started this job.
@@ -419,7 +444,7 @@ export default function App() {
         welcome={pricingWelcome}
       />
 
-      <main className="mobile-sticky-offset relative mx-auto flex w-full max-w-6xl flex-col px-2.5 py-3 sm:px-6 sm:py-5 lg:px-8">
+      <main className="mobile-sticky-offset relative mx-auto flex w-full max-w-6xl min-w-0 flex-col px-2 py-2 sm:px-6 sm:py-5 lg:px-8">
         {alert && (
           <AlertBanner
             message={alert.message}
@@ -470,7 +495,7 @@ export default function App() {
           />
         </fieldset>
 
-        <div className="mt-4 flex justify-end gap-2">
+        <div className="mt-2 hidden justify-end gap-2 sm:mt-4 sm:flex">
           {(imageUrl || (loading && runningMode === studioMode)) && (
             <button
               type="button"

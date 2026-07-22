@@ -1,5 +1,5 @@
 export const GUEST_CREDITS_STORAGE_KEY = 'snapfeed_guest_credits';
-export const GUEST_CREDITS_INITIAL = 3;
+export const GUEST_CREDITS_INITIAL = 1;
 
 export function readGuestCreditsFromStorage(): number | null {
   const stored = localStorage.getItem(GUEST_CREDITS_STORAGE_KEY);
@@ -14,7 +14,7 @@ export function readGuestCreditsFromStorage(): number | null {
     return null;
   }
 
-  return Math.max(0, parsed);
+  return Math.min(GUEST_CREDITS_INITIAL, Math.max(0, parsed));
 }
 
 export function writeGuestCreditsToStorage(credits: number): void {

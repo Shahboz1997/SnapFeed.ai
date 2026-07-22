@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { deleteCloudGalleryItem, fetchCloudGallery } from '../api/cloudGallery';
 import { downloadImageBlob, triggerBlobDownload } from '../api/downloadImage';
 import { fetchGuestCredits } from '../api/guestCredits';
 import AppShell from '../components/AppShell';
@@ -21,18 +22,48 @@ export default function GalleryPage() {
   const { user, profile, loading: authLoading } = useAuth();
   const { showToast } = useToast();
   const [items, setItems] = useState<GalleryItem[]>([]);
+  const [galleryLoading, setGalleryLoading] = useState(true);
   const [guestCredits, setGuestCredits] = useState<number | null>(() => readGuestCreditsFromStorage());
   const [guestCreditsLoading, setGuestCreditsLoading] = useState(() => !user && readGuestCreditsFromStorage() === null);
   const [showPricingModal, setShowPricingModal] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [removingId, setRemovingId] = useState<string | null>(null);
 
   const displayCredits = user ? (profile?.credits ?? 0) : (guestCredits ?? 0);
   const creditsLoading = user ? authLoading || profile === null : guestCreditsLoading;
 
   useEffect(() => {
-    setItems(listGalleryItems());
-  }, []);
+    let cancelled = false;
+
+    async function loadGallery() {
+      setGalleryLoading(true);
+
+      if (!user) {
+        if (!cancelled) {
+          setItems(listGalleryItems());
+          setGalleryLoading(false);
+        }
+        return;
+      }
+
+      try {
+        const cloudItems = await fetchCloudGallery();
+        if (!cancelled) setItems(cloudItems);
+      } catch {
+        if (!cancelled) {
+          setItems([]);
+          showToast(t('alerts.galleryLoadFailed', { defaultValue: 'Failed to load gallery.' }), 'error');
+        }
+      } finally {
+        if (!cancelled) setGalleryLoading(false);
+      }
+    }
+
+    if (authLoading) return;
+    void loadGallery();
+    return () => { cancelled = true; };
+  }, [user, authLoading, showToast, t]);
 
   useEffect(() => {
     if (user) return;
@@ -64,9 +95,24 @@ export default function GalleryPage() {
     setShowPricingModal(true);
   }
 
-  function handleRemove(id: string) {
-    removeGalleryItem(id);
-    setItems(listGalleryItems());
+  async function handleRemove(id: string) {
+    if (removingId) return;
+
+    if (!user) {
+      removeGalleryItem(id);
+      setItems(listGalleryItems());
+      return;
+    }
+
+    setRemovingId(id);
+    try {
+      await deleteCloudGalleryItem(id);
+      setItems((prev) => prev.filter((item) => item.id !== id));
+    } catch {
+      showToast(t('alerts.galleryRemoveFailed', { defaultValue: 'Failed to remove image.' }), 'error');
+    } finally {
+      setRemovingId(null);
+    }
   }
 
   async function handleDownload(item: GalleryItem) {
@@ -115,7 +161,11 @@ export default function GalleryPage() {
           </Link>
         </div>
 
-        {items.length === 0 ? (
+        {galleryLoading ? (
+          <div className="glass-panel luxury-shadow flex min-h-[280px] items-center justify-center rounded-2xl sm:min-h-[420px] sm:rounded-3xl">
+            <p className="text-sm text-zinc-500">{t('gallery.loading', { defaultValue: 'Loading gallery…' })}</p>
+          </div>
+        ) : items.length === 0 ? (
           <div className="glass-panel luxury-shadow flex min-h-[280px] flex-col items-center justify-center rounded-2xl border-dashed px-4 text-center sm:min-h-[420px] sm:rounded-3xl sm:px-6">
             <p className="font-display text-xl text-zinc-900 sm:text-2xl">{t('gallery.emptyTitle')}</p>
             <p className="mt-2 max-w-md text-sm text-zinc-500">{t('gallery.emptyDesc')}</p>
@@ -130,6 +180,7 @@ export default function GalleryPage() {
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:gap-4">
             {items.map((item) => {
               const isDownloading = downloadingId === item.id;
+              const isRemoving = removingId === item.id;
               return (
                 <article
                   key={item.id}
@@ -144,7 +195,7 @@ export default function GalleryPage() {
                   <div className="absolute inset-x-0 bottom-0 flex items-center justify-end gap-1.5 bg-gradient-to-t from-white/95 to-transparent p-3 opacity-100 transition lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-within:opacity-100">
                     <button
                       type="button"
-                      disabled={Boolean(downloadingId)}
+                      disabled={Boolean(downloadingId) || Boolean(removingId)}
                       onClick={() => void handleDownload(item)}
                       className="min-h-9 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-zinc-700 backdrop-blur-md transition hover:border-zinc-300 hover:bg-zinc-50 disabled:opacity-50"
                     >
@@ -152,10 +203,11 @@ export default function GalleryPage() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => handleRemove(item.id)}
-                      className="min-h-9 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-zinc-700 backdrop-blur-md transition hover:border-zinc-300 hover:bg-zinc-50"
+                      disabled={Boolean(removingId) || Boolean(downloadingId)}
+                      onClick={() => void handleRemove(item.id)}
+                      className="min-h-9 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-zinc-700 backdrop-blur-md transition hover:border-zinc-300 hover:bg-zinc-50 disabled:opacity-50"
                     >
-                      {t('gallery.remove')}
+                      {isRemoving ? '…' : t('gallery.remove')}
                     </button>
                   </div>
                 </article>
