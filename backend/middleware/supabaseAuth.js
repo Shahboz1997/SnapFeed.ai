@@ -1,5 +1,5 @@
 import { createRemoteJWKSet, jwtVerify } from 'jose';
-import { getSupabaseUrl, isSupabaseConfigured } from '../config/supabase.js';
+import { getSupabaseAdmin, getSupabaseUrl, isSupabaseConfigured } from '../config/supabase.js';
 
 let jwks = null;
 
@@ -13,27 +13,61 @@ function getJWKS() {
   return jwks;
 }
 
-async function verifyAccessToken(token) {
+function userFromJwtPayload(payload) {
+  return {
+    id: payload.sub,
+    email: typeof payload.email === 'string' ? payload.email : null,
+    role: payload.role,
+  };
+}
+
+async function verifyAccessTokenWithJwks(token) {
   const options = {
     issuer: `${getSupabaseUrl()}/auth/v1`,
+    audience: 'authenticated',
   };
 
   try {
     const { payload } = await jwtVerify(token, getJWKS(), options);
-    return {
-      id: payload.sub,
-      email: typeof payload.email === 'string' ? payload.email : null,
-      role: payload.role,
-    };
-  } catch (error) {
-    // Cold JWKS fetch / transient network — reset cache and retry once.
+    return userFromJwtPayload(payload);
+  } catch {
+    // Cold JWKS fetch / rotated keys — reset cache and retry once.
     jwks = null;
     const { payload } = await jwtVerify(token, getJWKS(), options);
-    return {
-      id: payload.sub,
-      email: typeof payload.email === 'string' ? payload.email : null,
-      role: payload.role,
-    };
+    return userFromJwtPayload(payload);
+  }
+}
+
+async function verifyAccessTokenWithAuthApi(token) {
+  const admin = getSupabaseAdmin();
+  if (!admin) {
+    throw new Error('Supabase admin client unavailable');
+  }
+
+  const { data, error } = await admin.auth.getUser(token);
+  if (error || !data?.user?.id) {
+    throw error || new Error('Supabase getUser returned no user');
+  }
+
+  return {
+    id: data.user.id,
+    email: data.user.email ?? null,
+    role: data.user.role,
+  };
+}
+
+async function verifyAccessToken(token) {
+  try {
+    return await verifyAccessTokenWithJwks(token);
+  } catch (jwksError) {
+    try {
+      return await verifyAccessTokenWithAuthApi(token);
+    } catch (apiError) {
+      const jwksMsg = jwksError?.message || String(jwksError);
+      const apiMsg = apiError?.message || String(apiError);
+      console.warn('[supabaseAuth] token verify failed:', { jwks: jwksMsg, api: apiMsg });
+      throw jwksError;
+    }
   }
 }
 

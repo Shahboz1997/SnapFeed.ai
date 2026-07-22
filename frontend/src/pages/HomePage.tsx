@@ -275,9 +275,9 @@ export default function HomePage() {
               className="group relative min-h-[200px] overflow-hidden rounded-2xl border border-zinc-200/70 shadow-sm shadow-zinc-200/40 transition duration-300 hover:-translate-y-0.5 hover:border-zinc-300 hover:shadow-xl hover:shadow-zinc-200/60 sm:min-h-[280px] sm:rounded-3xl"
             >
               <img
-                src="/studio-examples/tryon-model-1.png"
+                src="/studio-examples/tryon-shortcut-bg.jpg"
                 alt=""
-                className="absolute inset-0 h-full w-full object-cover object-top transition duration-500 group-hover:scale-105"
+                className="absolute inset-0 h-full w-full object-cover object-[center_20%] transition duration-500 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-white via-white/85 to-white/25" />
               <div className="relative z-10 flex h-full min-h-[200px] flex-col justify-end p-5 sm:min-h-[280px] sm:p-7">
@@ -305,9 +305,9 @@ export default function HomePage() {
               className="group relative min-h-[200px] overflow-hidden rounded-2xl border border-zinc-200/70 shadow-sm shadow-zinc-200/40 transition duration-300 hover:-translate-y-0.5 hover:border-zinc-300 hover:shadow-xl hover:shadow-zinc-200/60 sm:min-h-[280px] sm:rounded-3xl"
             >
               <img
-                src="/studio-examples/product-to-model-sample-result.png"
+                src="/studio-examples/gallery-shortcut-bg.jpg"
                 alt=""
-                className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                className="absolute inset-0 h-full w-full object-cover object-center transition duration-500 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-white via-white/85 to-white/25" />
               <div className="relative z-10 flex h-full min-h-[200px] flex-col justify-end p-5 sm:min-h-[280px] sm:p-7">

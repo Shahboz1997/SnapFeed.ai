@@ -5,7 +5,8 @@ if (typeof globalThis.WebSocket === 'undefined') {
   globalThis.WebSocket = ws;
 }
 
-const supabaseUrl = process.env.SUPABASE_URL?.trim() || '';
+// Trailing slash breaks jose issuer checks (`…co//auth/v1` ≠ token `iss`).
+const supabaseUrl = (process.env.SUPABASE_URL?.trim() || '').replace(/\/+$/, '');
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() || '';
 
 export function isSupabaseConfigured() {

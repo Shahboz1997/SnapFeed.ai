@@ -93,7 +93,7 @@ function TiltCard({
 export default function PricingModal({ open, onClose, credits = 0, welcome = false }: PricingModalProps) {
   const { t, i18n } = useTranslation();
   const { showToast } = useToast();
-  const { user, session, authEnabled, signInWithGoogle } = useAuth();
+  const { user, authEnabled, signInWithGoogle } = useAuth();
   const [signingIn, setSigningIn] = useState(false);
   const [signInError, setSignInError] = useState<string | null>(null);
   const [creatingPlan, setCreatingPlan] = useState<DepositPlanName | null>(null);
@@ -144,13 +144,8 @@ export default function PricingModal({ open, onClose, credits = 0, welcome = fal
     setCreateError(null);
     setCreateErrorNeedsAuth(false);
 
-    if (!session?.access_token) {
-      setCreateError(t('pricing.authRequired'));
-      setCreateErrorNeedsAuth(true);
-      setCreatingPlan(null);
-      return;
-    }
-
+    // Do not gate on React `session` — it can lag behind supabase-js storage.
+    // authApiFetch refreshes the access token right before the request.
     try {
       const result = await createDepositRequest(tier.id, currency);
       setInvoice(result);
