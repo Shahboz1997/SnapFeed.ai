@@ -6,6 +6,7 @@ import {
   type ChangeEvent,
   type DragEvent,
   type ReactNode,
+  type RefObject,
 } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, LayoutGroup, motion } from 'framer-motion';
@@ -202,8 +203,9 @@ export default function TryOnWorkspace({
   const [garmentDragging, setGarmentDragging] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [historyOpen, setHistoryOpen] = useState(true);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const sessionStageRef = useRef<HTMLDivElement>(null);
   const isProductOnly = studioMode === 'packshot' || studioMode === 'product-to-model';
 
   const modelPreviewUrl = humanPreviewUrl || selectedModelUrl;
@@ -212,6 +214,14 @@ export default function TryOnWorkspace({
   const waitingInThisMode = running && runningMode === studioMode;
   const inSession = waitingInThisMode || Boolean(resultImageUrl);
   const displayResultUrl = resolveImageUrl(resultImageUrl);
+
+  useLayoutEffect(() => {
+    if (!inSession) return;
+    const stage = sessionStageRef.current;
+    if (!stage) return;
+    // Keep waiting animation / result fully in view above the sticky dock.
+    stage.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  }, [inSession, waitingInThisMode, resultImageUrl]);
 
   useEffect(() => {
     const dock = studioDockRef.current;
@@ -421,6 +431,7 @@ export default function TryOnWorkspace({
 
       {inSession ? (
         <SessionLayout
+          stageRef={sessionStageRef}
           garmentPreviewUrl={garmentPreviewUrl}
           modelPreviewUrl={isProductOnly ? null : modelPreviewUrl}
           showModelThumb={!isProductOnly}
@@ -1005,6 +1016,7 @@ function ExampleFan({
 }
 
 function SessionLayout({
+  stageRef,
   garmentPreviewUrl,
   modelPreviewUrl,
   showModelThumb = true,
@@ -1026,6 +1038,7 @@ function SessionLayout({
   onOpenLightbox,
   onReusePrompt,
 }: {
+  stageRef?: RefObject<HTMLDivElement | null>;
   garmentPreviewUrl: string | null;
   modelPreviewUrl: string | null;
   showModelThumb?: boolean;
@@ -1055,19 +1068,21 @@ function SessionLayout({
 
   return (
     <div
-      className={`flex min-w-0 flex-col gap-3 md:grid md:min-h-[460px] ${
+      ref={stageRef}
+      className={`studio-stage studio-stage-session flex min-h-0 min-w-0 flex-col gap-1.5 md:grid md:min-h-[460px] md:gap-3 ${
         historyOpen
           ? 'md:grid-cols-[88px_minmax(0,1fr)_120px]'
           : 'md:grid-cols-[88px_minmax(0,1fr)_48px]'
       }`}
     >
-      <div className="flex flex-row gap-2 overflow-x-auto scrollbar-none md:flex-col md:gap-3 md:overflow-visible">
+      {/* Desktop / tablet side rail */}
+      <div className="hidden flex-col gap-3 md:flex">
         {onBackToSetup ? (
           <button
             type="button"
             disabled={locked}
             onClick={onBackToSetup}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-xl px-2 py-1.5 text-xs font-semibold text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 disabled:opacity-50 md:w-full"
+            className="inline-flex w-full items-center gap-1.5 rounded-xl px-2 py-1.5 text-xs font-semibold text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 disabled:opacity-50"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
             {t('studio.back')}
@@ -1090,7 +1105,38 @@ function SessionLayout({
         ) : null}
       </div>
 
-      <div className="glass-panel relative flex min-h-[min(var(--studio-stage-height),52dvh)] items-center justify-center overflow-hidden rounded-2xl border border-zinc-200/60 bg-white shadow-xl shadow-zinc-200/50 sm:min-h-[280px] sm:rounded-3xl md:min-h-[460px]">
+      <div className="glass-panel relative min-h-0 flex-1 overflow-hidden rounded-2xl border border-zinc-200/60 bg-white shadow-xl shadow-zinc-200/50 sm:rounded-3xl md:min-h-[460px]">
+        {/* Mobile: compact overlays so animation/result fills the stage */}
+        <div className="absolute left-2 top-2 z-20 flex items-start gap-1.5 md:hidden">
+          {onBackToSetup ? (
+            <button
+              type="button"
+              disabled={locked}
+              onClick={onBackToSetup}
+              aria-label={t('studio.back')}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-zinc-200/70 bg-white/90 text-zinc-700 shadow-sm backdrop-blur-md transition hover:bg-white disabled:opacity-50"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+            </button>
+          ) : null}
+          <InputThumb
+            label={t('studio.productLabel')}
+            src={garmentPreviewUrl}
+            disabled={locked}
+            onClick={onReplaceGarment}
+            compact
+          />
+          {showModelThumb ? (
+            <InputThumb
+              label={t('studio.modelLabel')}
+              src={modelPreviewUrl}
+              disabled={locked}
+              onClick={onReplaceModel}
+              compact
+            />
+          ) : null}
+        </div>
+
         {running ? (
           <GenerationWaitingShowcase />
         ) : resultImageUrl ? (
@@ -1158,7 +1204,7 @@ function SessionLayout({
         ) : null}
       </div>
 
-      <div className="glass-panel flex flex-col rounded-2xl border border-zinc-200/60 bg-white/70 p-2 shadow-sm">
+      <div className="glass-panel hidden flex-col rounded-2xl border border-zinc-200/60 bg-white/70 p-2 shadow-sm md:flex">
         <button
           type="button"
           onClick={onToggleHistory}
@@ -1366,23 +1412,36 @@ function InputThumb({
   src,
   onClick,
   disabled,
+  compact = false,
 }: {
   label: string;
   src: string | null;
   onClick: () => void;
   disabled?: boolean;
+  compact?: boolean;
 }) {
   return (
     <button
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className="group flex w-20 flex-col gap-1 disabled:opacity-50 md:w-full"
+      className={`group flex shrink-0 flex-col disabled:opacity-50 md:w-full ${
+        compact
+          ? 'w-11 gap-0.5 rounded-xl border border-white/40 bg-white/85 p-1 shadow-sm backdrop-blur-md'
+          : 'w-20 gap-1'
+      }`}
     >
-      <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500">
+      <span
+        className={`font-semibold uppercase tracking-[0.12em] ${
+          compact ? 'px-0.5 text-[8px] text-zinc-600' : 'text-[10px] text-zinc-500'
+        }`}
+      >
         {label}
       </span>
-      <span className="relative aspect-[3/4] w-full overflow-hidden rounded-xl border border-zinc-200/60 bg-zinc-50 shadow-sm transition group-hover:border-zinc-300 group-hover:shadow-md group-hover:shadow-zinc-200/50">
+      <span className={`relative aspect-[3/4] w-full overflow-hidden border border-zinc-200/60 bg-zinc-50 shadow-sm transition group-hover:border-zinc-300 group-hover:shadow-md group-hover:shadow-zinc-200/50 ${
+        compact ? 'rounded-lg' : 'rounded-xl'
+      }`}
+      >
         {src ? (
           <img src={src} alt="" className="h-full w-full object-cover object-top" />
         ) : (

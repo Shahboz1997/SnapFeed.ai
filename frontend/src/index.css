@@ -146,6 +146,14 @@ summary {
   height: var(--studio-stage-height);
 }
 
+/* Session result: keep fixed stage on phones; let grid grow from tablet up */
+@media (min-width: 768px) {
+  .studio-stage-session {
+    height: auto;
+    min-height: var(--studio-stage-height);
+  }
+}
+
 @media (min-width: 1024px) {
   .studio-stage {
     height: auto;

@@ -446,12 +446,16 @@ export default function App() {
 
       <main className="mobile-sticky-offset relative mx-auto flex w-full max-w-6xl min-w-0 flex-col px-2 py-2 sm:px-6 sm:py-5 lg:px-8">
         {alert && (
-          <AlertBanner
-            message={alert.message}
-            type={alert.type}
-            onDismiss={() => setAlert(null)}
-            autoDismissMs={alert.type === 'success' ? 5000 : undefined}
-          />
+          <div className="pointer-events-none absolute inset-x-2 top-2 z-30 sm:inset-x-6 sm:top-5 lg:inset-x-8">
+            <div className="pointer-events-auto mx-auto max-w-6xl [&_[role=alert]]:mb-0">
+              <AlertBanner
+                message={alert.message}
+                type={alert.type}
+                onDismiss={() => setAlert(null)}
+                autoDismissMs={alert.type === 'success' ? 5000 : undefined}
+              />
+            </div>
+          </div>
         )}
 
         <fieldset className="min-w-0 border-0 p-0">
