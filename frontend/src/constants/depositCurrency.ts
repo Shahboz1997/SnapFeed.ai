@@ -141,30 +141,22 @@ const CLIENT_PAYMENT_ENV: Record<DepositCurrency, string> = {
 /** Public payment instructions shown before “I paid” (override via VITE_MANUAL_PAYMENT_DETAILS*). */
 const DEFAULT_CLIENT_PAYMENT_DETAILS: Record<DepositCurrency, string> = {
   RUB: [
-    'Карта Visa (Ориёнбанк): 4167560008784260',
-    'Телефон / перевод: +992931633999',
-    'Получатель: Райимкулов Шахбоз',
+    'Карта Visa: 4167560008784260',
     'Переведите точную сумму. В комментарии укажите email аккаунта SnapFeed.ai.',
     'После перевода нажмите «Я оплатил».',
   ].join('\n'),
   USD: [
-    'Visa card (Oriyonbank): 4167560008784260',
-    'Phone / transfer: +992931633999',
-    'Recipient: Raimkulov Shahboz',
+    'Visa card: 4167560008784260',
     'Transfer the exact USD amount. Include your SnapFeed.ai email in the payment note.',
     'Then tap "I paid".',
   ].join('\n'),
   UZS: [
-    'Visa karta (Oriyonbank): 4167560008784260',
-    'Telefon / o\'tkazma: +992931633999',
-    'Oluvchi: Raimkulov Shahboz',
+    'Visa karta: 4167560008784260',
     'Aniq so\'m summasini o\'tkazing. Izohga SnapFeed.ai emailingizni yozing.',
     'So\'ng «To\'ladim» tugmasini bosing.',
   ].join('\n'),
   TJS: [
-    'Корти Visa (Ориёнбанк): 4167560008784260',
-    'Телефон / интиқол: +992931633999',
-    'Гиранда: Райимкулов Шахбоз',
+    'Корти Visa: 4167560008784260',
     'Маблағи дақиқро гузаронед. Дар шарҳ email-и SnapFeed.ai-ро нависед.',
     'Сипас «Ман пардохт кардам»-ро пахш кунед.',
   ].join('\n'),
