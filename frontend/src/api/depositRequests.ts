@@ -13,17 +13,23 @@ export type DepositPlanName = 'single' | 'starter' | 'pro' | 'business';
 
 export type DepositRequestStatus = 'pending' | 'approved' | 'rejected';
 
-export interface CreateDepositRequestResult {
+export interface DepositInvoiceDraft {
   success: true;
-  requestId: string;
+  /** null until user taps “I paid” and the request is created */
+  requestId: string | null;
   amount: number;
   currency: DepositCurrency;
   credits: number;
   planName: DepositPlanName;
   planLabel: string;
-  status: DepositRequestStatus;
+  status: DepositRequestStatus | null;
   paymentDetails: string;
 }
+
+export type CreateDepositRequestResult = DepositInvoiceDraft & {
+  requestId: string;
+  status: DepositRequestStatus;
+};
 
 export interface DepositRequestItem {
   id: string;
@@ -49,6 +55,44 @@ async function readError(response: Response): Promise<ApiError> {
   return new ApiError(message, response.status, messageKey);
 }
 
+function mapAuthBillingError(response: Response, err: ApiError): ApiError {
+  // Generation copy ("sign in to generate images") is wrong in the billing modal.
+  if (
+    response.status === 401
+    && (err.messageKey === 'api.authRequired' || err.messageKey === 'api.authInvalid')
+  ) {
+    return new ApiError(err.message, response.status, 'pricing.authRequired');
+  }
+  return err;
+}
+
+/** Load payment details for a plan without creating a deposit_requests row. */
+export async function previewDepositRequest(
+  planName: DepositPlanName,
+  currency: DepositCurrency = 'RUB',
+): Promise<DepositInvoiceDraft> {
+  const response = await authApiFetch('/api/auth/preview-deposit', {
+    method: 'POST',
+    body: JSON.stringify({ planName, currency }),
+  });
+
+  if (!response.ok) {
+    throw mapAuthBillingError(response, await readError(response));
+  }
+
+  const data = await response.json() as DepositInvoiceDraft;
+  if (!data?.success || !data.paymentDetails) {
+    throw new ApiError('Invalid deposit preview.', 500, 'pricing.depositCreateFailed');
+  }
+
+  return {
+    ...data,
+    requestId: data.requestId ?? null,
+    status: data.status ?? null,
+    currency: normalizeDepositCurrency(data.currency),
+  };
+}
+
 export async function createDepositRequest(
   planName: DepositPlanName,
   currency: DepositCurrency = 'RUB',
@@ -59,15 +103,7 @@ export async function createDepositRequest(
   });
 
   if (!response.ok) {
-    const err = await readError(response);
-    // Generation copy ("sign in to generate images") is wrong in the billing modal.
-    if (
-      response.status === 401
-      && (err.messageKey === 'api.authRequired' || err.messageKey === 'api.authInvalid')
-    ) {
-      throw new ApiError(err.message, response.status, 'pricing.authRequired');
-    }
-    throw err;
+    throw mapAuthBillingError(response, await readError(response));
   }
 
   const data = await response.json() as CreateDepositRequestResult;

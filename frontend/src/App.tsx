@@ -57,7 +57,6 @@ export default function App() {
   const [outputSettings, setOutputSettings] = useState<StudioOutputSettings>(
     DEFAULT_STUDIO_OUTPUT_SETTINGS,
   );
-  const [autoRunToken, setAutoRunToken] = useState(0);
   const [loading, setLoading] = useState(false);
   const [runningMode, setRunningMode] = useState<StudioMode | null>(null);
   const [alert, setAlert] = useState<AlertState | null>(null);
@@ -216,10 +215,6 @@ export default function App() {
     setGarmentPreviewUrl(previewUrl);
     setGarmentFileError(null);
     setImageUrl(null);
-    // Product → Model: FASHN picks the model; start as soon as the garment is ready.
-    if (studioMode === 'product-to-model') {
-      setAutoRunToken((token) => token + 1);
-    }
   }
 
   function handleGarmentImageClear() {
@@ -403,21 +398,6 @@ export default function App() {
     profile?.credits,
     updateCredits,
     showToast,
-  ]);
-
-  useEffect(() => {
-    if (autoRunToken === 0 || loading) return;
-    if (studioMode !== 'product-to-model') return;
-    if (!garmentBase64 || garmentFileError) return;
-    setAutoRunToken(0);
-    void handleGenerate();
-  }, [
-    autoRunToken,
-    loading,
-    studioMode,
-    garmentBase64,
-    garmentFileError,
-    handleGenerate,
   ]);
 
   const generateButtonLabel = loading

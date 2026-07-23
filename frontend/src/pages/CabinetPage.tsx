@@ -19,26 +19,26 @@ function StatusBadge({ status }: { status: DepositRequestStatus }) {
 
   if (status === 'approved') {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
-        <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
-        {t('pricing.statusApproved')}
+      <span className="inline-flex max-w-full items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold leading-tight text-emerald-700 sm:gap-1.5 sm:px-2.5 sm:py-1 sm:text-[11px]">
+        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-600" />
+        <span className="min-w-0 break-words">{t('pricing.statusApproved')}</span>
       </span>
     );
   }
 
   if (status === 'rejected') {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 px-2.5 py-1 text-[11px] font-semibold text-rose-700">
-        <span className="h-1.5 w-1.5 rounded-full bg-rose-600" />
-        {t('pricing.statusRejected')}
+      <span className="inline-flex max-w-full items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-semibold leading-tight text-rose-700 sm:gap-1.5 sm:px-2.5 sm:py-1 sm:text-[11px]">
+        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-rose-600" />
+        <span className="min-w-0 break-words">{t('pricing.statusRejected')}</span>
       </span>
     );
   }
 
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700">
-      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-600" />
-      {t('pricing.statusPending')}
+    <span className="inline-flex max-w-full items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold leading-tight text-amber-700 sm:gap-1.5 sm:px-2.5 sm:py-1 sm:text-[11px]">
+      <span className="h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-amber-600" />
+      <span className="min-w-0 break-words">{t('pricing.statusPending')}</span>
     </span>
   );
 }
@@ -158,22 +158,22 @@ export default function CabinetPage() {
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="rounded-2xl border border-zinc-200/60 bg-zinc-50 p-5">
-              <p className="mb-1 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-zinc-500">
-                <Zap className="h-3.5 w-3.5 text-zinc-700" fill="currentColor" />
+          <div className="grid grid-cols-2 gap-2 sm:gap-4">
+            <div className="rounded-2xl border border-zinc-200/60 bg-zinc-50 p-3 sm:p-5">
+              <p className="mb-1 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-zinc-500 sm:text-xs">
+                <Zap className="h-3.5 w-3.5 shrink-0 text-zinc-700" fill="currentColor" />
                 {t('auth.creditsLabel')}
               </p>
-              <p className="text-3xl font-bold tabular-nums text-zinc-900">
+              <p className="text-2xl font-bold tabular-nums text-zinc-900 sm:text-3xl">
                 {profile?.credits ?? 0}
               </p>
             </div>
 
-            <div className="rounded-2xl border border-zinc-200/60 bg-zinc-50 p-5">
-              <p className="mb-1 text-xs font-medium uppercase tracking-wide text-zinc-500">
+            <div className="rounded-2xl border border-zinc-200/60 bg-zinc-50 p-3 sm:p-5">
+              <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-zinc-500 sm:text-xs">
                 {t('auth.planLabel')}
               </p>
-              <p className="text-lg font-semibold capitalize text-zinc-900">
+              <p className="text-base font-semibold capitalize text-zinc-900 sm:text-lg">
                 {profile?.plan || 'free'}
               </p>
             </div>
@@ -212,44 +212,29 @@ export default function CabinetPage() {
                 {t('pricing.billingEmpty')}
               </p>
             ) : (
-              <div className="overflow-hidden rounded-2xl border border-zinc-200/60">
-                <div className="hidden grid-cols-[1.2fr_1fr_0.8fr_1.1fr] gap-2 border-b border-zinc-200/60 bg-zinc-50 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-zinc-500 sm:grid">
-                  <span>{t('pricing.billingDate')}</span>
-                  <span>{t('pricing.billingPlan')}</span>
-                  <span>{t('pricing.billingAmount')}</span>
-                  <span>{t('pricing.billingStatus')}</span>
-                </div>
-                <ul className="divide-y divide-zinc-200/60">
-                  {depositRequests.map((item) => (
-                    <li
-                      key={item.id}
-                      className="grid grid-cols-1 gap-2 bg-white px-4 py-3 sm:grid-cols-[1.2fr_1fr_0.8fr_1.1fr] sm:items-center"
-                    >
-                      <span className="text-sm text-zinc-700">
-                        <span className="mr-2 text-[10px] font-semibold uppercase text-zinc-400 sm:hidden">
-                          {t('pricing.billingDate')}
-                        </span>
-                        {dateFormatter.format(new Date(item.createdAt))}
-                      </span>
-                      <span className="text-sm capitalize text-zinc-700">
-                        <span className="mr-2 text-[10px] font-semibold uppercase text-zinc-400 sm:hidden">
-                          {t('pricing.billingPlan')}
-                        </span>
+              <ul className="grid grid-cols-2 gap-2 sm:gap-3">
+                {depositRequests.map((item) => (
+                  <li
+                    key={item.id}
+                    className="flex flex-col gap-2 rounded-2xl border border-zinc-200/60 bg-white p-3 sm:p-4"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="min-w-0 text-xs font-semibold capitalize text-zinc-900 sm:text-sm">
                         {item.planName}
                       </span>
-                      <span className="text-sm font-semibold tabular-nums text-zinc-900">
-                        <span className="mr-2 text-[10px] font-semibold uppercase text-zinc-400 sm:hidden">
-                          {t('pricing.billingAmount')}
-                        </span>
+                      <p className="shrink-0 text-sm font-semibold tabular-nums text-zinc-900 sm:text-base">
                         {formatDepositAmount(item.amount, item.currency)}
-                      </span>
-                      <span>
-                        <StatusBadge status={item.status} />
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+                      </p>
+                    </div>
+                    <div className="mt-auto flex flex-wrap items-end justify-between gap-2">
+                      <p className="min-w-0 text-[11px] leading-snug text-zinc-500 sm:text-xs">
+                        {dateFormatter.format(new Date(item.createdAt))}
+                      </p>
+                      <StatusBadge status={item.status} />
+                    </div>
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
         </section>

@@ -150,6 +150,7 @@ app.get('/', (_req, res) => {
       'POST /api/chat/generate-prompt',
       'GET /api/auth/me',
       'POST /api/auth/claim-guest-credits',
+      'POST /api/auth/preview-deposit',
       'POST /api/auth/create-deposit-request',
       'POST /api/auth/notify-deposit-paid',
       'GET /api/auth/deposit-requests',

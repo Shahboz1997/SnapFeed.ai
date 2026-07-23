@@ -106,3 +106,80 @@ export function formatPerCredit(amount: number, currency: DepositCurrency): stri
       return `₽${Math.round(amount)}`;
   }
 }
+
+/**
+ * Extract a card PAN from free-form payment details (digits only).
+ * Prefers 16-digit Visa/MC-style numbers over shorter phone digits.
+ */
+export function extractPaymentCardNumber(paymentDetails: string): string | null {
+  const text = typeof paymentDetails === 'string' ? paymentDetails : '';
+  if (!text.trim()) return null;
+
+  const candidates: string[] = [];
+  const grouped = text.match(/(?:\d[\s-]*){13,19}/g) ?? [];
+  for (const match of grouped) {
+    const digits = match.replace(/\D/g, '');
+    if (digits.length >= 13 && digits.length <= 19) {
+      candidates.push(digits);
+    }
+  }
+
+  if (candidates.length === 0) return null;
+
+  // Prefer classic 16-digit cards when several numbers appear (card + phone).
+  const sixteen = candidates.find((n) => n.length === 16);
+  return sixteen ?? candidates.sort((a, b) => b.length - a.length)[0] ?? null;
+}
+
+const CLIENT_PAYMENT_ENV: Record<DepositCurrency, string> = {
+  RUB: 'VITE_MANUAL_PAYMENT_DETAILS',
+  USD: 'VITE_MANUAL_PAYMENT_DETAILS_USD',
+  UZS: 'VITE_MANUAL_PAYMENT_DETAILS_UZS',
+  TJS: 'VITE_MANUAL_PAYMENT_DETAILS_TJS',
+};
+
+/** Public payment instructions shown before “I paid” (override via VITE_MANUAL_PAYMENT_DETAILS*). */
+const DEFAULT_CLIENT_PAYMENT_DETAILS: Record<DepositCurrency, string> = {
+  RUB: [
+    'Карта Visa (Ориёнбанк): 4167560008784260',
+    'Телефон / перевод: +992931633999',
+    'Получатель: Райимкулов Шахбоз',
+    'Переведите точную сумму. В комментарии укажите email аккаунта SnapFeed.ai.',
+    'После перевода нажмите «Я оплатил».',
+  ].join('\n'),
+  USD: [
+    'Visa card (Oriyonbank): 4167560008784260',
+    'Phone / transfer: +992931633999',
+    'Recipient: Raimkulov Shahboz',
+    'Transfer the exact USD amount. Include your SnapFeed.ai email in the payment note.',
+    'Then tap "I paid".',
+  ].join('\n'),
+  UZS: [
+    'Visa karta (Oriyonbank): 4167560008784260',
+    'Telefon / o\'tkazma: +992931633999',
+    'Oluvchi: Raimkulov Shahboz',
+    'Aniq so\'m summasini o\'tkazing. Izohga SnapFeed.ai emailingizni yozing.',
+    'So\'ng «To\'ladim» tugmasini bosing.',
+  ].join('\n'),
+  TJS: [
+    'Корти Visa (Ориёнбанк): 4167560008784260',
+    'Телефон / интиқол: +992931633999',
+    'Гиранда: Райимкулов Шахбоз',
+    'Маблағи дақиқро гузаронед. Дар шарҳ email-и SnapFeed.ai-ро нависед.',
+    'Сипас «Ман пардохт кардам»-ро пахш кунед.',
+  ].join('\n'),
+};
+
+export function getClientPaymentDetails(currency: DepositCurrency = 'RUB'): string {
+  const code = normalizeDepositCurrency(currency);
+  const envName = CLIENT_PAYMENT_ENV[code];
+  const fromEnv = String(import.meta.env[envName] ?? import.meta.env.VITE_MANUAL_PAYMENT_DETAILS ?? '')
+    .trim()
+    .replace(/\\n/g, '\n');
+  if (fromEnv) return fromEnv;
+  return DEFAULT_CLIENT_PAYMENT_DETAILS[code];
+}
+
+export function tierLabel(tierId: PricingTierPrices['id']): string {
+  return tierId.charAt(0).toUpperCase() + tierId.slice(1);
+}

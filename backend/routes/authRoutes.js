@@ -120,6 +120,47 @@ router.post('/auth/claim-guest-credits', protect, async (req, res, next) => {
   }
 });
 
+/** Preview invoice (payment details) without creating a deposit_requests row. */
+router.post('/auth/preview-deposit', protect, async (req, res, next) => {
+  try {
+    if (!isSupabaseConfigured() || !req.user?.id) {
+      return res.status(503).json({
+        error: 'Payments are not configured.',
+        messageKey: 'api.authUnavailable',
+      });
+    }
+
+    const planName = typeof req.body?.planName === 'string'
+      ? req.body.planName.trim().toLowerCase()
+      : '';
+    const currency = normalizeDepositCurrency(req.body?.currency);
+    const tier = getPricingTier(planName);
+
+    if (!tier) {
+      return res.status(400).json({
+        error: 'Invalid plan name.',
+        messageKey: 'pricing.invalidPlan',
+      });
+    }
+
+    const amount = formatTierAmount(tier, currency);
+
+    return res.json({
+      success: true,
+      requestId: null,
+      amount,
+      currency,
+      credits: tier.credits,
+      planName: tier.id,
+      planLabel: tier.label,
+      status: null,
+      paymentDetails: getManualPaymentDetails(currency),
+    });
+  } catch (error) {
+    return next(error);
+  }
+});
+
 router.post('/auth/create-deposit-request', protect, async (req, res, next) => {
   try {
     if (!isSupabaseConfigured() || !req.user?.id) {

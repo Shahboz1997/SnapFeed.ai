@@ -5,9 +5,8 @@ import {
   createDepositRequest,
   formatDepositAmount,
   notifyDepositPaid,
-  type CreateDepositRequestResult,
   type DepositCurrency,
-  type DepositPlanName,
+  type DepositInvoiceDraft,
 } from '../api/depositRequests';
 import { ApiError } from '../api/generateImage';
 import { useAuth } from '../context/AuthContext';
@@ -17,9 +16,12 @@ import {
   DEPOSIT_CURRENCIES,
   PRICING_TIERS,
   currencyFromLang,
+  extractPaymentCardNumber,
   formatPerCredit,
+  getClientPaymentDetails,
   langFromCurrency,
   tierAmountForCurrency,
+  tierLabel,
   type PricingTierPrices,
 } from '../constants/depositCurrency';
 import BottomSheet from './BottomSheet';
@@ -96,10 +98,9 @@ export default function PricingModal({ open, onClose, credits = 0, welcome = fal
   const { user, authEnabled, signInWithGoogle } = useAuth();
   const [signingIn, setSigningIn] = useState(false);
   const [signInError, setSignInError] = useState<string | null>(null);
-  const [creatingPlan, setCreatingPlan] = useState<DepositPlanName | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
   const [createErrorNeedsAuth, setCreateErrorNeedsAuth] = useState(false);
-  const [invoice, setInvoice] = useState<CreateDepositRequestResult | null>(null);
+  const [invoice, setInvoice] = useState<DepositInvoiceDraft | null>(null);
   const [copied, setCopied] = useState(false);
   const [notifyingPaid, setNotifyingPaid] = useState(false);
   const [currency, setCurrency] = useState<DepositCurrency>(() => currencyFromLang(i18n.language));
@@ -108,7 +109,6 @@ export default function PricingModal({ open, onClose, credits = 0, welcome = fal
     if (!open) {
       setSigningIn(false);
       setSignInError(null);
-      setCreatingPlan(null);
       setCreateError(null);
       setCreateErrorNeedsAuth(false);
       setInvoice(null);
@@ -138,42 +138,35 @@ export default function PricingModal({ open, onClose, credits = 0, welcome = fal
     }
   }
 
-  async function handleSelectPlan(tier: PricingTier) {
-    if (!user || creatingPlan) return;
-    setCreatingPlan(tier.id);
+  function handleSelectPlan(tier: PricingTier) {
+    if (!user) return;
     setCreateError(null);
     setCreateErrorNeedsAuth(false);
-
-    // Do not gate on React `session` — it can lag behind supabase-js storage.
-    // authApiFetch refreshes the access token right before the request.
-    try {
-      const result = await createDepositRequest(tier.id, currency);
-      setInvoice(result);
-    } catch (err) {
-      if (err instanceof ApiError && err.messageKey) {
-        const translated = t(err.messageKey);
-        setCreateError(translated !== err.messageKey ? translated : err.message);
-        setCreateErrorNeedsAuth(
-          err.messageKey === 'pricing.authRequired'
-          || err.messageKey === 'api.authRequired'
-          || err.messageKey === 'api.authInvalid',
-        );
-      } else if (err instanceof Error) {
-        setCreateError(err.message);
-      } else {
-        setCreateError(t('pricing.depositCreateFailed'));
-      }
-    } finally {
-      setCreatingPlan(null);
-    }
+    // Local preview only — no API call / no deposit_requests row until “I paid”.
+    setInvoice({
+      success: true,
+      requestId: null,
+      amount: tierAmountForCurrency(tier, currency),
+      currency,
+      credits: tier.credits,
+      planName: tier.id,
+      planLabel: tierLabel(tier.id),
+      status: null,
+      paymentDetails: getClientPaymentDetails(currency),
+    });
   }
 
   async function handleCopyDetails() {
     if (!invoice?.paymentDetails) return;
+    const cardNumber = extractPaymentCardNumber(invoice.paymentDetails);
+    const toCopy = cardNumber || invoice.paymentDetails;
     try {
-      await navigator.clipboard.writeText(invoice.paymentDetails);
+      await navigator.clipboard.writeText(toCopy);
       setCopied(true);
-      showToast(t('pricing.copied'), 'success');
+      showToast(
+        cardNumber ? t('pricing.copiedCard') : t('pricing.copied'),
+        'success',
+      );
       window.setTimeout(() => setCopied(false), 2000);
     } catch {
       showToast(t('pricing.copyFailed'), 'error');
@@ -181,10 +174,16 @@ export default function PricingModal({ open, onClose, credits = 0, welcome = fal
   }
 
   async function handleNotifyPaid() {
-    if (!invoice?.requestId || notifyingPaid) return;
+    if (!invoice || notifyingPaid) return;
     setNotifyingPaid(true);
     try {
-      await notifyDepositPaid(invoice.requestId);
+      let requestId = invoice.requestId;
+      if (!requestId) {
+        const created = await createDepositRequest(invoice.planName, invoice.currency);
+        requestId = created.requestId;
+        setInvoice(created);
+      }
+      await notifyDepositPaid(requestId);
       showToast(t('pricing.paidNotifyToast'), 'success');
       onClose();
     } catch (err) {
@@ -287,7 +286,9 @@ export default function PricingModal({ open, onClose, credits = 0, welcome = fal
 
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-amber-700">
-                {t('pricing.invoiceStatusPending')}
+                {invoice.requestId
+                  ? t('pricing.invoiceStatusPending')
+                  : t('pricing.invoiceStatusAwaitingPayment')}
               </p>
               <h2 id="pricing-modal-title" className="mt-1 pr-10 font-display text-xl font-bold tracking-tight text-zinc-900">
                 {t('pricing.invoiceTitle')}
@@ -329,7 +330,7 @@ export default function PricingModal({ open, onClose, credits = 0, welcome = fal
                   ) : (
                     <>
                       <Copy className="h-3.5 w-3.5" />
-                      {t('pricing.copyDetails')}
+                      {t('pricing.copyCard')}
                     </>
                   )}
                 </button>
@@ -458,15 +459,14 @@ export default function PricingModal({ open, onClose, credits = 0, welcome = fal
                       </div>
                       <button
                         type="button"
-                        disabled={Boolean(creatingPlan)}
-                        onClick={() => void handleSelectPlan(tier)}
+                        onClick={() => handleSelectPlan(tier)}
                         className={`inline-flex min-h-11 min-w-[6.5rem] items-center justify-center rounded-xl px-4 py-2 text-xs font-semibold transition disabled:opacity-60 ${
                           tier.popular
                             ? 'bg-zinc-900 text-white hover:bg-zinc-800'
                             : 'border border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50'
                         }`}
                       >
-                        {creatingPlan === tier.id ? <Spinner /> : t('pricing.selectPlan')}
+                        {t('pricing.selectPlan')}
                       </button>
                     </div>
                   </TiltCard>
