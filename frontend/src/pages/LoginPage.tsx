@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import Spinner from '../components/Spinner';
 import Logo from '../components/Logo';
+import SiteFooter from '../components/SiteFooter';
 
 export default function LoginPage() {
   const { t } = useTranslation();
@@ -48,13 +49,13 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative h-[100dvh] overflow-y-auto overscroll-y-contain bg-white px-4 py-10 text-slate-900">
+    <div className="relative flex min-h-[100dvh] flex-col overflow-y-auto overscroll-y-contain bg-white text-slate-900">
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden="true">
         <div className="absolute -right-16 -top-16 h-[280px] w-[280px] rounded-full bg-indigo-200/30 blur-[100px]" />
         <div className="absolute -bottom-20 -left-16 h-[260px] w-[260px] rounded-full bg-purple-200/20 blur-[100px]" />
       </div>
 
-      <div className="relative z-10 mx-auto flex w-full max-w-md flex-col gap-8">
+      <div className="relative z-10 mx-auto flex w-full max-w-md flex-1 flex-col gap-8 px-4 py-10">
         <div className="text-center">
           <Link to="/" className="inline-flex items-center gap-3">
             <Logo className="h-11 w-11 shadow-md" />
@@ -116,6 +117,10 @@ export default function LoginPage() {
             {t('auth.backToApp')}
           </Link>
         </p>
+      </div>
+
+      <div className="relative z-10 mt-auto">
+        <SiteFooter />
       </div>
     </div>
   );

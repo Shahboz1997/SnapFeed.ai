@@ -219,12 +219,36 @@ export async function listUserGallery(userId, { limit = 48 } = {}) {
 
   const { data, error } = await supabase
     .from('user_images')
-    .select('id, storage_path, mode, hashtags, created_at')
+    .select('id, storage_path, mode, hashtags, collection, created_at')
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
     .limit(safeLimit);
 
   if (error) {
+    // collection column may be missing until migration 015
+    if (/collection/i.test(error.message || '') || error.code === 'PGRST204') {
+      const fallback = await supabase
+        .from('user_images')
+        .select('id, storage_path, mode, hashtags, created_at')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(safeLimit);
+      if (fallback.error) throw createError('Failed to load gallery.', 500);
+      const rows = fallback.data || [];
+      const items = await Promise.all(rows.map(async (row) => {
+        const imageUrl = await createSignedUrl(supabase, row.storage_path);
+        return {
+          id: row.id,
+          imageUrl,
+          storagePath: row.storage_path,
+          mode: row.mode,
+          hashtags: row.hashtags ?? [],
+          collection: null,
+          createdAt: row.created_at,
+        };
+      }));
+      return items.filter((item) => Boolean(item.imageUrl));
+    }
     throw createError('Failed to load gallery.', 500);
   }
 
@@ -237,11 +261,54 @@ export async function listUserGallery(userId, { limit = 48 } = {}) {
       storagePath: row.storage_path,
       mode: row.mode,
       hashtags: row.hashtags ?? [],
+      collection: row.collection ?? null,
       createdAt: row.created_at,
     };
   }));
 
   return items.filter((item) => Boolean(item.imageUrl));
+}
+
+const ALLOWED_COLLECTIONS = new Set(['looks', 'catalog', 'favorites', null, '']);
+
+export async function setUserGalleryCollection(userId, imageId, collection) {
+  if (!isGalleryEnabled() || !userId || !imageId) {
+    throw createError('Image not found.', 404);
+  }
+
+  const normalized = typeof collection === 'string' && collection.trim()
+    ? collection.trim().toLowerCase().slice(0, 32)
+    : null;
+
+  if (normalized && !ALLOWED_COLLECTIONS.has(normalized)) {
+    throw createError('Invalid collection.', 400);
+  }
+
+  const supabase = getSupabaseAdmin();
+  if (!supabase) {
+    throw createError('Gallery is not configured.', 503);
+  }
+
+  const { data, error } = await supabase
+    .from('user_images')
+    .update({ collection: normalized })
+    .eq('id', imageId)
+    .eq('user_id', userId)
+    .select('id, collection')
+    .maybeSingle();
+
+  if (error) {
+    if (/collection/i.test(error.message || '') || error.code === 'PGRST204') {
+      throw createError('Collections are not set up yet.', 503);
+    }
+    throw createError('Failed to update collection.', 500);
+  }
+
+  if (!data) {
+    throw createError('Image not found.', 404);
+  }
+
+  return { id: data.id, collection: data.collection ?? null };
 }
 
 export async function deleteUserGalleryImage(userId, imageId) {

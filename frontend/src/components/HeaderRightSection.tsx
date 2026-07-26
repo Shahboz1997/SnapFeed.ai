@@ -107,7 +107,7 @@ export default function HeaderRightSection({
 
   if (authEnabled && loading) {
     return (
-      <div className="flex h-9 shrink-0 items-center gap-2 sm:gap-3">
+      <div className="flex h-9 min-w-0 shrink-0 items-center gap-1.5 sm:gap-2 lg:gap-3">
         <CreditsPill credits={credits} isGuest={!user} loading={creditsLoading} onClick={onCreditsClick} />
         <LanguageSwitcher variant="light" />
         <div className="h-9 w-9 shrink-0 animate-pulse rounded-xl bg-zinc-200" aria-hidden="true" />
@@ -117,13 +117,13 @@ export default function HeaderRightSection({
 
   if (!user) {
     return (
-      <div className="flex h-9 shrink-0 items-center gap-2 sm:gap-3">
+      <div className="flex h-9 min-w-0 shrink-0 items-center gap-1.5 sm:gap-2 lg:gap-3">
         <CreditsPill credits={credits} isGuest loading={creditsLoading} onClick={onCreditsClick} />
         <LanguageSwitcher variant="light" />
         <button
           type="button"
           onClick={onSignInClick}
-          className="inline-flex h-9 shrink-0 items-center rounded-xl border border-zinc-200/80 bg-white px-3 text-xs font-semibold text-zinc-700 shadow-sm shadow-zinc-200/40 transition hover:border-zinc-300 hover:bg-zinc-50 sm:px-4 sm:text-sm"
+          className="inline-flex h-9 shrink-0 items-center rounded-xl border border-zinc-200/80 bg-white px-2.5 text-xs font-semibold text-zinc-700 shadow-sm shadow-zinc-200/40 transition hover:border-zinc-300 hover:bg-zinc-50 sm:px-4 sm:text-sm"
         >
           {t('auth.signIn')}
         </button>
@@ -140,7 +140,7 @@ export default function HeaderRightSection({
   }
 
   return (
-    <div className="flex h-9 shrink-0 items-center gap-2 sm:gap-3">
+    <div className="flex h-9 min-w-0 shrink-0 items-center gap-1.5 sm:gap-2 lg:gap-3">
       <CreditsPill credits={credits} loading={creditsLoading} onClick={onCreditsClick} />
       <LanguageSwitcher variant="light" />
 

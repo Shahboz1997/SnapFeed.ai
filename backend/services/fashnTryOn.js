@@ -303,7 +303,7 @@ export async function runFashnTryOn({
     || process.env.FASHN_TRYON_RESOLUTION
     || '1k'
   ).trim().toLowerCase();
-  const returnBase64 = envBool('FASHN_RETURN_BASE64', false);
+  const returnBase64 = envBool('FASHN_RETURN_BASE64', true);
   const seedRaw = process.env.FASHN_SEED;
   const seed = seedRaw !== undefined && seedRaw !== ''
     ? Number(seedRaw)
@@ -425,7 +425,7 @@ export async function runFashnPackshot({
     || process.env.FASHN_TRYON_RESOLUTION
     || '1k'
   ).trim().toLowerCase();
-  const returnBase64 = envBool('FASHN_RETURN_BASE64', false);
+  const returnBase64 = envBool('FASHN_RETURN_BASE64', true);
   const seedRaw = process.env.FASHN_SEED;
   const seed = seedRaw !== undefined && seedRaw !== ''
     ? Number(seedRaw)
@@ -552,7 +552,7 @@ export async function runFashnProductToModel({
     || process.env.FASHN_TRYON_RESOLUTION
     || '1k'
   ).trim().toLowerCase();
-  const returnBase64 = envBool('FASHN_RETURN_BASE64', false);
+  const returnBase64 = envBool('FASHN_RETURN_BASE64', true);
   const seedRaw = process.env.FASHN_SEED;
   const seed = seedRaw !== undefined && seedRaw !== ''
     ? Number(seedRaw)

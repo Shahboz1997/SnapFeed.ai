@@ -7,6 +7,7 @@ export interface GalleryItem {
   originalImageUrl?: string | null;
   createdAt: string;
   hashtags?: string[];
+  collection?: string | null;
 }
 
 function readRaw(): GalleryItem[] {
@@ -36,6 +37,7 @@ export function addGalleryItem(item: Omit<GalleryItem, 'id' | 'createdAt'> & { i
     imageUrl: item.imageUrl,
     originalImageUrl: item.originalImageUrl ?? null,
     hashtags: item.hashtags ?? [],
+    collection: item.collection ?? null,
     createdAt: item.createdAt || new Date().toISOString(),
   };
 
@@ -46,6 +48,13 @@ export function addGalleryItem(item: Omit<GalleryItem, 'id' | 'createdAt'> & { i
 
 export function removeGalleryItem(id: string) {
   writeRaw(readRaw().filter((item) => item.id !== id));
+}
+
+export function setGalleryItemCollection(id: string, collection: string | null) {
+  const next = readRaw().map((item) => (
+    item.id === id ? { ...item, collection } : item
+  ));
+  writeRaw(next);
 }
 
 export function clearGallery() {

@@ -39,6 +39,17 @@ export const PRICING_TIERS = {
     priceTjs: 400,
     label: 'Business',
   },
+  /** Manual “subscription” pack — renew by buying again each month. */
+  monthly: {
+    id: 'monthly',
+    credits: 60,
+    priceRub: 999,
+    priceUsd: 12.99,
+    priceUzs: 150000,
+    priceTjs: 130,
+    label: 'Monthly',
+    subscription: true,
+  },
 };
 
 export const DEPOSIT_CURRENCIES = ['RUB', 'USD', 'UZS', 'TJS'];

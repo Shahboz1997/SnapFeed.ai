@@ -154,7 +154,11 @@ app.get('/', (_req, res) => {
       'POST /api/auth/create-deposit-request',
       'POST /api/auth/notify-deposit-paid',
       'GET /api/auth/deposit-requests',
+      'GET /api/auth/referral',
+      'POST /api/auth/referral/redeem',
+      'POST /api/auth/welcome-email',
       'GET /api/guest/credits',
+      'PATCH /api/gallery/:id/collection',
     ],
   });
 });

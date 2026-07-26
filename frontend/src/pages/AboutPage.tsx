@@ -2,20 +2,15 @@ import { useTranslation } from 'react-i18next';
 import LegalPageLayout, { LegalSections } from '../components/LegalPageLayout';
 import { COMPANY, COMPANY_FULL_ADDRESS } from '../constants/company';
 import { getLegalSections } from '../utils/legalSections';
-import { getSupportEmail } from '../utils/supportContact';
 
-export default function TermsPage() {
+export default function AboutPage() {
   const { t } = useTranslation();
-  const supportEmail = getSupportEmail();
-  const sections = getLegalSections(t, 'legal.terms.sections');
+  const sections = getLegalSections(t, 'legal.about.sections');
 
   return (
-    <LegalPageLayout
-      title={t('legal.terms.title')}
-      lastUpdated={t('legal.terms.updated')}
-    >
+    <LegalPageLayout title={t('legal.about.title')} lastUpdated={t('legal.about.updated')}>
       <p>
-        {t('legal.terms.intro', {
+        {t('legal.about.intro', {
           brand: COMPANY.brand,
           legalName: COMPANY.legalName,
         })}
@@ -23,20 +18,12 @@ export default function TermsPage() {
       <LegalSections sections={sections} />
       <section className="space-y-2">
         <h2 className="text-base font-semibold text-slate-900">
-          {t('legal.terms.contactTitle')}
+          {t('legal.about.entityTitle')}
         </h2>
         <p>
-          {t('legal.terms.contactBody')}{' '}
-          <a
-            href={`mailto:${supportEmail}`}
-            className="font-medium text-slate-900 underline-offset-2 hover:underline"
-          >
-            {supportEmail}
-          </a>
-          .
-        </p>
-        <p>
           {COMPANY.legalName}
+          <br />
+          {t('legal.about.registeredIn', { jurisdiction: COMPANY.jurisdiction })}
           <br />
           {COMPANY_FULL_ADDRESS}
         </p>

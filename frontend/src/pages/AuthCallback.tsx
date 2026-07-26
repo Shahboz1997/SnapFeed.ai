@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { POST_AUTH_MODAL_KEY } from '../constants/authFlow';
+import { POST_AUTH_FIRST_SUCCESS_KEY } from '../constants/authFlow';
 import { getSupabaseClient } from '../lib/supabase';
 import Spinner from '../components/Spinner';
 
@@ -18,12 +18,16 @@ export default function AuthCallback() {
 
     let active = true;
 
+    function goToFirstSuccess() {
+      sessionStorage.setItem(POST_AUTH_FIRST_SUCCESS_KEY, '1');
+      navigate('/studio', { replace: true });
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!active) return;
 
       if (session) {
-        sessionStorage.setItem(POST_AUTH_MODAL_KEY, '1');
-        navigate('/', { replace: true });
+        goToFirstSuccess();
         return;
       }
 
@@ -34,8 +38,7 @@ export default function AuthCallback() {
       if (!active) return;
 
       if (event === 'SIGNED_IN' && session) {
-        sessionStorage.setItem(POST_AUTH_MODAL_KEY, '1');
-        navigate('/', { replace: true });
+        goToFirstSuccess();
       }
 
       if (event === 'SIGNED_OUT') {

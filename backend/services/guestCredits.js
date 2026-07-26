@@ -4,9 +4,9 @@ import { createError } from '../utils/errors.js';
 import { getClientIp } from '../utils/clientIp.js';
 
 export const GUEST_MAX_GENERATIONS = Number.parseInt(
-  process.env.GUEST_MAX_GENERATIONS || '1',
+  process.env.GUEST_MAX_GENERATIONS || '3',
   10,
-) || 1;
+) || 3;
 
 const FINGERPRINT_PATTERN = /^[a-f0-9]{64}$/i;
 

@@ -3,6 +3,7 @@ import { protect } from '../middleware/supabaseAuth.js';
 import {
   deleteUserGalleryImage,
   listUserGallery,
+  setUserGalleryCollection,
 } from '../services/userGallery.js';
 
 const router = express.Router();
@@ -22,6 +23,26 @@ router.get('/gallery', protect, async (req, res, next) => {
     });
 
     return res.json({ items });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+router.patch('/gallery/:id/collection', protect, async (req, res, next) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({
+        error: 'Authentication required.',
+        messageKey: 'api.authRequired',
+      });
+    }
+
+    const result = await setUserGalleryCollection(
+      req.user.id,
+      req.params.id,
+      req.body?.collection,
+    );
+    return res.json(result);
   } catch (error) {
     return next(error);
   }

@@ -8,4 +8,4 @@ export interface UserProfile {
   created_at?: string;
 }
 
-export const DEFAULT_FREE_CREDITS = 1;
+export const DEFAULT_FREE_CREDITS = 3;

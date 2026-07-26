@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
@@ -8,7 +8,7 @@ import LoginModal from '../components/LoginModal';
 import PricingModal from '../components/PricingModal';
 import { useAuth } from '../context/AuthContext';
 import { fetchGuestCredits } from '../api/guestCredits';
-import { POST_AUTH_MODAL_KEY } from '../constants/authFlow';
+import { POST_AUTH_FIRST_SUCCESS_KEY, POST_AUTH_MODAL_KEY } from '../constants/authFlow';
 import {
   GUEST_CREDITS_INITIAL,
   readGuestCreditsFromStorage,
@@ -59,12 +59,12 @@ const GARMENT_RANK = [
 
 export default function HomePage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { user, profile, loading: authLoading } = useAuth();
   const [guestCredits, setGuestCredits] = useState<number | null>(() => readGuestCreditsFromStorage());
   const [guestCreditsLoading, setGuestCreditsLoading] = useState(() => !user && readGuestCreditsFromStorage() === null);
   const [showPricingModal, setShowPricingModal] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [pricingWelcome, setPricingWelcome] = useState(false);
 
   const displayCredits = user ? (profile?.credits ?? 0) : (guestCredits ?? 0);
   const creditsLoading = user ? authLoading || profile === null : guestCreditsLoading;
@@ -93,12 +93,13 @@ export default function HomePage() {
 
   useEffect(() => {
     if (authLoading || !user || !profile) return;
-    if (sessionStorage.getItem(POST_AUTH_MODAL_KEY)) {
+    // Legacy flag → send to Studio for first success (not pricing).
+    if (sessionStorage.getItem(POST_AUTH_FIRST_SUCCESS_KEY) || sessionStorage.getItem(POST_AUTH_MODAL_KEY)) {
+      sessionStorage.removeItem(POST_AUTH_FIRST_SUCCESS_KEY);
       sessionStorage.removeItem(POST_AUTH_MODAL_KEY);
-      setPricingWelcome(true);
-      setShowPricingModal(true);
+      navigate('/studio', { replace: true });
     }
-  }, [authLoading, user, profile]);
+  }, [authLoading, user, profile, navigate]);
 
   function openCreditsFlow() {
     if (!user) {
@@ -118,9 +119,8 @@ export default function HomePage() {
       <LoginModal open={showLoginModal} onClose={() => setShowLoginModal(false)} />
       <PricingModal
         open={showPricingModal}
-        onClose={() => { setShowPricingModal(false); setPricingWelcome(false); }}
+        onClose={() => setShowPricingModal(false)}
         credits={displayCredits}
-        welcome={pricingWelcome}
       />
 
       <main className="relative mx-auto flex w-full max-w-5xl flex-col px-3 py-8 sm:px-6 sm:py-14 lg:py-20">
@@ -128,7 +128,7 @@ export default function HomePage() {
           <motion.p
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-3 font-display text-xl font-semibold tracking-tight text-zinc-900 sm:mb-4 sm:text-3xl"
+            className="font-display text-2xl tracking-tight text-zinc-900 sm:text-3xl md:text-4xl"
           >
             {t('home.eyebrow')}
           </motion.p>
@@ -136,7 +136,7 @@ export default function HomePage() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.05 }}
-            className="font-display text-[1.85rem] leading-[1.12] tracking-tight text-zinc-900 sm:text-5xl md:text-6xl"
+            className="mt-3 font-display text-[1.55rem] leading-[1.12] tracking-tight text-zinc-700 sm:mt-4 sm:text-4xl md:text-5xl"
           >
             {t('home.title')}
           </motion.h2>
@@ -168,6 +168,14 @@ export default function HomePage() {
               <ArrowRight className="h-4 w-4" />
             </Link>
           </motion.div>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.22 }}
+            className="mt-4 text-xs text-zinc-400 sm:text-sm"
+          >
+            {t('home.freeTrialHint', { count: GUEST_CREDITS_INITIAL })}
+          </motion.p>
         </section>
 
         <section className="mt-12 sm:mt-16 lg:mt-20">

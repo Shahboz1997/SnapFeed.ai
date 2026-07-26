@@ -9,7 +9,7 @@ import {
 export type { DepositCurrency };
 export { formatDepositAmount };
 
-export type DepositPlanName = 'single' | 'starter' | 'pro' | 'business';
+export type DepositPlanName = 'single' | 'starter' | 'pro' | 'business' | 'monthly';
 
 export type DepositRequestStatus = 'pending' | 'approved' | 'rejected';
 

@@ -9,8 +9,13 @@ import CabinetPage from './pages/CabinetPage';
 import GalleryPage from './pages/GalleryPage';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
+import AboutPage from './pages/AboutPage';
+import ContactPage from './pages/ContactPage';
+import CookiesPage from './pages/CookiesPage';
 import PrivacyPage from './pages/PrivacyPage';
+import RefundPage from './pages/RefundPage';
 import TermsPage from './pages/TermsPage';
+import CookieConsent from './components/CookieConsent';
 import './i18n';
 import './index.css';
 
@@ -27,9 +32,14 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/login" element={<LoginPage />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/cabinet" element={<CabinetPage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/contact" element={<ContactPage />} />
             <Route path="/terms" element={<TermsPage />} />
             <Route path="/privacy" element={<PrivacyPage />} />
+            <Route path="/cookies" element={<CookiesPage />} />
+            <Route path="/refund" element={<RefundPage />} />
           </Routes>
+          <CookieConsent />
         </ToastProvider>
       </AuthProvider>
     </BrowserRouter>

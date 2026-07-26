@@ -446,8 +446,15 @@ export default function PricingModal({ open, onClose, credits = 0, welcome = fal
                     <div className="flex items-center justify-between gap-3">
                       <div>
                         <p className="text-sm font-semibold text-zinc-900">
-                          {t('pricing.creditsPack', { count: tier.credits })}
+                          {tier.subscription
+                            ? t('pricing.monthlyPack', { count: tier.credits })
+                            : t('pricing.creditsPack', { count: tier.credits })}
                         </p>
+                        {tier.subscription ? (
+                          <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-500">
+                            {t('pricing.subscriptionBadge')}
+                          </p>
+                        ) : null}
                         <p className="text-xs text-zinc-500">
                           {formatDepositAmount(amount, currency)}
                         </p>

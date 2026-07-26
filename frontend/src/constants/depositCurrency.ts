@@ -41,18 +41,28 @@ export function normalizeDepositCurrency(value: string | undefined | null): Depo
 
 /** Keep in sync with backend/constants/pricingTiers.js */
 export type PricingTierPrices = {
-  id: 'single' | 'starter' | 'pro' | 'business';
+  id: 'single' | 'starter' | 'pro' | 'business' | 'monthly';
   credits: number;
   priceRub: number;
   priceUsd: number;
   priceUzs: number;
   priceTjs: number;
   popular?: boolean;
+  subscription?: boolean;
 };
 
 export const PRICING_TIERS: PricingTierPrices[] = [
   { id: 'single', credits: 1, priceRub: 20, priceUsd: 0.25, priceUzs: 3000, priceTjs: 3 },
   { id: 'starter', credits: 10, priceRub: 200, priceUsd: 2.49, priceUzs: 30000, priceTjs: 25 },
+  {
+    id: 'monthly',
+    credits: 60,
+    priceRub: 999,
+    priceUsd: 12.99,
+    priceUzs: 150000,
+    priceTjs: 130,
+    subscription: true,
+  },
   { id: 'pro', credits: 50, priceRub: 999, priceUsd: 12.99, priceUzs: 150000, priceTjs: 130, popular: true },
   { id: 'business', credits: 200, priceRub: 3499, priceUsd: 39.99, priceUzs: 480000, priceTjs: 400 },
 ];

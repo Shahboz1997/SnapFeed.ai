@@ -9,6 +9,18 @@ interface ImageCompareSliderProps {
   beforeAlt: string;
   aspectClass: string;
   className?: string;
+  /** How both layers fill the frame. Use cover/fill for pre-aligned pairs. */
+  objectFit?: 'cover' | 'contain' | 'fill';
+  /** CSS object-position for both layers (e.g. "center top"). */
+  objectPosition?: string;
+  beforeObjectPosition?: string;
+  afterObjectPosition?: string;
+  /** Extra vertical nudge (CSS %, positive = down). */
+  beforeOffsetY?: string;
+  afterOffsetY?: string;
+  /** Extra scale (e.g. 0.92). */
+  beforeScale?: number;
+  afterScale?: number;
 }
 
 const TOUCH_INTENT_THRESHOLD = 10;
@@ -20,6 +32,14 @@ export default function ImageCompareSlider({
   beforeAlt,
   aspectClass,
   className = '',
+  objectFit = 'contain',
+  objectPosition = 'center center',
+  beforeObjectPosition,
+  afterObjectPosition,
+  beforeOffsetY = '0%',
+  afterOffsetY = '0%',
+  beforeScale = 1,
+  afterScale = 1,
 }: ImageCompareSliderProps) {
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -165,13 +185,26 @@ export default function ImageCompareSlider({
       onMouseLeave={handleMouseLeave}
       onClick={(e) => e.stopPropagation()}
       style={{ touchAction: isDragging ? 'none' : 'pan-y' }}
-      className={`relative w-full select-none overflow-hidden rounded-2xl ${aspectClass} ${className}`}
+      className={`relative w-full select-none overflow-hidden rounded-2xl bg-zinc-100 ${aspectClass} ${className}`}
       aria-label={t('preview.compareAria')}
     >
       <img
         src={afterSrc}
         alt={afterAlt}
-        className="absolute inset-0 h-full w-full bg-zinc-900 object-contain"
+        className={`absolute inset-0 h-full w-full ${
+          objectFit === 'fill'
+            ? 'object-fill'
+            : objectFit === 'cover'
+              ? 'object-cover'
+              : 'object-contain'
+        }`}
+        style={{
+          objectPosition: afterObjectPosition || objectPosition,
+          transform: afterScale !== 1 || afterOffsetY !== '0%'
+            ? `translateY(${afterOffsetY}) scale(${afterScale})`
+            : undefined,
+          transformOrigin: 'center top',
+        }}
         draggable={false}
       />
 
@@ -182,7 +215,20 @@ export default function ImageCompareSlider({
         <img
           src={beforeSrc}
           alt={beforeAlt}
-          className="h-full w-full bg-zinc-900 object-contain brightness-[0.88] saturate-[0.75] contrast-[0.95]"
+          className={`absolute inset-0 h-full w-full brightness-[0.92] saturate-[0.85] contrast-[0.98] ${
+            objectFit === 'fill'
+              ? 'object-fill'
+              : objectFit === 'cover'
+                ? 'object-cover'
+                : 'object-contain'
+          }`}
+          style={{
+            objectPosition: beforeObjectPosition || objectPosition,
+            transform: beforeScale !== 1 || beforeOffsetY !== '0%'
+              ? `translateY(${beforeOffsetY}) scale(${beforeScale})`
+              : undefined,
+            transformOrigin: 'center top',
+          }}
           draggable={false}
         />
       </div>

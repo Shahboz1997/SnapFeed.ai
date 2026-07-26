@@ -98,6 +98,23 @@ async function sendViaResend({ to, subject, text, html }) {
   }
 }
 
+/** Send any transactional email via SMTP (preferred) or Resend. */
+export async function sendViaConfiguredProvider({ to, subject, text, html }) {
+  if (!isAdminEmailConfigured()) {
+    const err = new Error('Email is not configured.');
+    err.code = 'EMAIL_NOT_CONFIGURED';
+    throw err;
+  }
+
+  if (isSmtpConfigured()) {
+    await sendViaSmtp({ to, subject, text, html });
+    return { to, provider: 'smtp' };
+  }
+
+  await sendViaResend({ to, subject, text, html });
+  return { to, provider: 'resend' };
+}
+
 /**
  * Notify admin that a user paid for a deposit request.
  * Prefers SMTP when configured; otherwise Resend.
@@ -111,12 +128,6 @@ export async function sendDepositPaidAdminEmail(payload) {
 
   const to = getAdminNotifyEmail();
   const content = buildDepositPaidContent(payload);
-
-  if (isSmtpConfigured()) {
-    await sendViaSmtp({ to, ...content });
-    return { to, provider: 'smtp' };
-  }
-
-  await sendViaResend({ to, ...content });
-  return { to, provider: 'resend' };
+  const result = await sendViaConfiguredProvider({ to, ...content });
+  return result;
 }

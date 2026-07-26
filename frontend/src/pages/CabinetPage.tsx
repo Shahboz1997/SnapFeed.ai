@@ -1,18 +1,20 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Zap } from 'lucide-react';
+import { Copy, Zap } from 'lucide-react';
 import {
   formatDepositAmount,
   listDepositRequests,
   type DepositRequestItem,
   type DepositRequestStatus,
 } from '../api/depositRequests';
+import { fetchReferralSummary, type ReferralSummary } from '../api/referral';
 import AppShell from '../components/AppShell';
 import LoginModal from '../components/LoginModal';
 import PricingModal from '../components/PricingModal';
 import Spinner from '../components/Spinner';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 
 function StatusBadge({ status }: { status: DepositRequestStatus }) {
   const { t } = useTranslation();
@@ -46,12 +48,14 @@ function StatusBadge({ status }: { status: DepositRequestStatus }) {
 export default function CabinetPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const { authEnabled, user, profile, loading, signOut, refreshProfile } = useAuth();
   const [showPricingModal, setShowPricingModal] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [depositRequests, setDepositRequests] = useState<DepositRequestItem[]>([]);
   const [depositsLoading, setDepositsLoading] = useState(false);
   const [depositsError, setDepositsError] = useState<string | null>(null);
+  const [referral, setReferral] = useState<ReferralSummary | null>(null);
 
   const loadDeposits = useCallback(async () => {
     if (!user) {
@@ -81,8 +85,20 @@ export default function CabinetPage() {
     if (user) {
       refreshProfile();
       void loadDeposits();
+      void fetchReferralSummary().then(setReferral);
     }
   }, [loadDeposits, refreshProfile, user]);
+
+  async function copyReferralLink() {
+    if (!referral?.code) return;
+    const link = `${window.location.origin}/login?ref=${encodeURIComponent(referral.code)}`;
+    try {
+      await navigator.clipboard.writeText(link);
+      showToast(t('referral.linkCopied'), 'success');
+    } catch {
+      showToast(t('pricing.copyFailed'), 'error');
+    }
+  }
 
   if (loading) {
     return (
@@ -193,6 +209,32 @@ export default function CabinetPage() {
               {t('pricing.upgrade')}
             </button>
           </div>
+
+          {referral ? (
+            <div className="mt-6 rounded-2xl border border-zinc-200/60 bg-zinc-50 p-5">
+              <h2 className="mb-2 text-sm font-semibold text-zinc-900">{t('referral.title')}</h2>
+              <p className="mb-3 text-sm leading-relaxed text-zinc-500">
+                {t('referral.description', { count: referral.bonusCredits })}
+              </p>
+              <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-zinc-500">
+                {t('referral.codeLabel')}
+              </p>
+              <p className="mb-3 font-mono text-lg font-semibold tracking-wider text-zinc-900">
+                {referral.code}
+              </p>
+              <p className="mb-4 text-xs text-zinc-500">
+                {t('referral.invited', { count: referral.invitedCount })}
+              </p>
+              <button
+                type="button"
+                onClick={() => void copyReferralLink()}
+                className="inline-flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-800 transition hover:border-zinc-300 hover:bg-zinc-50"
+              >
+                <Copy className="h-4 w-4" />
+                {t('referral.copyLink')}
+              </button>
+            </div>
+          ) : null}
 
           <div className="mt-8 border-t border-zinc-200/60 pt-6">
             <h2 className="mb-4 font-display text-lg font-semibold text-zinc-900">

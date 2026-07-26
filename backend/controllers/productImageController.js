@@ -791,24 +791,75 @@ function normalizeClothingCategory(category) {
   return normalizeClothingCategoryFromVision(category);
 }
 
+async function persistFashnOutput(item) {
+  if (typeof item !== 'string' || !item.trim()) {
+    return null;
+  }
+
+  const trimmed = item.trim();
+
+  if (trimmed.startsWith('data:')) {
+    const match = /^data:([^;]+);base64,(.+)$/s.exec(trimmed);
+    if (!match?.[2]) {
+      return trimmed;
+    }
+    try {
+      const buffer = Buffer.from(match[2], 'base64');
+      if (!buffer.length) return trimmed;
+      const filename = await saveImageBuffer(buffer);
+      return `/api/generated-images/${filename}`;
+    } catch (error) {
+      console.warn('[try-on] Could not persist base64 output, returning data URL:', error?.message || error);
+      return trimmed;
+    }
+  }
+
+  return downloadTryOnResult(trimmed);
+}
+
 async function downloadTryOnResult(finalImageUrl) {
   if (!finalImageUrl || typeof finalImageUrl !== 'string') {
     throw createError('Try-on did not return an image URL', 502);
   }
 
   // Keep FASHN output as-is — no Replicate/bg-removal/upscale pipeline.
-  try {
-    const response = await fetch(finalImageUrl);
-    if (response.ok) {
+  // Mirror to local /api/generated-images so the browser is not blocked on flaky cdn.fashn.ai.
+  const maxAttempts = 4;
+  let lastError;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      const response = await fetch(finalImageUrl, {
+        redirect: 'follow',
+        headers: { Accept: 'image/*,*/*' },
+      });
+      if (!response.ok) {
+        throw new Error(`FASHN CDN HTTP ${response.status}`);
+      }
       const buffer = Buffer.from(await response.arrayBuffer());
-      const contentType = response.headers.get('content-type') || 'image/png';
-      const mime = contentType.split(';')[0].trim() || 'image/png';
-      return `data:${mime};base64,${buffer.toString('base64')}`;
+      if (!buffer.length) {
+        throw new Error('FASHN CDN returned empty body');
+      }
+      const filename = await saveImageBuffer(buffer);
+      return `/api/generated-images/${filename}`;
+    } catch (error) {
+      lastError = error;
+      const message = String(error?.message || error || '');
+      const causeCode = String(error?.cause?.code || error?.code || '');
+      const transient = /terminated|econnreset|fetch failed|network|timeout|eai_again|enotfound|und_err|socket|aborted/i.test(
+        `${message} ${causeCode}`,
+      );
+      if (!transient || attempt === maxAttempts) {
+        break;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 400 * attempt));
     }
-  } catch (error) {
-    console.warn('[try-on] Could not mirror FASHN CDN output, returning URL:', error?.message || error);
   }
 
+  console.warn(
+    '[try-on] Could not mirror FASHN CDN output after retries, returning URL:',
+    lastError?.message || lastError,
+  );
   return finalImageUrl;
 }
 
@@ -827,13 +878,8 @@ async function resolveFashnImageUrls(result) {
 
   const urls = [];
   for (const item of rawOutputs) {
-    if (typeof item !== 'string' || !item.trim()) continue;
-    const trimmed = item.trim();
-    if (trimmed.startsWith('data:')) {
-      urls.push(trimmed);
-    } else {
-      urls.push(await downloadTryOnResult(trimmed));
-    }
+    const persisted = await persistFashnOutput(item);
+    if (persisted) urls.push(persisted);
   }
 
   if (!urls.length) {

@@ -9,6 +9,7 @@ export interface CloudGalleryItem {
   storagePath?: string;
   mode?: string | null;
   hashtags?: string[];
+  collection?: string | null;
   createdAt: string;
 }
 
@@ -18,8 +19,33 @@ function mapCloudItem(item: CloudGalleryItem): GalleryItem {
     imageUrl: item.imageUrl,
     originalImageUrl: null,
     hashtags: Array.isArray(item.hashtags) ? item.hashtags : [],
+    collection: item.collection ?? null,
     createdAt: item.createdAt,
   };
+}
+
+export async function setCloudGalleryCollection(
+  id: string,
+  collection: string | null,
+): Promise<void> {
+  let response: Response;
+  try {
+    response = await authApiFetch(`/api/gallery/${encodeURIComponent(id)}/collection`, {
+      method: 'PATCH',
+      body: JSON.stringify({ collection }),
+    });
+  } catch {
+    throw new ApiError('Unable to reach the server.', undefined, 'api.serverUnreachable');
+  }
+
+  const data = await parseApiResponse<{ error?: string; messageKey?: string }>(response);
+  if (!response.ok) {
+    throw new ApiError(
+      data.error || 'Failed to update collection.',
+      response.status,
+      data.messageKey || 'api.generateFailed',
+    );
+  }
 }
 
 export async function fetchCloudGallery(limit = 48): Promise<GalleryItem[]> {

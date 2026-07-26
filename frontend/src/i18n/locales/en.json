@@ -1,7 +1,7 @@
 {
   "header": {
     "subtitle": "Virtual clothing try-on",
-    "productName": "Virtual Try-On"
+    "productName": "SnapFeed.ai"
   },
   "nav": {
     "label": "Main navigation",
@@ -15,6 +15,7 @@
     "subtitle": "Upload a garment and a photo — see a realistic virtual try-on in seconds.",
     "promptHint": "Clothing photo + person photo → try-on result",
     "cta": "Open Studio",
+    "freeTrialHint": "{{count}} free generations — no sign-in required",
     "shortcutsTitle": "Studio Shortcuts",
     "tryOnBadge": "Primary",
     "tryOnTitle": "Try-On",
@@ -69,6 +70,36 @@
     "title": "Virtual Try-On",
     "subtitle": "Add a clothing photo and a person, then run the try-on.",
     "badge": "Try-On",
+    "firstSuccessToast": "You're in — create your first look with free credits.",
+    "firstSuccessHint": "You have {{count}} credit(s). Pick a quick start below or upload your garment.",
+    "quickStartTitle": "Quick start",
+    "quickStartSubtitle": "One tap loads a sample — then hit Generate.",
+    "quickStartLoaded": "Sample loaded — hit Generate.",
+    "quickStartFailed": "Could not load sample. Try uploading your own photo.",
+    "quickStart": {
+      "dress": {
+        "title": "Dress on model",
+        "desc": "Product → Model in one click"
+      },
+      "hoodie": {
+        "title": "Hoodie try-on",
+        "desc": "Garment + person sample"
+      },
+      "packshot": {
+        "title": "Catalog packshot",
+        "desc": "Clean white-background shot"
+      }
+    },
+    "compare": "Compare",
+    "share": "Share",
+    "shareCaption": "Made with SnapFeed.ai — virtual try-on & fashion studio",
+    "shareDone": "Shared",
+    "shareCopied": "Image saved — caption copied",
+    "shareFailed": "Could not share. Try download instead.",
+    "moreVariants": "+2 variants",
+    "moreVariantsHint": "Set to 3 variants — generate again when ready.",
+    "hdUpsell": "HD quality",
+    "hdUpsellHint": "HD settings applied — generate again when ready.",
     "modeTryOn": "Try-On",
     "modePackshot": "Packshot",
     "modeProductToModel": "Product to Model",
@@ -148,7 +179,8 @@
       "fullBody": "full body",
       "cleanBg": "clean background",
       "naturalFit": "natural fit"
-    }
+    },
+    "modeProductToModelShort": "To Model"
   },
   "gallery": {
     "eyebrow": "Library",
@@ -159,7 +191,31 @@
     "emptyCta": "Go to Studio",
     "loading": "Loading gallery…",
     "download": "Download",
-    "remove": "Remove"
+    "remove": "Remove",
+    "filterAll": "All",
+    "noCollection": "No collection",
+    "saveToCollection": "Save to collection",
+    "collectionFailed": "Could not update collection.",
+    "collections": {
+      "looks": "Looks",
+      "catalog": "Catalog",
+      "favorites": "Favorites"
+    }
+  },
+  "referral": {
+    "title": "Invite friends",
+    "description": "Share your link — you both get {{count}} free credits when they sign up.",
+    "codeLabel": "Your code",
+    "copyLink": "Copy invite link",
+    "linkCopied": "Invite link copied",
+    "invited_one": "{{count}} friend joined",
+    "invited_other": "{{count}} friends joined",
+    "invalidCode": "Invalid referral code.",
+    "alreadyApplied": "Referral already applied.",
+    "notFound": "Referral code not found.",
+    "self": "You cannot use your own code.",
+    "notReady": "Referrals are not available yet.",
+    "failed": "Could not apply referral."
   },
   "language": {
     "label": "Language",
@@ -431,13 +487,16 @@
     "mailSubject": "SnapFeed.ai — {{tier}}",
     "mailBody": "Hello!\n\nI'd like to buy: {{tier}} ({{price}}).\nMy SnapFeed.ai email: {{email}}\n\nReady to pay to a self-employed provider. Please send payment details.",
     "guestTitle": "Free generations used up",
-    "guestDescription": "You've used your free guest generation. Sign in to create an account and purchase credits.",
-    "guestBenefit1": "{{count}} free generation without sign-in",
+    "guestDescription": "You've used your free guest generations. Sign in to create an account and purchase credits.",
+    "guestBenefit1": "{{count}} free generations without sign-in",
     "guestBenefit2": "Account saves your profile and credit balance",
     "guestBenefit3": "Purchase credit packs anytime",
     "welcomeTitle": "Welcome!",
     "welcomeDescription": "Your account is ready. Top up your balance to start creating.",
     "welcomeHint": "Need more? Choose a credit pack below.",
+    "monthlyPack_one": "{{count}} credit / month",
+    "monthlyPack_other": "{{count}} credits / month",
+    "subscriptionBadge": "Monthly pack",
     "selectPlan": "Select",
     "backToPlans": "Back to plans",
     "invoiceTitle": "Payment invoice",
@@ -483,21 +542,236 @@
     "error": "Could not generate a prompt. Please try again."
   },
   "legal": {
-    "termsTitle": "Terms of Service",
-    "termsIntro": "These terms govern your use of SnapFeed.ai. By using the service you accept them.",
-    "termsUseTitle": "Use of the service",
-    "termsUseBody": "SnapFeed.ai generates visual content using AI. You are responsible for the prompts you submit and how you use generated images. Do not use the service for illegal, harmful, or infringing content.",
-    "termsCreditsTitle": "Credits and payments",
-    "termsCreditsBody": "Generations consume credits. Credit packs are sold manually until online payments are connected. Credits are non-refundable except where required by law.",
-    "termsContactTitle": "Contact",
-    "termsContactBody": "For billing or support questions, email",
-    "privacyTitle": "Privacy Policy",
-    "privacyIntro": "This policy describes what data SnapFeed.ai collects and how we use it.",
-    "privacyDataTitle": "Account data",
-    "privacyDataBody": "When you sign in with Google, we store your profile (email, name, avatar) in Supabase to manage your account and credit balance. Generated images are processed on our servers and third-party AI providers (OpenAI, Replicate).",
-    "privacyGuestTitle": "Guest usage",
-    "privacyGuestBody": "Without signing in, we use a browser fingerprint hash and optional IP address to enforce free generation limits. This data is stored in our database and is not used for advertising.",
-    "privacyContactTitle": "Contact",
-    "privacyContactBody": "To request data deletion or ask privacy questions, email"
+    "lastUpdated": "Last updated: {{date}}",
+    "footer": {
+      "product": "Product",
+      "company": "Company",
+      "legal": "Legal",
+      "about": "About",
+      "contact": "Contact",
+      "terms": "Terms of Service",
+      "privacy": "Privacy Policy",
+      "cookies": "Cookie Policy",
+      "refunds": "Refunds",
+      "rights": "Privacy Rights",
+      "copyright": "© {{year}} {{legalName}}. Registered in {{jurisdiction}}. All rights reserved.",
+      "operatedBy": "{{legalName}} operates SnapFeed.ai."
+    },
+    "cookieBanner": {
+      "title": "Cookies & local storage",
+      "body": "We use essential cookies and local storage to run SnapFeed.ai (sign-in, language, credit limits, and preferences). If we add analytics or advertising tags later, we will only use them according to your choice.",
+      "accept": "Accept",
+      "essential": "Essential only",
+      "learnMore": "Cookie Policy"
+    },
+    "terms": {
+      "title": "Terms of Service",
+      "updated": "July 26, 2026",
+      "intro": "These Terms of Service (“Terms”) govern your access to and use of {{brand}}, a product operated by {{legalName}} (“Company,” “we,” “us”). By accessing or using the service, you agree to these Terms.",
+      "contactTitle": "Contact",
+      "contactBody": "For billing, support, or legal notices, email",
+      "sections": [
+        {
+          "title": "Who we are",
+          "body": "SnapFeed.ai is operated by Stratum Technologies LLC, a limited liability company registered in Wyoming, USA. Mailing address: 30 N Gould St #28330, Sheridan, WY 82801, USA."
+        },
+        {
+          "title": "The service",
+          "body": "SnapFeed.ai provides AI-powered virtual try-on and related image generation tools (including garment try-on, packshot, and product-to-model workflows). Outputs are machine-generated and may be inaccurate, incomplete, or unsuitable for a particular commercial use. You are solely responsible for reviewing results before publishing or selling them."
+        },
+        {
+          "title": "Eligibility and accounts",
+          "body": "You must be at least 18 years old (or the age of majority in your jurisdiction) to create an account and purchase credits. Accounts are created via Google sign-in. You are responsible for activity under your account and for keeping access to your Google account secure."
+        },
+        {
+          "title": "Credits and payments",
+          "body": "Generations consume prepaid credits. Credit packs may be purchased through the in-app deposit flow. Payment instructions may include bank/card transfer or other methods we display at checkout. Credits are typically applied after we verify payment (often within about 15 minutes during business hours, but timing may vary). Prices are shown in the selected currency before you confirm a deposit request. Taxes may apply where required by law."
+        },
+        {
+          "title": "Refunds",
+          "body": "Credits are digital goods. Refunds are handled under our Refund Policy. Consumed credits (used generations) are generally non-refundable except where required by law or when we determine a material service failure occurred."
+        },
+        {
+          "title": "Acceptable use and AI content",
+          "body": "You may not use the service for illegal, harmful, fraudulent, or infringing purposes. Prohibited uses include: non-consensual intimate imagery; impersonation or deepfakes intended to deceive; child sexual exploitation content; content that violates others’ intellectual property, privacy, or publicity rights; malware; or attempts to disrupt the service. You represent that you have all rights needed in photos and garments you upload (including model releases where required)."
+        },
+        {
+          "title": "Intellectual property",
+          "body": "We own the SnapFeed.ai platform, branding, and software. You retain rights in content you upload. Subject to these Terms and applicable law, you own the outputs you generate for your account, and you grant us a limited license to process uploads and outputs solely to provide, secure, and improve the service (including through subprocessors listed in the Privacy Policy)."
+        },
+        {
+          "title": "Disclaimer of warranties",
+          "body": "THE SERVICE IS PROVIDED “AS IS” AND “AS AVAILABLE.” TO THE MAXIMUM EXTENT PERMITTED BY LAW, WE DISCLAIM ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. We do not guarantee uninterrupted availability or that any AI output will meet your requirements."
+        },
+        {
+          "title": "Limitation of liability",
+          "body": "TO THE MAXIMUM EXTENT PERMITTED BY LAW, STRATUM TECHNOLOGIES LLC AND ITS OFFICERS, DIRECTORS, AND AGENTS WILL NOT BE LIABLE FOR INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR ANY LOSS OF PROFITS, DATA, OR GOODWILL. OUR TOTAL LIABILITY FOR ANY CLAIM RELATING TO THE SERVICE WILL NOT EXCEED THE AMOUNT YOU PAID US FOR CREDITS IN THE THREE (3) MONTHS BEFORE THE CLAIM."
+        },
+        {
+          "title": "Indemnity",
+          "body": "You agree to indemnify and hold harmless Stratum Technologies LLC from claims arising out of your uploads, prompts, generated images, or misuse of the service."
+        },
+        {
+          "title": "Termination",
+          "body": "We may suspend or terminate access if you violate these Terms, abuse payment processes, or create risk to the service or other users. You may stop using the service at any time."
+        },
+        {
+          "title": "Governing law",
+          "body": "These Terms are governed by the laws of the State of Wyoming, USA, without regard to conflict-of-law rules. Courts located in Wyoming will have exclusive jurisdiction, except where applicable law requires otherwise for consumers."
+        },
+        {
+          "title": "Changes",
+          "body": "We may update these Terms from time to time. The “Last updated” date will change when we do. Continued use after changes means you accept the updated Terms."
+        }
+      ]
+    },
+    "privacy": {
+      "title": "Privacy Policy",
+      "updated": "July 26, 2026",
+      "intro": "This Privacy Policy explains how {{legalName}} (“Company,” “we,” “us”) collects, uses, and shares personal information when you use {{brand}}.",
+      "contactTitle": "Contact",
+      "contactBody": "For privacy requests (access, deletion, correction, or CCPA inquiries), email",
+      "sections": [
+        {
+          "title": "Controller",
+          "body": "Stratum Technologies LLC, registered in Wyoming, USA.\n30 N Gould St #28330, Sheridan, WY 82801, USA."
+        },
+        {
+          "title": "Information we collect",
+          "body": "Account data from Google sign-in (email, name, profile photo).\nCredit balance, plan, and deposit/payment request records.\nImages you upload and images generated by the service.\nGuest usage data: a browser fingerprint hash and optional IP address to enforce free limits.\nTechnical data such as device/browser type, language preference, and basic logs needed for security and reliability.\nSupport communications you send us."
+        },
+        {
+          "title": "How we use information",
+          "body": "Provide and operate SnapFeed.ai (accounts, credits, generations, gallery).\nProcess payments and prevent fraud or abuse.\nProvide customer support.\nImprove reliability and safety of the service.\nComply with law and enforce our Terms."
+        },
+        {
+          "title": "AI processing and subprocessors",
+          "body": "To generate results, we send necessary image/prompt data to subprocessors, which may include:\n• Supabase (authentication, database, storage)\n• OpenAI (prompt assistance / image-related AI)\n• Replicate (image generation models)\n• FASHN (virtual try-on processing)\n• Hosting providers for our frontend/backend\nThese providers process data on our instructions to deliver the service."
+        },
+        {
+          "title": "Guest usage",
+          "body": "If you use the service without signing in, we store a fingerprint hash and may use IP address solely to enforce free generation limits. This guest data is not sold and is not used for advertising profiling."
+        },
+        {
+          "title": "Cookies and similar technologies",
+          "body": "We use essential cookies/local storage for authentication session state, language, consent choice, and guest credit limits. See our Cookie Policy for details. Analytics or advertising cookies will only be used according to your consent choice once enabled."
+        },
+        {
+          "title": "Retention",
+          "body": "We keep account and credit records while your account is active and as needed for legal, tax, and fraud-prevention purposes. Generated gallery images are kept until you delete them or your account is deleted, subject to backup retention windows. Guest fingerprint/IP limit data is retained only as long as needed to enforce abuse controls."
+        },
+        {
+          "title": "Security",
+          "body": "We use reasonable administrative and technical safeguards. No method of transmission or storage is 100% secure."
+        },
+        {
+          "id": "privacy-rights",
+          "title": "Your privacy rights (including CCPA/CPRA)",
+          "body": "Depending on your location (including California), you may have rights to:\n• Know/access the personal information we hold about you\n• Delete personal information\n• Correct inaccurate information\n• Opt out of “sale” or “sharing” of personal information for cross-context behavioral advertising\n• Non-discrimination for exercising privacy rights\n\nWe do not sell personal information for money. If we use advertising pixels in the future, we will treat relevant sharing as subject to opt-out and honor your Cookie/consent choices and any “Do Not Sell or Share” request sent to our support email.\n\nTo exercise rights, email us with the subject “Privacy Request” and enough detail to verify your account (usually the Google email on the account)."
+        },
+        {
+          "title": "Children’s privacy",
+          "body": "SnapFeed.ai is not directed to children under 13, and we do not knowingly collect personal information from children under 13. If you believe a child provided data, contact us and we will take appropriate steps to delete it."
+        },
+        {
+          "title": "International users",
+          "body": "We are based in the United States. If you access the service from other countries, your information may be processed in the U.S. and other countries where our providers operate."
+        },
+        {
+          "title": "Changes",
+          "body": "We may update this Privacy Policy periodically. The “Last updated” date will change when we do."
+        }
+      ]
+    },
+    "about": {
+      "title": "About",
+      "updated": "July 26, 2026",
+      "intro": "{{brand}} is an AI virtual try-on and product imagery studio operated by {{legalName}}.",
+      "entityTitle": "Legal entity",
+      "registeredIn": "Registered in {{jurisdiction}}.",
+      "sections": [
+        {
+          "title": "What we do",
+          "body": "SnapFeed.ai helps brands and creators visualize garments on models using AI—virtual try-on, packshot cleanup, and product-to-model imagery—metered by prepaid credits."
+        },
+        {
+          "title": "Who operates SnapFeed.ai",
+          "body": "SnapFeed.ai is a product of Stratum Technologies LLC, a Wyoming limited liability company. We serve customers online and provide support by email."
+        }
+      ]
+    },
+    "contact": {
+      "title": "Contact",
+      "updated": "July 26, 2026",
+      "intro": "Reach the {{brand}} team for support, billing, privacy, or partnership questions.",
+      "emailTitle": "Email",
+      "mailTitle": "Mailing address",
+      "responseTime": "We aim to respond within 1–2 business days.",
+      "sections": [
+        {
+          "title": "What to include",
+          "body": "For faster help, include your account email, a short description of the issue, and (for payments) your deposit request details or transfer reference."
+        }
+      ]
+    },
+    "refund": {
+      "title": "Refund & Cancellation Policy",
+      "updated": "July 26, 2026",
+      "intro": "This policy explains how refunds work for prepaid credits on {{brand}}.",
+      "contactTitle": "How to request a refund",
+      "contactBody": "Email",
+      "seeAlso": "Also see our",
+      "sections": [
+        {
+          "title": "Digital goods",
+          "body": "Credits are prepaid digital goods used to run AI generations. Once purchased and applied to your account, they are available for immediate use."
+        },
+        {
+          "title": "Delivery of credits",
+          "body": "After you submit a deposit request and confirm payment, we review the transfer and apply credits to your account—typically within about 15 minutes during monitoring hours. Delays can occur outside business hours or if payment details are incomplete."
+        },
+        {
+          "title": "When refunds may be granted",
+          "body": "We may refund or re-credit when:\n• Payment was received but credits were not applied due to our error\n• A material service outage prevented use shortly after purchase and credits remain unused\n• Required by applicable law"
+        },
+        {
+          "title": "When refunds are not available",
+          "body": "Refunds are generally not available for:\n• Credits already consumed by successful or attempted generations\n• Dissatisfaction with subjective AI output quality alone\n• Violations of our Terms (including payment abuse)\n• Duplicate or mistaken purchases after credits were used"
+        },
+        {
+          "title": "Cancellation",
+          "body": "You can stop using SnapFeed.ai at any time. There is no recurring subscription cancellation for one-time credit packs. Unused credits remain on the account unless refunded under this policy or required by law."
+        },
+        {
+          "title": "Chargebacks",
+          "body": "Please contact us before filing a payment dispute so we can investigate. Fraudulent chargebacks may result in account suspension."
+        }
+      ]
+    },
+    "cookies": {
+      "title": "Cookie Policy",
+      "updated": "July 26, 2026",
+      "intro": "This Cookie Policy explains how {{brand}} uses cookies and similar technologies.",
+      "contactTitle": "Contact",
+      "contactBody": "Questions about cookies? Email",
+      "sections": [
+        {
+          "title": "What we use today",
+          "body": "Essential technologies only, including:\n• Authentication/session storage (via our auth provider)\n• Language preference\n• Guest credit limit / fingerprint-related local data\n• Cookie consent choice (stored locally)\nThese are required for the service to function securely."
+        },
+        {
+          "title": "Analytics and advertising",
+          "body": "We may add analytics or Google Ads conversion tags in the future. If we do, we will categorize them as non-essential and use them according to your consent choice (Accept vs Essential only) and this policy."
+        },
+        {
+          "title": "Managing preferences",
+          "body": "You can clear site data in your browser to reset local storage and consent. You can also revisit this page after clearing data to choose again when the banner reappears."
+        },
+        {
+          "title": "Third-party resources",
+          "body": "The site may load fonts or infrastructure resources from third-party CDNs. Those providers may receive standard technical request data (such as IP address) as part of delivering the resource."
+        }
+      ]
+    }
   }
 }

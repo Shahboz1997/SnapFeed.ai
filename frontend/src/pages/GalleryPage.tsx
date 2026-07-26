@@ -1,7 +1,11 @@
 import { Link } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { deleteCloudGalleryItem, fetchCloudGallery } from '../api/cloudGallery';
+import {
+  deleteCloudGalleryItem,
+  fetchCloudGallery,
+  setCloudGalleryCollection,
+} from '../api/cloudGallery';
 import { downloadImageBlob, triggerBlobDownload } from '../api/downloadImage';
 import { fetchGuestCredits } from '../api/guestCredits';
 import AppShell from '../components/AppShell';
@@ -14,8 +18,20 @@ import {
   readGuestCreditsFromStorage,
   writeGuestCreditsToStorage,
 } from '../constants/guestCredits';
-import { listGalleryItems, removeGalleryItem, type GalleryItem } from '../lib/galleryStorage';
+import {
+  GALLERY_COLLECTIONS,
+  type GalleryCollection,
+} from '../constants/galleryCollections';
+import {
+  listGalleryItems,
+  removeGalleryItem,
+  setGalleryItemCollection,
+  type GalleryItem,
+} from '../lib/galleryStorage';
 import { resolveImageUrl } from '../utils/resolveImageUrl';
+import { downloadWithWatermark } from '../utils/shareResult';
+
+type FilterKey = 'all' | GalleryCollection;
 
 export default function GalleryPage() {
   const { t } = useTranslation();
@@ -29,9 +45,15 @@ export default function GalleryPage() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [filter, setFilter] = useState<FilterKey>('all');
 
   const displayCredits = user ? (profile?.credits ?? 0) : (guestCredits ?? 0);
   const creditsLoading = user ? authLoading || profile === null : guestCreditsLoading;
+
+  const filteredItems = useMemo(() => {
+    if (filter === 'all') return items;
+    return items.filter((item) => item.collection === filter);
+  }, [filter, items]);
 
   useEffect(() => {
     let cancelled = false;
@@ -119,13 +141,35 @@ export default function GalleryPage() {
     if (downloadingId) return;
     setDownloadingId(item.id);
     try {
-      const blob = await downloadImageBlob(item.imageUrl);
-      triggerBlobDownload(blob, `snapfeed-gallery-${item.id}.png`);
+      await downloadWithWatermark(item.imageUrl, `snapfeed-gallery-${item.id}.png`);
       showToast(t('alerts.downloadSuccess'), 'success');
     } catch {
-      showToast(t('alerts.downloadWarning'), 'error');
+      try {
+        const blob = await downloadImageBlob(item.imageUrl);
+        triggerBlobDownload(blob, `snapfeed-gallery-${item.id}.png`);
+        showToast(t('alerts.downloadSuccess'), 'success');
+      } catch {
+        showToast(t('alerts.downloadWarning'), 'error');
+      }
     } finally {
       setDownloadingId(null);
+    }
+  }
+
+  async function handleCollectionChange(item: GalleryItem, collection: string) {
+    const next = collection || null;
+    try {
+      if (!user) {
+        setGalleryItemCollection(item.id, next);
+        setItems(listGalleryItems());
+        return;
+      }
+      await setCloudGalleryCollection(item.id, next);
+      setItems((prev) => prev.map((row) => (
+        row.id === item.id ? { ...row, collection: next } : row
+      )));
+    } catch {
+      showToast(t('gallery.collectionFailed'), 'error');
     }
   }
 
@@ -161,11 +205,31 @@ export default function GalleryPage() {
           </Link>
         </div>
 
+        <div className="mb-4 flex flex-wrap gap-1.5">
+          {(['all', ...GALLERY_COLLECTIONS] as FilterKey[]).map((key) => {
+            const active = filter === key;
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setFilter(key)}
+                className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                  active
+                    ? 'bg-zinc-900 text-white'
+                    : 'border border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300'
+                }`}
+              >
+                {key === 'all' ? t('gallery.filterAll') : t(`gallery.collections.${key}`)}
+              </button>
+            );
+          })}
+        </div>
+
         {galleryLoading ? (
           <div className="glass-panel luxury-shadow flex min-h-[280px] items-center justify-center rounded-2xl sm:min-h-[420px] sm:rounded-3xl">
             <p className="text-sm text-zinc-500">{t('gallery.loading', { defaultValue: 'Loading gallery…' })}</p>
           </div>
-        ) : items.length === 0 ? (
+        ) : filteredItems.length === 0 ? (
           <div className="glass-panel luxury-shadow flex min-h-[280px] flex-col items-center justify-center rounded-2xl border-dashed px-4 text-center sm:min-h-[420px] sm:rounded-3xl sm:px-6">
             <p className="font-display text-xl text-zinc-900 sm:text-2xl">{t('gallery.emptyTitle')}</p>
             <p className="mt-2 max-w-md text-sm text-zinc-500">{t('gallery.emptyDesc')}</p>
@@ -178,7 +242,7 @@ export default function GalleryPage() {
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:gap-4">
-            {items.map((item) => {
+            {filteredItems.map((item) => {
               const isDownloading = downloadingId === item.id;
               const isRemoving = removingId === item.id;
               return (
@@ -192,23 +256,41 @@ export default function GalleryPage() {
                     className="aspect-[3/4] w-full object-cover"
                     loading="lazy"
                   />
-                  <div className="absolute inset-x-0 bottom-0 flex items-center justify-end gap-1.5 bg-gradient-to-t from-white/95 to-transparent p-3 opacity-100 transition lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-within:opacity-100">
-                    <button
-                      type="button"
-                      disabled={Boolean(downloadingId) || Boolean(removingId)}
-                      onClick={() => void handleDownload(item)}
-                      className="min-h-9 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-zinc-700 backdrop-blur-md transition hover:border-zinc-300 hover:bg-zinc-50 disabled:opacity-50"
+                  <div className="absolute inset-x-0 bottom-0 flex flex-col gap-1.5 bg-gradient-to-t from-white/95 to-transparent p-2.5 opacity-100 transition lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-within:opacity-100">
+                    <label className="sr-only" htmlFor={`collection-${item.id}`}>
+                      {t('gallery.saveToCollection')}
+                    </label>
+                    <select
+                      id={`collection-${item.id}`}
+                      value={item.collection || ''}
+                      onChange={(e) => void handleCollectionChange(item, e.target.value)}
+                      className="w-full rounded-lg border border-zinc-200 bg-white/95 px-2 py-1 text-[10px] font-semibold text-zinc-700"
                     >
-                      {isDownloading ? t('preview.downloading') : t('gallery.download')}
-                    </button>
-                    <button
-                      type="button"
-                      disabled={Boolean(removingId) || Boolean(downloadingId)}
-                      onClick={() => void handleRemove(item.id)}
-                      className="min-h-9 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-zinc-700 backdrop-blur-md transition hover:border-zinc-300 hover:bg-zinc-50 disabled:opacity-50"
-                    >
-                      {isRemoving ? '…' : t('gallery.remove')}
-                    </button>
+                      <option value="">{t('gallery.noCollection')}</option>
+                      {GALLERY_COLLECTIONS.map((key) => (
+                        <option key={key} value={key}>
+                          {t(`gallery.collections.${key}`)}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="flex items-center justify-end gap-1.5">
+                      <button
+                        type="button"
+                        disabled={Boolean(downloadingId) || Boolean(removingId)}
+                        onClick={() => void handleDownload(item)}
+                        className="min-h-9 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-zinc-700 backdrop-blur-md transition hover:border-zinc-300 hover:bg-zinc-50 disabled:opacity-50"
+                      >
+                        {isDownloading ? t('preview.downloading') : t('gallery.download')}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={Boolean(removingId) || Boolean(downloadingId)}
+                        onClick={() => void handleRemove(item.id)}
+                        className="min-h-9 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-zinc-700 backdrop-blur-md transition hover:border-zinc-300 hover:bg-zinc-50 disabled:opacity-50"
+                      >
+                        {isRemoving ? '…' : t('gallery.remove')}
+                      </button>
+                    </div>
                   </div>
                 </article>
               );

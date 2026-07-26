@@ -21,7 +21,8 @@ async function buildAuthHeaders(baseHeaders: HeadersInit | undefined, body: Body
   const needsRefresh = !session?.access_token || (expiresAtMs > 0 && expiresAtMs <= Date.now() + 60_000);
   if (needsRefresh) {
     const { data } = await supabase!.auth.refreshSession();
-    session = data.session ?? session;
+    // Never keep a known-expired session — requireCredits rejects dead Bearers as authInvalid.
+    session = data.session?.access_token ? data.session : null;
   }
 
   const token = session?.access_token;
@@ -58,14 +59,26 @@ export async function authFetch(url: string, options: RequestInit = {}): Promise
 
   const supabase = getSupabaseClient();
   const { data } = await supabase!.auth.refreshSession();
-  if (!data.session?.access_token) {
-    return response;
+  if (data.session?.access_token) {
+    const retryHeaders = await buildAuthHeaders(options.headers, options.body);
+    return fetch(url, {
+      ...options,
+      headers: retryHeaders,
+    });
   }
 
-  const retryHeaders = await buildAuthHeaders(options.headers, options.body);
+  // Dead session: clear locally and retry without Bearer so guest generation still works.
+  try {
+    await supabase!.auth.signOut({ scope: 'local' });
+  } catch {
+    // Ignore — still retry without Authorization.
+  }
+
+  const guestHeaders = await buildAuthHeaders(options.headers, options.body);
+  guestHeaders.delete('Authorization');
   return fetch(url, {
     ...options,
-    headers: retryHeaders,
+    headers: guestHeaders,
   });
 }
 

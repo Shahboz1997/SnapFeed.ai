@@ -69,7 +69,8 @@ import type { GalleryItem } from '../lib/galleryStorage';
 import { compressImageForUpload } from '../utils/compressImageForUpload';
 import { resolveImageUrl } from '../utils/resolveImageUrl';
 import Lightbox from './Lightbox';
-
+import ImageCompareSlider from './ImageCompareSlider';
+import ResultEngageBar from './ResultEngageBar';
 const MAX_BYTES = 12 * 1024 * 1024;
 const ACCEPT = 'image/jpeg,image/png,image/webp';
 
@@ -134,6 +135,10 @@ type TryOnWorkspaceProps = {
   onSelectHistory?: (item: TryOnHistoryItem) => void;
   onBackToSetup?: () => void;
   onNotify?: (message: string, type: 'success' | 'warning' | 'error') => void;
+  onShareResult?: () => void;
+  onDownloadWatermarked?: () => void;
+  onMoreVariants?: () => void;
+  onHdUpsell?: () => void;
 };
 
 const MODE_ORDER: StudioMode[] = ['product-to-model', 'tryon', 'packshot'];
@@ -195,6 +200,10 @@ export default function TryOnWorkspace({
   onSelectHistory,
   onBackToSetup,
   onNotify,
+  onShareResult,
+  onDownloadWatermarked,
+  onMoreVariants,
+  onHdUpsell,
 }: TryOnWorkspaceProps) {
   const { t } = useTranslation();
   const garmentInputRef = useRef<HTMLInputElement>(null);
@@ -205,6 +214,7 @@ export default function TryOnWorkspace({
   const [uploading, setUploading] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [compareActive, setCompareActive] = useState(false);
   const sessionStageRef = useRef<HTMLDivElement>(null);
   const isProductOnly = studioMode === 'packshot' || studioMode === 'product-to-model';
 
@@ -214,6 +224,11 @@ export default function TryOnWorkspace({
   const waitingInThisMode = running && runningMode === studioMode;
   const inSession = waitingInThisMode || Boolean(resultImageUrl);
   const displayResultUrl = resolveImageUrl(resultImageUrl);
+
+  // New result → leave compare mode so a slow/failed CDN load doesn't hide the image.
+  useEffect(() => {
+    setCompareActive(false);
+  }, [resultImageUrl]);
 
   useLayoutEffect(() => {
     if (!inSession) return;
@@ -228,8 +243,9 @@ export default function TryOnWorkspace({
     if (!dock || typeof ResizeObserver === 'undefined') return undefined;
 
     const syncDockHeight = () => {
-      const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
-      if (isDesktop) {
+      // Dock is in document flow from sm — no sticky offset needed.
+      const dockInFlow = window.matchMedia('(min-width: 640px)').matches;
+      if (dockInFlow) {
         document.documentElement.style.removeProperty('--studio-dock-height');
         return;
       }
@@ -249,7 +265,7 @@ export default function TryOnWorkspace({
       window.removeEventListener('resize', syncDockHeight);
       document.documentElement.style.removeProperty('--studio-dock-height');
     };
-  }, []);
+  }, [studioMode, inSession, selectedPromptPresets.length]);
 
   async function handleFile(file: File | undefined, kind: 'garment' | 'human') {
     if (!file || disabled) return;
@@ -384,26 +400,32 @@ export default function TryOnWorkspace({
     );
   }
 
-  const modeMeta: Record<StudioMode, { icon: ReactNode; label: string; example: (typeof STUDIO_MODE_EXAMPLES)[StudioMode] }> = {
+  const modeMeta: Record<
+    StudioMode,
+    { icon: ReactNode; label: string; shortLabel: string; example: (typeof STUDIO_MODE_EXAMPLES)[StudioMode] }
+  > = {
     'product-to-model': {
       icon: <UserRound className="h-3.5 w-3.5" />,
       label: t('studio.modeProductToModel'),
+      shortLabel: t('studio.modeProductToModelShort'),
       example: STUDIO_MODE_EXAMPLES['product-to-model'],
     },
     tryon: {
       icon: <Shirt className="h-3.5 w-3.5" />,
       label: t('studio.modeTryOn'),
+      shortLabel: t('studio.modeTryOn'),
       example: STUDIO_MODE_EXAMPLES.tryon,
     },
     packshot: {
       icon: <Package className="h-3.5 w-3.5" />,
       label: t('studio.modePackshot'),
+      shortLabel: t('studio.modePackshot'),
       example: STUDIO_MODE_EXAMPLES.packshot,
     },
   };
 
   return (
-    <div className="flex w-full min-w-0 flex-col gap-2 sm:gap-3 lg:gap-4">
+    <div className="flex w-full min-h-0 min-w-0 flex-1 flex-col gap-2 sm:gap-3 lg:gap-4">
       <input
         ref={garmentInputRef}
         type="file"
@@ -449,11 +471,19 @@ export default function TryOnWorkspace({
           onReplaceGarment={() => garmentInputRef.current?.click()}
           onReplaceModel={() => humanInputRef.current?.click()}
           onSelectHistory={onSelectHistory}
-          onDownload={(url) => void handleDownload(url)}
+          onDownload={(url) => {
+            if (onDownloadWatermarked) onDownloadWatermarked();
+            else void handleDownload(url);
+          }}
           onOpenLightbox={(url) => setLightboxUrl(url)}
           onReusePrompt={(tags) => {
             if (tags?.length) onPromptChange(tags.join(', '));
           }}
+          compareActive={compareActive}
+          onToggleCompare={() => setCompareActive((v) => !v)}
+          onShareResult={onShareResult}
+          onMoreVariants={onMoreVariants}
+          onHdUpsell={onHdUpsell}
         />
       ) : isProductOnly ? (
         <DropZone
@@ -507,32 +537,34 @@ export default function TryOnWorkspace({
         />
       ) : (
         /* Side-by-side from the smallest phones — stacking wastes the dock/tab viewport */
-        <div className="studio-stage grid min-h-0 grid-cols-2 gap-1.5 sm:gap-3">
-          <DropZone
-            dragging={garmentDragging}
-            uploading={uploading}
-            disabled={disabled}
-            label={t('studio.productLabel')}
-            emptyTitle={t('studio.uploadGarment')}
-            emptyHint={t('studio.dropHint')}
-            previewUrl={hasGarment ? garmentPreviewUrl : null}
-            exampleFan={TRYON_PRODUCT_FAN}
-            error={garmentFileError}
-            onDragOver={(e) => {
-              e.preventDefault();
-              if (!disabled) setGarmentDragging(true);
-            }}
-            onDragLeave={() => setGarmentDragging(false)}
-            onDrop={onGarmentDrop}
-            onBrowse={() => garmentInputRef.current?.click()}
-            onReplace={() => garmentInputRef.current?.click()}
-            onClear={onGarmentClear}
-            showCornerThumb
-            stretch
-            compact
-          />
+        <div className="studio-stage grid min-h-0 min-w-0 grid-cols-2 gap-1.5 sm:gap-3">
+          <div className="flex min-h-0 min-w-0 flex-col">
+            <DropZone
+              dragging={garmentDragging}
+              uploading={uploading}
+              disabled={disabled}
+              label={t('studio.productLabel')}
+              emptyTitle={t('studio.uploadGarment')}
+              emptyHint={t('studio.dropHint')}
+              previewUrl={hasGarment ? garmentPreviewUrl : null}
+              exampleFan={TRYON_PRODUCT_FAN}
+              error={garmentFileError}
+              onDragOver={(e) => {
+                e.preventDefault();
+                if (!disabled) setGarmentDragging(true);
+              }}
+              onDragLeave={() => setGarmentDragging(false)}
+              onDrop={onGarmentDrop}
+              onBrowse={() => garmentInputRef.current?.click()}
+              onReplace={() => garmentInputRef.current?.click()}
+              onClear={onGarmentClear}
+              showCornerThumb
+              stretch
+              compact
+            />
+          </div>
 
-          <div className="glass-panel relative flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-zinc-200/60 bg-white shadow-xl shadow-zinc-200/50 sm:rounded-3xl">
+          <div className="glass-panel relative flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl border border-zinc-200/60 bg-white shadow-xl shadow-zinc-200/50 sm:rounded-3xl">
             <p className="absolute left-2 top-2 z-10 text-[9px] font-semibold uppercase tracking-[0.12em] text-zinc-500 sm:left-4 sm:top-4 sm:text-[11px] sm:tracking-[0.16em]">
               {t('studio.modelLabel')}
             </p>
@@ -600,14 +632,14 @@ export default function TryOnWorkspace({
         </div>
       )}
 
-      {/* Control dock — sticky chat-style input above iOS tab bar on phones */}
+      {/* Control dock — fixed above tab bar on phones; in-flow from sm (tablet+) */}
       <div
         ref={studioDockRef}
-        className="studio-dock-mobile fixed inset-x-0 z-40 border-t border-zinc-200/80 bg-white/95 px-2 pt-2 shadow-[0_-12px_40px_rgb(24_24_27/0.08)] backdrop-blur-xl sm:px-3 sm:pt-2.5 lg:static lg:z-auto lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none lg:backdrop-blur-none"
+        className="studio-dock-mobile fixed inset-x-0 z-40 shrink-0 border-t border-zinc-200/80 bg-white/95 px-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] shadow-[0_-12px_40px_rgb(24_24_27/0.08)] backdrop-blur-xl sm:static sm:z-auto sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none sm:backdrop-blur-none"
       >
-        <div className="glass-panel mx-auto w-full max-w-6xl rounded-2xl border border-zinc-200/60 bg-white/90 p-2 shadow-xl shadow-zinc-200/40 sm:p-3 lg:rounded-3xl lg:bg-white/70 lg:p-4">
+        <div className="glass-panel mx-auto w-full max-w-6xl rounded-2xl border border-zinc-200/60 bg-white/90 p-2 shadow-xl shadow-zinc-200/40 sm:p-3 md:p-3.5 lg:rounded-3xl lg:bg-white/70 lg:p-4">
           <LayoutGroup>
-            <div className="relative mb-2 flex gap-0.5 overflow-x-auto scrollbar-none rounded-xl border border-zinc-200/60 bg-zinc-100/80 p-0.5 snap-x snap-mandatory sm:mb-2.5 sm:gap-1 sm:rounded-2xl sm:p-1 lg:mb-3 lg:flex-wrap lg:overflow-visible lg:snap-none">
+            <div className="relative mb-2 flex gap-0.5 overflow-x-auto scrollbar-none rounded-xl border border-zinc-200/60 bg-zinc-100/80 p-0.5 snap-x snap-mandatory sm:mb-2.5 sm:gap-1 sm:overflow-visible sm:rounded-2xl sm:p-1 sm:snap-none lg:mb-3">
               {MODE_ORDER.map((mode) => {
                 const meta = modeMeta[mode];
                 const active = studioMode === mode;
@@ -618,6 +650,7 @@ export default function TryOnWorkspace({
                     onClick={() => onStudioModeChange?.(mode)}
                     icon={meta.icon}
                     label={meta.label}
+                    shortLabel={meta.shortLabel}
                     example={meta.example}
                   />
                 );
@@ -652,7 +685,7 @@ export default function TryOnWorkspace({
                         ? t('studio.packshotPromptPlaceholder')
                         : t('studio.promptPlaceholder')
                   }
-                  className="w-full rounded-xl bg-transparent py-2.5 pl-8 pr-2.5 text-[15px] text-zinc-900 placeholder:text-zinc-400 outline-none disabled:cursor-not-allowed sm:rounded-2xl sm:py-3.5 sm:pl-10 sm:pr-3 sm:text-base lg:text-sm"
+                  className="w-full rounded-xl bg-transparent py-2.5 pl-8 pr-2.5 text-[15px] text-zinc-900 placeholder:text-zinc-400 outline-none disabled:cursor-not-allowed sm:rounded-2xl sm:py-3 sm:pl-10 sm:pr-3 sm:text-sm md:py-3.5"
                 />
               </div>
             </div>
@@ -667,52 +700,27 @@ export default function TryOnWorkspace({
               }
               aria-busy={waitingInThisMode}
               whileTap={waitingInThisMode ? undefined : { scale: 0.98 }}
-              className={`run-btn-shimmer relative inline-flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/20 disabled:cursor-not-allowed disabled:opacity-40 sm:h-12 sm:w-12 sm:rounded-2xl lg:h-12 lg:w-auto lg:min-w-[9rem] lg:gap-2 lg:px-6 lg:text-sm lg:font-semibold ${
+              className={`run-btn-shimmer relative inline-flex h-10 shrink-0 items-center justify-center overflow-hidden rounded-xl transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/20 disabled:cursor-not-allowed disabled:opacity-40 sm:h-11 sm:w-auto sm:min-w-[7.5rem] sm:gap-2 sm:rounded-2xl sm:px-4 sm:text-sm sm:font-semibold md:h-12 md:min-w-[9rem] md:px-5 ${
                 waitingInThisMode
-                  ? 'bg-zinc-100 text-zinc-600'
-                  : 'bg-zinc-900 text-white hover:bg-zinc-800'
+                  ? 'w-10 bg-zinc-100 text-zinc-600 sm:w-auto'
+                  : 'w-10 bg-zinc-900 text-white hover:bg-zinc-800 sm:w-auto'
               }`}
             >
               {waitingInThisMode ? (
                 <>
                   <span className="meditative-spinner !h-4 !w-4 sm:!h-5 sm:!w-5" />
-                  <span className="hidden lg:inline">{runLabel}</span>
+                  <span className="hidden sm:inline">{runLabel}</span>
                 </>
               ) : (
                 <>
                   <Play className="h-3.5 w-3.5 fill-current sm:h-4 sm:w-4" />
-                  <span className="hidden lg:inline">{runLabel}</span>
+                  <span className="hidden sm:inline">{runLabel}</span>
                 </>
               )}
             </motion.button>
           </div>
 
-          <div className="mt-2 hidden flex-wrap gap-1.5 lg:flex">
-            {STUDIO_PROMPT_PRESET_KEYS.map((key) => {
-              const label = t(`studio.promptPresets.${key}`);
-              const selected = selectedPromptPresets.includes(key);
-              return (
-                <motion.button
-                  key={key}
-                  type="button"
-                  disabled={disabled && !running}
-                  aria-pressed={selected}
-                  whileTap={{ scale: 0.96 }}
-                  onClick={() => togglePromptPreset(key)}
-                  className={
-                    selected
-                      ? 'inline-flex items-center gap-1.5 rounded-full border border-zinc-900 bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white transition disabled:opacity-50'
-                      : 'inline-flex items-center gap-1.5 rounded-full border border-zinc-200/60 bg-white px-3 py-1.5 text-xs font-medium text-zinc-500 transition hover:border-zinc-300 hover:bg-zinc-50 hover:text-zinc-900 disabled:opacity-50'
-                  }
-                >
-                  <ImageIcon className="h-3 w-3 opacity-70" />
-                  {label}
-                </motion.button>
-              );
-            })}
-          </div>
-
-          <div className="mt-2 flex gap-1.5 overflow-x-auto scrollbar-none pb-0.5 sm:mt-2.5 sm:gap-2">
+          <div className="mt-2 flex flex-wrap items-center gap-1.5 sm:mt-2.5 sm:gap-2">
             <StudioOutputControls
               settings={outputSettings}
               disabled={disabled && !running}
@@ -720,8 +728,7 @@ export default function TryOnWorkspace({
             />
           </div>
 
-          {/* Mobile: horizontal preset chips under prompt */}
-          <div className="mt-1.5 flex gap-1.5 overflow-x-auto scrollbar-none pb-0.5 sm:mt-2 lg:hidden">
+          <div className="mt-1.5 flex gap-1.5 overflow-x-auto scrollbar-none pb-0.5 sm:mt-2 sm:flex-wrap sm:overflow-visible">
             {STUDIO_PROMPT_PRESET_KEYS.map((key) => {
               const label = t(`studio.promptPresets.${key}`);
               const selected = selectedPromptPresets.includes(key);
@@ -736,9 +743,10 @@ export default function TryOnWorkspace({
                   className={
                     selected
                       ? 'inline-flex shrink-0 items-center gap-1 rounded-full border border-zinc-900 bg-zinc-900 px-2.5 py-1 text-[11px] font-medium text-white transition disabled:opacity-50 sm:gap-1.5 sm:px-3 sm:py-1.5 sm:text-xs'
-                      : 'inline-flex shrink-0 items-center gap-1 rounded-full border border-zinc-200/60 bg-zinc-50 px-2.5 py-1 text-[11px] font-medium text-zinc-500 transition active:bg-zinc-100 disabled:opacity-50 sm:gap-1.5 sm:px-3 sm:py-1.5 sm:text-xs'
+                      : 'inline-flex shrink-0 items-center gap-1 rounded-full border border-zinc-200/60 bg-zinc-50 px-2.5 py-1 text-[11px] font-medium text-zinc-500 transition hover:border-zinc-300 hover:bg-white hover:text-zinc-900 active:bg-zinc-100 disabled:opacity-50 sm:gap-1.5 sm:px-3 sm:py-1.5 sm:text-xs'
                   }
                 >
+                  <ImageIcon className="hidden h-3 w-3 opacity-70 sm:inline" />
                   {label}
                 </motion.button>
               );
@@ -861,15 +869,30 @@ function DropZone({
           </div>
         </>
       ) : (
-        <button
-          type="button"
-          disabled={disabled || uploading}
-          onClick={onBrowse}
-          className={`flex h-full w-full flex-col items-center justify-center border-2 border-dashed border-zinc-300 bg-zinc-50/30 text-center transition hover:bg-zinc-100 active:bg-zinc-100 disabled:opacity-50 ${
+        // Div shell (not <button>) so example cards can be real buttons without nested-button breakage.
+        <div
+          role="button"
+          tabIndex={disabled || uploading ? -1 : 0}
+          onClick={disabled || uploading ? undefined : onBrowse}
+          onKeyDown={
+            disabled || uploading
+              ? undefined
+              : (e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onBrowse();
+                  }
+                }
+          }
+          className={`flex h-full w-full flex-col items-center justify-center border-2 border-dashed border-zinc-300 bg-zinc-50/30 text-center transition ${
+            disabled || uploading
+              ? 'cursor-not-allowed opacity-50'
+              : 'cursor-pointer hover:bg-zinc-100 active:bg-zinc-100'
+          } ${
             compact
-              ? 'min-h-0 gap-1.5 px-1.5 pt-6 pb-2 sm:gap-3 sm:px-6 sm:pt-0 sm:pb-0'
+              ? 'min-h-0 gap-1.5 px-1.5 pt-6 pb-2 sm:gap-3 sm:px-4 sm:pt-0 sm:pb-0 md:px-6'
               : fillStage || stretch
-                ? 'min-h-0 gap-2 px-3 sm:gap-3 sm:px-6'
+                ? 'min-h-0 gap-2 px-3 sm:gap-2.5 sm:px-4 md:gap-3 md:px-6'
                 : 'min-h-[168px] gap-2 px-3 sm:min-h-[220px] sm:gap-3 sm:px-6 md:min-h-[420px]'
           }`}
         >
@@ -891,6 +914,7 @@ function DropZone({
                   onPick={onExamplePick}
                   disabled={disabled}
                   compact={compact}
+                  fillStage={fillStage}
                 />
               ) : (
                 <motion.span
@@ -903,30 +927,36 @@ function DropZone({
                   <Upload className="h-5 w-5 sm:h-6 sm:w-6" />
                 </motion.span>
               )}
-              <span
-                className={`rounded-full border border-zinc-200/60 bg-white font-semibold text-zinc-900 ${
+              <button
+                type="button"
+                disabled={disabled || uploading}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onBrowse();
+                }}
+                className={`rounded-full border border-zinc-200/60 bg-white font-semibold text-zinc-900 transition hover:border-zinc-300 disabled:opacity-50 ${
                   compact
                     ? 'max-w-full truncate px-2 py-1 text-[10px] sm:px-4 sm:py-2 sm:text-sm'
                     : 'px-3 py-1.5 text-xs sm:px-4 sm:py-2 sm:text-sm'
                 }`}
               >
                 {emptyTitle}
-              </span>
+              </button>
               <span
                 className={`leading-snug text-zinc-500 ${
                   compact
                     ? 'hidden max-w-[9rem] text-[10px] sm:block sm:max-w-none sm:text-xs'
-                    : 'max-w-[14rem] text-[11px] sm:max-w-none sm:text-xs'
+                    : 'max-w-[16rem] px-2 text-[11px] sm:max-w-md sm:text-xs'
                 }`}
               >
                 {emptyHint}
               </span>
               {emptySubhint ? (
                 <span
-                  className={`text-zinc-400 ${
+                  className={`px-2 text-zinc-400 ${
                     compact
                       ? 'hidden max-w-[10rem] text-[10px] sm:block sm:max-w-sm sm:text-xs'
-                      : 'max-w-sm text-[11px] sm:text-xs'
+                      : 'max-w-md text-[11px] sm:text-xs'
                   }`}
                 >
                   {emptySubhint}
@@ -934,7 +964,7 @@ function DropZone({
               ) : null}
             </>
           )}
-        </button>
+        </div>
       )}
 
       {error ? (
@@ -957,34 +987,47 @@ function ExampleFan({
   onPick,
   disabled,
   compact = false,
+  fillStage = false,
 }: {
   images: readonly string[];
   onPick?: (url: string) => void;
   disabled?: boolean;
   compact?: boolean;
+  fillStage?: boolean;
 }) {
   const count = Math.min(images.length, 3);
-  const rotations = count === 2 ? [-10, 10] : [-14, 0, 14];
+  // Wide fan so both side photos stay readable beside the center card.
+  const rotations = count === 2 ? [-7, 7] : [-9, 0, 9];
   const offsets = compact
-    ? (count === 2 ? [-14, 14] : [-20, 0, 20])
-    : (count === 2 ? [-24, 24] : [-34, 0, 34]);
+    ? (count === 2 ? [-36, 36] : [-48, 0, 48])
+    : fillStage
+      ? (count === 2 ? [-56, 56] : [-72, 0, 72])
+      : (count === 2 ? [-50, 50] : [-66, 0, 66]);
+  const scales = count === 2
+    ? [0.96, 0.96]
+    : [0.88, 1, 0.88];
+
+  const shellClass = compact
+    ? 'relative mx-auto mb-0.5 flex h-24 w-full max-w-[200px] items-center justify-center sm:mb-1 sm:h-40 sm:max-w-[300px]'
+    : fillStage
+      ? 'relative mx-auto mb-1 flex h-36 w-full max-w-[300px] items-center justify-center sm:h-44 sm:max-w-[360px] md:h-52 md:max-w-[400px]'
+      : 'relative mx-auto mb-0.5 flex h-32 w-full max-w-[280px] items-center justify-center sm:mb-1 sm:h-44 sm:max-w-[340px]';
+
+  // Visible chrome — white product shots otherwise vanish on the panel.
+  const cardClass = compact
+    ? 'absolute h-[4.75rem] w-[3.35rem] overflow-hidden rounded-lg border border-zinc-300/90 bg-zinc-200 shadow-[0_6px_18px_rgb(24_24_27/0.18)] ring-1 ring-zinc-900/10 sm:h-36 sm:w-[5.1rem] sm:rounded-xl'
+    : fillStage
+      ? 'absolute h-32 w-[4.6rem] overflow-hidden rounded-xl border border-zinc-300/90 bg-zinc-200 shadow-[0_8px_22px_rgb(24_24_27/0.2)] ring-1 ring-zinc-900/10 sm:h-40 sm:w-[5.4rem] md:h-48 md:w-24'
+      : 'absolute h-28 w-16 overflow-hidden rounded-xl border border-zinc-300/90 bg-zinc-200 shadow-[0_8px_22px_rgb(24_24_27/0.2)] ring-1 ring-zinc-900/10 sm:h-40 sm:w-[5.4rem]';
 
   return (
-    <div
-      className={
-        compact
-          ? 'relative mb-0.5 flex h-20 w-full max-w-[110px] items-center justify-center sm:mb-1 sm:h-40 sm:max-w-[220px]'
-          : 'relative mb-0.5 flex h-28 w-full max-w-[170px] items-center justify-center sm:mb-1 sm:h-40 sm:max-w-[220px]'
-      }
-    >
+    <div className={shellClass}>
       {images.slice(0, 3).map((src, index) => {
         const interactive = Boolean(onPick);
-        const className = compact
-          ? 'absolute h-16 w-11 overflow-hidden rounded-md border border-white bg-zinc-100 shadow-lg shadow-zinc-300/50 sm:h-36 sm:w-20 sm:rounded-xl'
-          : 'absolute h-24 w-[3.5rem] overflow-hidden rounded-lg border border-white bg-zinc-100 shadow-lg shadow-zinc-300/50 sm:h-36 sm:w-20 sm:rounded-xl';
+        const isCenter = count === 3 ? index === 1 : false;
         const style = {
-          transform: `translateX(${offsets[index] ?? 0}px) rotate(${rotations[index] ?? 0}deg)`,
-          zIndex: count === 2 ? index + 1 : index === 1 ? 3 : 1,
+          transform: `translateX(${offsets[index] ?? 0}px) rotate(${rotations[index] ?? 0}deg) scale(${scales[index] ?? 1})`,
+          zIndex: count === 2 ? index + 1 : isCenter ? 4 : index === 0 ? 2 : 3,
         };
 
         if (interactive) {
@@ -997,17 +1040,25 @@ function ExampleFan({
                 e.stopPropagation();
                 onPick?.(src);
               }}
-              className={`${className} transition hover:-translate-y-1 hover:shadow-xl disabled:opacity-50`}
+              className={`${cardClass} transition duration-200 hover:-translate-y-1 hover:z-10 hover:shadow-[0_12px_28px_rgb(24_24_27/0.28)] disabled:opacity-50`}
               style={style}
             >
-              <img src={src} alt="" className="h-full w-full object-cover object-top" />
+              <img
+                src={src}
+                alt=""
+                className="h-full w-full object-cover object-[center_18%] contrast-[1.04] saturate-[1.06]"
+              />
             </button>
           );
         }
 
         return (
-          <div key={src} className={className} style={style}>
-            <img src={src} alt="" className="h-full w-full object-cover object-top" />
+          <div key={src} className={cardClass} style={style}>
+            <img
+              src={src}
+              alt=""
+              className="h-full w-full object-cover object-[center_18%] contrast-[1.04] saturate-[1.06]"
+            />
           </div>
         );
       })}
@@ -1037,6 +1088,11 @@ function SessionLayout({
   onDownload,
   onOpenLightbox,
   onReusePrompt,
+  compareActive = false,
+  onToggleCompare,
+  onShareResult,
+  onMoreVariants,
+  onHdUpsell,
 }: {
   stageRef?: RefObject<HTMLDivElement | null>;
   garmentPreviewUrl: string | null;
@@ -1059,17 +1115,24 @@ function SessionLayout({
   onDownload: (url?: string | null) => void;
   onOpenLightbox: (url: string) => void;
   onReusePrompt: (tags?: string[]) => void;
+  compareActive?: boolean;
+  onToggleCompare?: () => void;
+  onShareResult?: () => void;
+  onMoreVariants?: () => void;
+  onHdUpsell?: () => void;
 }) {
   const { t } = useTranslation();
   const locked = running || disabled;
   const variantUrls = resultVariantUrls.length > 1
     ? resultVariantUrls
     : [];
+  const compareBefore = garmentPreviewUrl || modelPreviewUrl;
+  const canCompare = Boolean(compareBefore && resultImageUrl);
 
   return (
     <div
       ref={stageRef}
-      className={`studio-stage studio-stage-session flex min-h-0 min-w-0 flex-col gap-1.5 md:grid md:min-h-[460px] md:gap-3 ${
+      className={`studio-stage studio-stage-session flex min-h-0 min-w-0 flex-1 flex-col gap-1.5 md:grid md:gap-3 ${
         historyOpen
           ? 'md:grid-cols-[88px_minmax(0,1fr)_120px]'
           : 'md:grid-cols-[88px_minmax(0,1fr)_48px]'
@@ -1105,7 +1168,7 @@ function SessionLayout({
         ) : null}
       </div>
 
-      <div className="glass-panel relative min-h-0 flex-1 overflow-hidden rounded-2xl border border-zinc-200/60 bg-white shadow-xl shadow-zinc-200/50 sm:rounded-3xl md:min-h-[460px]">
+      <div className="glass-panel relative h-full min-h-0 flex-1 overflow-hidden rounded-2xl border border-zinc-200/60 bg-white shadow-xl shadow-zinc-200/50 sm:rounded-3xl">
         {/* Mobile: compact overlays so animation/result fills the stage */}
         <div className="absolute left-2 top-2 z-20 flex items-start gap-1.5 md:hidden">
           {onBackToSetup ? (
@@ -1141,11 +1204,24 @@ function SessionLayout({
           <GenerationWaitingShowcase />
         ) : resultImageUrl ? (
           <>
-            <img
-              src={resultImageUrl}
-              alt=""
-              className="absolute inset-0 h-full w-full object-contain"
-            />
+            {compareActive && canCompare && compareBefore ? (
+              <div className="absolute inset-0 z-[1]">
+                <ImageCompareSlider
+                  beforeSrc={compareBefore}
+                  afterSrc={resultImageUrl}
+                  beforeAlt={t('preview.beforeLabel')}
+                  afterAlt={t('preview.afterLabel')}
+                  aspectClass="h-full"
+                  className="h-full rounded-none"
+                />
+              </div>
+            ) : (
+              <ResultImage
+                src={resultImageUrl}
+                loadingLabel={t('studio.loadingResult', { defaultValue: 'Loading result…' })}
+                errorLabel={t('studio.resultLoadFailed', { defaultValue: 'Could not load result image. Try Run again.' })}
+              />
+            )}
             <div className="absolute right-3 top-3 z-10 flex gap-1.5">
               <IconButton
                 disabled={locked}
@@ -1162,21 +1238,34 @@ function SessionLayout({
                 <Maximize2 className="h-3.5 w-3.5" />
               </IconButton>
             </div>
-            <div className="absolute bottom-3 right-3 z-10">
-              <IconButton
-                disabled={downloading || locked}
-                onClick={() => onDownload(resultImageUrl)}
-                label={t('preview.download')}
-              >
-                {downloading ? (
-                  <span className="meditative-spinner !h-4 !w-4" />
-                ) : (
-                  <Download className="h-3.5 w-3.5" />
-                )}
-              </IconButton>
-            </div>
+            {onShareResult && onMoreVariants && onHdUpsell ? (
+              <ResultEngageBar
+                disabled={locked}
+                compareActive={compareActive}
+                canCompare={canCompare}
+                onToggleCompare={onToggleCompare}
+                onShare={() => onShareResult()}
+                onDownload={() => onDownload(resultImageUrl)}
+                onMoreVariants={onMoreVariants}
+                onHdUpsell={onHdUpsell}
+              />
+            ) : (
+              <div className="absolute bottom-3 right-3 z-10">
+                <IconButton
+                  disabled={downloading || locked}
+                  onClick={() => onDownload(resultImageUrl)}
+                  label={t('preview.download')}
+                >
+                  {downloading ? (
+                    <span className="meditative-spinner !h-4 !w-4" />
+                  ) : (
+                    <Download className="h-3.5 w-3.5" />
+                  )}
+                </IconButton>
+              </div>
+            )}
             {variantUrls.length > 0 ? (
-              <div className="absolute bottom-3 left-3 z-10 flex gap-1.5 rounded-2xl border border-zinc-200/70 bg-white/90 p-1.5 shadow-sm backdrop-blur-md">
+              <div className="absolute bottom-[5.75rem] left-3 z-10 flex gap-1.5 rounded-2xl border border-zinc-200/70 bg-white/90 p-1.5 shadow-sm backdrop-blur-md sm:bottom-16">
                 {variantUrls.map((url, index) => {
                   const thumb = resolveImageUrl(url);
                   const active = url === activeResultUrl || resolveImageUrl(url) === resultImageUrl;
@@ -1204,7 +1293,7 @@ function SessionLayout({
         ) : null}
       </div>
 
-      <div className="glass-panel hidden flex-col rounded-2xl border border-zinc-200/60 bg-white/70 p-2 shadow-sm md:flex">
+      <div className="glass-panel relative hidden h-full min-h-0 flex-col rounded-2xl border border-zinc-200/60 bg-white/70 p-2 shadow-sm md:flex">
         <button
           type="button"
           onClick={onToggleHistory}
@@ -1293,6 +1382,46 @@ function SessionLayout({
         </AnimatePresence>
       </div>
     </div>
+  );
+}
+
+function ResultImage({
+  src,
+  loadingLabel,
+  errorLabel,
+}: {
+  src: string;
+  loadingLabel: string;
+  errorLabel: string;
+}) {
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+
+  useEffect(() => {
+    setStatus('loading');
+  }, [src]);
+
+  return (
+    <>
+      <img
+        src={src}
+        alt=""
+        className={`absolute inset-0 h-full w-full object-contain transition-opacity ${
+          status === 'ready' ? 'opacity-100' : 'opacity-0'
+        }`}
+        onLoad={() => setStatus('ready')}
+        onError={() => setStatus('error')}
+      />
+      {status === 'loading' ? (
+        <div className="absolute inset-0 z-[1] flex items-center justify-center bg-white/80 text-sm text-zinc-500">
+          {loadingLabel}
+        </div>
+      ) : null}
+      {status === 'error' ? (
+        <div className="absolute inset-0 z-[1] flex items-center justify-center bg-white px-6 text-center text-sm text-zinc-600">
+          {errorLabel}
+        </div>
+      ) : null}
+    </>
   );
 }
 
@@ -1460,6 +1589,7 @@ function ModeTab({
   onClick,
   icon,
   label,
+  shortLabel,
   example,
 }: {
   active?: boolean;
@@ -1467,6 +1597,7 @@ function ModeTab({
   onClick: () => void;
   icon: ReactNode;
   label: string;
+  shortLabel?: string;
   example?: {
     before?: string;
     after?: string;
@@ -1479,9 +1610,10 @@ function ModeTab({
   const hasSplit = Boolean(example?.before && example?.after);
   const hasSingle = Boolean(example?.image);
   const showPreview = Boolean(example && (hasSplit || hasSingle || example.descriptionKey));
+  const compactLabel = shortLabel || label;
 
   return (
-    <div className="group relative min-w-[5.75rem] shrink-0 snap-start flex-1 sm:min-w-[7rem] lg:min-w-0">
+    <div className="group relative min-w-0 shrink-0 snap-start flex-1 basis-0 sm:min-w-[6.5rem] md:min-w-0">
       {showPreview && example ? (
         <div
           className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-3 hidden w-[min(18rem,calc(100vw-2rem))] -translate-x-1/2 opacity-0 transition duration-150 group-hover:opacity-100 group-focus-within:opacity-100 lg:block"
@@ -1528,9 +1660,10 @@ function ModeTab({
             transition={{ type: 'spring', stiffness: 420, damping: 34 }}
           />
         ) : null}
-        <span className="relative z-10 flex min-w-0 items-center gap-1 sm:gap-2">
-          <span className="hidden sm:inline-flex">{icon}</span>
-          <span className="truncate">{label}</span>
+        <span className="relative z-10 flex min-w-0 items-center justify-center gap-1 sm:gap-2">
+          <span className="inline-flex shrink-0">{icon}</span>
+          <span className="truncate sm:hidden">{compactLabel}</span>
+          <span className="hidden truncate sm:inline">{label}</span>
         </span>
       </button>
     </div>

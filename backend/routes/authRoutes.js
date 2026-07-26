@@ -17,6 +17,14 @@ import {
   isAdminEmailConfigured,
   sendDepositPaidAdminEmail,
 } from '../services/adminNotifyEmail.js';
+import {
+  getReferralSummary,
+  redeemReferralCode,
+} from '../services/referrals.js';
+import {
+  isUserEmailConfigured,
+  sendWelcomeUserEmail,
+} from '../services/userEmail.js';
 
 const router = express.Router();
 
@@ -412,11 +420,19 @@ router.get('/auth/me', protect, async (req, res, next) => {
     }
 
     const supabase = getSupabaseAdmin();
-    const { data: profile, error } = await supabase
+    let { data: profile, error } = await supabase
       .from('profiles')
-      .select('id, email, full_name, avatar_url, credits, plan, created_at')
+      .select('id, email, full_name, avatar_url, credits, plan, created_at, referral_code')
       .eq('id', req.user.id)
       .maybeSingle();
+
+    if (error && (/referral_code/i.test(error.message || '') || error.code === 'PGRST204')) {
+      ({ data: profile, error } = await supabase
+        .from('profiles')
+        .select('id, email, full_name, avatar_url, credits, plan, created_at')
+        .eq('id', req.user.id)
+        .maybeSingle());
+    }
 
     if (error) {
       return res.status(500).json({ error: 'Failed to load profile.' });
@@ -445,6 +461,91 @@ router.get('/auth/me', protect, async (req, res, next) => {
     });
   } catch (error) {
     return next(error);
+  }
+});
+
+router.get('/auth/referral', protect, async (req, res, next) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Authentication required.', messageKey: 'api.authRequired' });
+    }
+
+    const summary = await getReferralSummary(req.user.id);
+    if (!summary) {
+      return res.status(503).json({
+        error: 'Referrals are not set up yet.',
+        messageKey: 'referral.notReady',
+      });
+    }
+
+    return res.json(summary);
+  } catch (error) {
+    return next(error);
+  }
+});
+
+router.post('/auth/referral/redeem', protect, async (req, res, next) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Authentication required.', messageKey: 'api.authRequired' });
+    }
+
+    const code = typeof req.body?.code === 'string' ? req.body.code : '';
+    const result = await redeemReferralCode(req.user.id, code);
+    return res.json({
+      success: true,
+      ...result,
+    });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+router.post('/auth/welcome-email', protect, async (req, res, next) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Authentication required.', messageKey: 'api.authRequired' });
+    }
+
+    if (!isUserEmailConfigured()) {
+      return res.json({ sent: false, reason: 'not_configured' });
+    }
+
+    const supabase = getSupabaseAdmin();
+    if (!supabase) {
+      return res.json({ sent: false, reason: 'unavailable' });
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id, email, full_name, credits, welcome_email_sent_at')
+      .eq('id', req.user.id)
+      .maybeSingle();
+
+    if (!profile?.email) {
+      return res.json({ sent: false, reason: 'no_email' });
+    }
+
+    if (profile.welcome_email_sent_at) {
+      return res.json({ sent: false, reason: 'already_sent' });
+    }
+
+    await sendWelcomeUserEmail({
+      email: profile.email,
+      fullName: profile.full_name,
+      credits: profile.credits ?? 3,
+    });
+
+    await supabase
+      .from('profiles')
+      .update({ welcome_email_sent_at: new Date().toISOString() })
+      .eq('id', req.user.id)
+      .is('welcome_email_sent_at', null);
+
+    return res.json({ sent: true });
+  } catch (error) {
+    console.warn('[welcome-email]', error?.message || error);
+    return res.json({ sent: false, reason: 'failed' });
   }
 });
 

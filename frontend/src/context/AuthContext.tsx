@@ -9,6 +9,8 @@ import {
 } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { claimGuestCredits } from '../api/claimGuestCredits';
+import { redeemReferralCode, requestWelcomeEmail } from '../api/referral';
+import { REFERRAL_CODE_STORAGE_KEY } from '../constants/authFlow';
 import { getSupabaseClient, isSupabaseConfigured } from '../lib/supabase';
 import type { UserProfile } from '../types/profile';
 import { DEFAULT_FREE_CREDITS } from '../types/profile';
@@ -92,6 +94,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [updateCredits]);
 
+  const tryRedeemReferralAndWelcome = useCallback(async () => {
+    try {
+      const stored = localStorage.getItem(REFERRAL_CODE_STORAGE_KEY);
+      if (stored) {
+        localStorage.removeItem(REFERRAL_CODE_STORAGE_KEY);
+        const result = await redeemReferralCode(stored);
+        if (typeof result.credits === 'number') {
+          updateCredits(result.credits);
+        }
+      }
+    } catch {
+      // Non-blocking — invalid/expired codes are ignored.
+    }
+
+    void requestWelcomeEmail();
+  }, [updateCredits]);
+
   useEffect(() => {
     if (!authEnabled || !supabase) {
       setLoading(false);
@@ -109,10 +128,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (initialSession?.user) {
         loadProfile(initialSession.user)
           .then(() => tryClaimGuestCredits())
+          .then(() => tryRedeemReferralAndWelcome())
           .finally(() => {
             if (mounted) setLoading(false);
           });
       } else {
+        // Capture ?ref=CODE before OAuth for invite funnel.
+        try {
+          const ref = new URLSearchParams(window.location.search).get('ref');
+          if (ref && ref.trim().length >= 4) {
+            localStorage.setItem(REFERRAL_CODE_STORAGE_KEY, ref.trim().toLowerCase());
+          }
+        } catch {
+          // ignore
+        }
         setLoading(false);
       }
     });
@@ -124,7 +153,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (nextSession?.user) {
         loadProfile(nextSession.user).then(() => {
           if (event === 'SIGNED_IN') {
-            tryClaimGuestCredits();
+            tryClaimGuestCredits().then(() => tryRedeemReferralAndWelcome());
           }
         });
       } else {
@@ -136,10 +165,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [authEnabled, loadProfile, supabase, tryClaimGuestCredits]);
+  }, [authEnabled, loadProfile, supabase, tryClaimGuestCredits, tryRedeemReferralAndWelcome]);
 
   const signInWithGoogle = useCallback(async () => {
     if (!supabase) return;
+
+    try {
+      const ref = new URLSearchParams(window.location.search).get('ref');
+      if (ref && ref.trim().length >= 4) {
+        localStorage.setItem(REFERRAL_CODE_STORAGE_KEY, ref.trim().toLowerCase());
+      }
+    } catch {
+      // ignore
+    }
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',

@@ -1,8 +1,9 @@
 import OpenAI from 'openai';
 
-export function createError(message, statusCode) {
+export function createError(message, statusCode, messageKey) {
   const error = new Error(message);
   error.statusCode = statusCode;
+  if (messageKey) error.messageKey = messageKey;
   return error;
 }
 

@@ -1,7 +1,7 @@
 {
   "header": {
     "subtitle": "Virtual kiyim kiydirish",
-    "productName": "Virtual Try-On"
+    "productName": "SnapFeed.ai"
   },
   "nav": {
     "label": "Asosiy navigatsiya",
@@ -62,7 +62,8 @@
         "label": "Yo‘q",
         "desc": "Ilgichda yoki polda"
       }
-    }
+    },
+    "freeTrialHint": "{{count}} bepul generatsiya — kirish shart emas"
   },
   "studio": {
     "eyebrow": "Studiya",
@@ -148,7 +149,38 @@
       "fullBody": "to'liq bo'y",
       "cleanBg": "toza fon",
       "naturalFit": "tabiiy o'tirish"
-    }
+    },
+    "firstSuccessToast": "Tayyor — bepul kreditlar bilan birinchi obraz yarating.",
+    "firstSuccessHint": "Sizda {{count}} kredit bor. Tez startni tanlang yoki kiyim yuklang.",
+    "quickStartTitle": "Tez start",
+    "quickStartSubtitle": "Bir bosish — namuna yuklanadi, keyin Generate.",
+    "quickStartLoaded": "Namuna yuklandi — Generate ni bosing.",
+    "quickStartFailed": "Namuna yuklanmadi. O‘z fotongizni yuklang.",
+    "quickStart": {
+      "dress": {
+        "title": "Ko‘ylak modelda",
+        "desc": "Mahsulot → Model bir klikda"
+      },
+      "hoodie": {
+        "title": "Hoodie kiyish",
+        "desc": "Kiyim + odam namunasi"
+      },
+      "packshot": {
+        "title": "Katalog packshot",
+        "desc": "Oq fonda toza kadr"
+      }
+    },
+    "compare": "Solishtirish",
+    "share": "Ulashish",
+    "shareCaption": "SnapFeed.ai da yaratilgan — virtual kiyish",
+    "shareDone": "Ulashildi",
+    "shareCopied": "Rasm saqlandi — matn nusxalandi",
+    "shareFailed": "Ulashib bo‘lmadi. Yuklab ko‘ring.",
+    "moreVariants": "+2 variant",
+    "moreVariantsHint": "3 variant tanlandi — qayta generatsiya qiling.",
+    "hdUpsell": "HD sifat",
+    "hdUpsellHint": "HD sozlamalar qo‘llandi — qayta generatsiya qiling.",
+    "modeProductToModelShort": "Modelga"
   },
   "gallery": {
     "eyebrow": "Kutubxona",
@@ -159,7 +191,16 @@
     "emptyCta": "Studiyaga o‘tish",
     "loading": "Galereya yuklanmoqda…",
     "download": "Yuklab olish",
-    "remove": "O‘chirish"
+    "remove": "O‘chirish",
+    "filterAll": "Hammasi",
+    "noCollection": "To‘plamsiz",
+    "saveToCollection": "To‘plamga saqlash",
+    "collectionFailed": "To‘plam yangilanmadi.",
+    "collections": {
+      "looks": "Obrazlar",
+      "catalog": "Katalog",
+      "favorites": "Sevimlilar"
+    }
   },
   "language": {
     "label": "Til",
@@ -431,7 +472,7 @@
     "mailBody": "Assalomu alaykum!\n\nMen {{tier}} ({{price}}) paketini sotib olmoqchiman.\nSnapFeed.ai emailim: {{email}}\n\nO'z hisobidan ishlovchi shaxsga to'lashga tayyorman. Rekvizitlarni yuboring.",
     "guestTitle": "Bepul generatsiyalar tugadi",
     "guestDescription": "Siz bepul mehmon generatsiyasidan foydalandingiz. Akkaunt ochish va kredit sotib olish uchun Google orqali kiring.",
-    "guestBenefit1": "Ro'yxatdan o'tmasdan {{count}} ta bepul generatsiya",
+    "guestBenefit1": "Kirishsiz {{count}} bepul generatsiya",
     "guestBenefit2": "Akkaunt profilingiz va balansingizni saqlaydi",
     "guestBenefit3": "Istalgan vaqtda balansni to'ldirish mumkin",
     "welcomeTitle": "Xush kelibsiz!",
@@ -469,7 +510,10 @@
     "invalidPlan": "Noto'g'ri tarif tanlandi.",
     "authRequired": "To'lovni rasmiylashtirish uchun qayta tizimga kiring.",
     "depositCreateFailed": "Ariza yaratib bo'lmadi. Qayta urinib ko'ring.",
-    "depositLoadFailed": "To'ldirish tarixini yuklab bo'lmadi."
+    "depositLoadFailed": "To'ldirish tarixini yuklab bo'lmadi.",
+    "monthlyPack_one": "{{count}} kredit / oy",
+    "monthlyPack_other": "{{count}} kredit / oy",
+    "subscriptionBadge": "Oylik paket"
   },
   "chat": {
     "title": "✨ AI Yordamchi (O'z tilingizda yozing)",
@@ -482,21 +526,251 @@
     "error": "Prompt yaratib bo'lmadi. Qayta urinib ko'ring."
   },
   "legal": {
-    "termsTitle": "Foydalanish shartlari",
-    "termsIntro": "Ushbu shartlar SnapFeed.ai dan foydalanishni tartibga soladi. Xizmatdan foydalanish shartlarni qabul qilish demakdir.",
-    "termsUseTitle": "Xizmatdan foydalanish",
-    "termsUseBody": "SnapFeed.ai AI yordamida vizual kontent yaratadi. Promptlar va natijalardan qanday foydalanishingiz uchun javobgarsiz. Xizmatni noqonuniy yoki zararli maqsadlarda ishlatmang.",
-    "termsCreditsTitle": "Kreditlar va to'lov",
-    "termsCreditsBody": "Har bir muvaffaqiyatli generatsiya 1 kredit sarflaydi. Onlayn to'lov ulanguncha paketlar qo'lda sotiladi. Kreditlar qaytarilmaydi, qonun talab qilganda bundan mustasno.",
-    "termsContactTitle": "Aloqa",
-    "termsContactBody": "To'lov va qo'llab-quvvatlash uchun yozing:",
-    "privacyTitle": "Maxfiylik siyosati",
-    "privacyIntro": "SnapFeed.ai qanday ma'lumotlarni yig'ishi va qanday ishlatishi haqida.",
-    "privacyDataTitle": "Akkaunt ma'lumotlari",
-    "privacyDataBody": "Google orqali kirganda profil (email, ism, avatar) Supabase da saqlanadi. Rasmlar serverlarimiz va AI provayderlarida (OpenAI, Replicate) qayta ishlanadi.",
-    "privacyGuestTitle": "Mehmon rejimi",
-    "privacyGuestBody": "Kirmasdan turib brauzer fingerprint xeshi va kerak bo'lsa IP dan foydalanamiz. Bu ma'lumot reklama uchun ishlatilmaydi.",
-    "privacyContactTitle": "Aloqa",
-    "privacyContactBody": "Ma'lumotlarni o'chirish yoki savollar uchun yozing:"
+    "lastUpdated": "Yangilangan: {{date}}",
+    "footer": {
+      "product": "Mahsulot",
+      "company": "Kompaniya",
+      "legal": "Huquqiy",
+      "about": "Biz haqimizda",
+      "contact": "Aloqa",
+      "terms": "Foydalanish shartlari",
+      "privacy": "Maxfiylik",
+      "cookies": "Cookie",
+      "refunds": "Qaytarish",
+      "rights": "Maxfiylik huquqlari",
+      "copyright": "© {{year}} {{legalName}}. {{jurisdiction}} da ro'yxatdan o'tgan. Barcha huquqlar himoyalangan.",
+      "operatedBy": "{{legalName}} SnapFeed.ai ni boshqaradi."
+    },
+    "cookieBanner": {
+      "title": "Cookie va mahalliy saqlash",
+      "body": "SnapFeed.ai ishlashi uchun zarur cookie va local storage ishlatamiz (kirish, til, kredit limitlari, sozlamalar). Keyinroq analitika yoki reklama teglari qo'shilsa, ular faqat sizning tanlovingizga muvofiq ishlatiladi.",
+      "accept": "Qabul qilish",
+      "essential": "Faqat zaruriy",
+      "learnMore": "Cookie siyosati"
+    },
+    "terms": {
+      "title": "Foydalanish shartlari",
+      "updated": "2026-yil 26-iyul",
+      "intro": "Ushbu Foydalanish shartlari («Shartlar») {{brand}} dan foydalanishni tartibga soladi. Xizmatni {{legalName}} («Kompaniya», «biz») boshqaradi. Xizmatdan foydalanish orqali siz Shartlarga rozilik bildirasiz.",
+      "contactTitle": "Aloqa",
+      "contactBody": "To'lov, qo'llab-quvvatlash yoki huquqiy xabarlar uchun yozing:",
+      "sections": [
+        {
+          "title": "Biz kimimiz",
+          "body": "SnapFeed.ai ni Stratum Technologies LLC boshqaradi — Wyoming, USA da ro'yxatdan o'tgan MChJ. Manzil: 30 N Gould St #28330, Sheridan, WY 82801, USA."
+        },
+        {
+          "title": "Xizmat",
+          "body": "SnapFeed.ai AI asosida virtual kiyim sinash va rasm generatsiyasi vositalarini taqdim etadi. Natijalar mashina tomonidan yaratiladi va noaniq yoki tijorat uchun mos kelmasligi mumkin. Natijalarni nashr yoki sotishdan oldin o'zingiz tekshirasiz."
+        },
+        {
+          "title": "Yosh va akkaunt",
+          "body": "Akkaunt ochish va kredit sotib olish uchun kamida 18 yoshda bo'lishingiz kerak. Kirish Google orqali amalga oshadi. Akkauntingizdagi faoliyat uchun siz javobgarsiz."
+        },
+        {
+          "title": "Kreditlar va to'lov",
+          "body": "Generatsiyalar oldindan to'langan kreditlarni sarflaydi. Paketlarni ilova ichidagi depozit oqimi orqali sotib olish mumkin. Kreditlar odatda to'lov tekshirilgach hisobga o'tkaziladi (ko'pincha ~15 daqiqa ichida). Narxlar tanlangan valyutada ko'rsatiladi."
+        },
+        {
+          "title": "Qaytarish",
+          "body": "Kreditlar raqamli tovarlar. Qaytarishlar Qaytarish siyosatiga muvofiq. Sarflangan kreditlar odatda qaytarilmaydi, qonun talab qilganda yoki jiddiy xizmat xatosi bo'lganda bundan mustasno."
+        },
+        {
+          "title": "Ruxsat etilgan foydalanish va AI kontent",
+          "body": "Xizmatni noqonuniy, zararli yoki firibgarlik maqsadlarida ishlatmang. Taqiqlar: roziliksiz intim kontent; aldov uchun deepfake; bolalar ekspluatatsiyasi; IP/maxfiylik buzilishi; zararli dasturlar. Yuklagan rasmlarga barcha kerakli huquqlarga egasiz."
+        },
+        {
+          "title": "Intellektual mulk",
+          "body": "SnapFeed.ai platformasi va brendi bizga tegishli. Yuklangan kontentga huquqlaringiz saqlanadi. Shartlarga muvofiq, akkauntingizdagi generatsiya natijalari sizniki; xizmatni ko'rsatish uchun cheklangan litsenziya berasiz."
+        },
+        {
+          "title": "Kafolatlarning rad etilishi",
+          "body": "XIZMAT «BORI HOLATIDA» TAQDIM ETILADI. Qonun ruxsat bergan darajada barcha kafolatlardan voz kechamiz. Uzluksiz ishlash yoki AI natijasi talablaringizga mos kelishini kafolatlamaymiz."
+        },
+        {
+          "title": "Javobgarlikni cheklash",
+          "body": "Qonun ruxsat bergan darajada Stratum Technologies LLC bilvosita zararlarga javobgar emas. Umumiy javobgarlik da'vodan oldingi uch (3) oy ichida kreditlar uchun to'lagan summadan oshmaydi."
+        },
+        {
+          "title": "Zararni qoplash",
+          "body": "Yuklamalar, promptlar, generatsiya qilingan rasmlar yoki xizmatni noto'g'ri ishlatishdan kelib chiqqan da'volar bo'yicha Stratum Technologies LLC ni himoya qilishga rozisiz."
+        },
+        {
+          "title": "To'xtatish",
+          "body": "Shartlar buzilsa yoki to'lov suiiste'mol qilinsa, kirishni to'xtatishimiz mumkin. Xizmatdan istalgan vaqtda voz kechishingiz mumkin."
+        },
+        {
+          "title": "Amaldagi qonun",
+          "body": "Shartlar Wyoming, USA qonunlariga bo'ysunadi. Iste'molchi qonuni boshqacha talab qilmasa, sud yurisdiktsiyasi Wyomingda."
+        },
+        {
+          "title": "O'zgarishlar",
+          "body": "Shartlarni yangilashimiz mumkin. Yangilangan sana o'zgaradi. Davom etgan foydalanish yangi shartlarga rozilik demakdir."
+        }
+      ]
+    },
+    "privacy": {
+      "title": "Maxfiylik siyosati",
+      "updated": "2026-yil 26-iyul",
+      "intro": "Ushbu Maxfiylik siyosati {{legalName}} («Kompaniya», «biz») {{brand}} dan foydalanganda shaxsiy ma'lumotlarni qanday yig'ishi, ishlatishi va ulashishi haqida.",
+      "contactTitle": "Aloqa",
+      "contactBody": "Maxfiylik so'rovlari (kirish, o'chirish, tuzatish, CCPA) uchun yozing:",
+      "sections": [
+        {
+          "title": "Ma'lumotlar nazoratchisi",
+          "body": "Stratum Technologies LLC, Wyoming, USA.\n30 N Gould St #28330, Sheridan, WY 82801, USA."
+        },
+        {
+          "title": "Qanday ma'lumot yig'amiz",
+          "body": "Google orqali akkaunt ma'lumotlari (email, ism, foto).\nKredit balansi, reja va depozit yozuvlari.\nYuklangan va generatsiya qilingan rasmlar.\nMehmon: brauzer fingerprint xeshi va ixtiyoriy IP.\nTexnik ma'lumotlar va qo'llab-quvvatlash yozishmalari."
+        },
+        {
+          "title": "Qanday ishlatamiz",
+          "body": "SnapFeed.ai ni taqdim etish.\nTo'lovlarni qayta ishlash va firibgarlikni oldini olish.\nQo'llab-quvvatlash.\nXavfsizlik va ishonchlilik.\nQonun va Shartlarga rioya."
+        },
+        {
+          "title": "AI qayta ishlash va subprotsessorlar",
+          "body": "Natija yaratish uchun kerakli ma'lumotlar subprotsessorlarga yuboriladi:\n• Supabase\n• OpenAI\n• Replicate\n• FASHN\n• Hosting provayderlari"
+        },
+        {
+          "title": "Mehmon rejimi",
+          "body": "Kirmasdan foydalanganda fingerprint xeshi va IP faqat bepul limit uchun. Reklama profiling uchun ishlatilmaydi va sotilmaydi."
+        },
+        {
+          "title": "Cookie",
+          "body": "Kirish, til, rozilik va mehmon limitlari uchun zaruriy cookie/local storage. Batafsil — Cookie siyosatida."
+        },
+        {
+          "title": "Saqlash muddati",
+          "body": "Akkaunt va kredit yozuvlari akkaunt faol ekan saqlanadi. Galereya rasmlari o'chirilgunga qadar. Mehmon ma'lumotlari antiabuse uchun kerak bo'lgancha."
+        },
+        {
+          "title": "Xavfsizlik",
+          "body": "Oqilona texnik va tashkiliy choralarni qo'llaymiz. 100% xavfsizlik kafolatlanmaydi."
+        },
+        {
+          "id": "privacy-rights",
+          "title": "Maxfiylik huquqlari (CCPA/CPRA)",
+          "body": "Jurisdiktsiyangizga qarab (shu jumladan California) huquqlaringiz bo'lishi mumkin: bilish/kirish, o'chirish, tuzatish, «sotish/sharing» dan voz kechish.\n\nBiz shaxsiy ma'lumotni pul evaziga sotmaymiz. Reklama piksellari qo'shilsa, opt-out va cookie tanlovingizni hurmat qilamiz.\n\nHuquqlarni amalga oshirish uchun «Privacy Request» mavzusi bilan yozing."
+        },
+        {
+          "title": "Bolalar maxfiyligi",
+          "body": "SnapFeed.ai 13 yoshdan kichik bolalarga mo'ljallanmagan. Agar bola ma'lumot yuborgan deb hisoblasangiz, bog'laning — o'chiramiz."
+        },
+        {
+          "title": "Xalqaro foydalanuvchilar",
+          "body": "Biz AQShda joylashganmiz. Boshqa mamlakatlardan kirganda ma'lumotlar AQSh va provayderlar mamlakatlarida qayta ishlanishi mumkin."
+        },
+        {
+          "title": "O'zgarishlar",
+          "body": "Siyosat yangilanishi mumkin. «Yangilangan» sanasi o'zgaradi."
+        }
+      ]
+    },
+    "about": {
+      "title": "Biz haqimizda",
+      "updated": "2026-yil 26-iyul",
+      "intro": "{{brand}} — {{legalName}} tomonidan boshqariladigan AI virtual kiyim sinash va mahsulot tasvirlari studiyasi.",
+      "entityTitle": "Yuridik shaxs",
+      "registeredIn": "{{jurisdiction}} da ro'yxatdan o'tgan.",
+      "sections": [
+        {
+          "title": "Nima qilamiz",
+          "body": "SnapFeed.ai brendlar va ijodkorlarga AI yordamida kiyimni modellarda ko'rsatishga yordam beradi — virtual try-on, packshot va product-to-model — oldindan to'langan kreditlar orqali."
+        },
+        {
+          "title": "Kim boshqaradi",
+          "body": "SnapFeed.ai — Wyoming MChJ Stratum Technologies LLC mahsuloti. Mijozlarga onlayn xizmat ko'rsatamiz va email orqali yordam beramiz."
+        }
+      ]
+    },
+    "contact": {
+      "title": "Aloqa",
+      "updated": "2026-yil 26-iyul",
+      "intro": "{{brand}} jamoasiga qo'llab-quvvatlash, to'lov, maxfiylik yoki hamkorlik bo'yicha murojaat qiling.",
+      "emailTitle": "Email",
+      "mailTitle": "Pochta manzili",
+      "responseTime": "Odatda 1–2 ish kunida javob beramiz.",
+      "sections": [
+        {
+          "title": "Xatda nima yozing",
+          "body": "Tez yordam uchun akkaunt emailini, qisqa tavsifni va (to'lov uchun) depozit yoki o'tkazma ma'lumotlarini kiriting."
+        }
+      ]
+    },
+    "refund": {
+      "title": "Qaytarish va bekor qilish siyosati",
+      "updated": "2026-yil 26-iyul",
+      "intro": "Ushbu siyosat {{brand}} dagi oldindan to'langan kreditlar qaytarilishini tushuntiradi.",
+      "contactTitle": "Qaytarishni qanday so'rash",
+      "contactBody": "Yozing:",
+      "seeAlso": "Shuningdek qarang:",
+      "sections": [
+        {
+          "title": "Raqamli tovarlar",
+          "body": "Kreditlar AI generatsiyalari uchun oldindan to'langan raqamli tovarlar. Hisobga tushgach darhol foydalanish mumkin."
+        },
+        {
+          "title": "Kreditlarni yetkazish",
+          "body": "Depozit so'rovi va to'lov tasdiqidan keyin o'tkazmani tekshiramiz va kreditlarni hisobga o'tkazamiz — odatda ~15 daqiqa ichida."
+        },
+        {
+          "title": "Qachon qaytarilishi mumkin",
+          "body": "To'lov qabul qilingan lekin kreditlar bizning xatoyimiz tufayli tushmagan; xariddan keyin jiddiy uzilish va kreditlar ishlatilmagan; yoki qonun talab qilganda."
+        },
+        {
+          "title": "Qachon qaytarilmaydi",
+          "body": "Sarflangan kreditlar; faqat AI sifati bo'yicha norozilik; Shartlar buzilishi; kreditlar ishlatilgandan keyingi xato xaridlari."
+        },
+        {
+          "title": "Bekor qilish",
+          "body": "Istalgan vaqtda foydalanishni to'xtatishingiz mumkin. Bir martalik paketlar uchun obuna bekor qilish yo'q."
+        },
+        {
+          "title": "Chargeback",
+          "body": "To'lovni bahslashishdan oldin biz bilan bog'laning. Firibgarlik chargeback akkauntni bloklashi mumkin."
+        }
+      ]
+    },
+    "cookies": {
+      "title": "Cookie siyosati",
+      "updated": "2026-yil 26-iyul",
+      "intro": "Ushbu Cookie siyosati {{brand}} cookie va o'xshash texnologiyalarni qanday ishlatishini tushuntiradi.",
+      "contactTitle": "Aloqa",
+      "contactBody": "Cookie haqida savollar uchun yozing:",
+      "sections": [
+        {
+          "title": "Hozir nima ishlatiladi",
+          "body": "Faqat zaruriy: autentifikatsiya/sessiya, til, mehmon limiti, cookie roziligi tanlovi."
+        },
+        {
+          "title": "Analitika va reklama",
+          "body": "Kelajakda Google Ads yoki analitika qo'shilishi mumkin. Ular nozaruriy bo'ladi va roziligingizga muvofiq ishlatiladi."
+        },
+        {
+          "title": "Sozlamalarni boshqarish",
+          "body": "Brauzerda sayt ma'lumotlarini tozalash orqali local storage va rozilikni qayta tiklashingiz mumkin."
+        },
+        {
+          "title": "Uchinchi tomon resurslari",
+          "body": "Sayt shriftlar yoki CDN resurslarini yuklashi mumkin; provayderlar standart texnik so'rov ma'lumotlarini olishi mumkin."
+        }
+      ]
+    }
+  },
+  "referral": {
+    "title": "Do‘stlarni taklif qiling",
+    "description": "Havolani ulashing — ikkalangiz ham {{count}} bepul kredit olasiz.",
+    "codeLabel": "Kodingiz",
+    "copyLink": "Havolani nusxalash",
+    "linkCopied": "Havola nusxalandi",
+    "invited_one": "{{count}} do‘st qo‘shildi",
+    "invited_other": "{{count}} do‘st qo‘shildi",
+    "invalidCode": "Noto‘g‘ri kod.",
+    "alreadyApplied": "Referal allaqachon qo‘llangan.",
+    "notFound": "Kod topilmadi.",
+    "self": "O‘z kodingizni ishlata olmaysiz.",
+    "notReady": "Referallar hali mavjud emas.",
+    "failed": "Referal qo‘llanmadi."
   }
 }

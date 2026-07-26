@@ -1,44 +1,42 @@
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import LegalPageLayout, { LegalSections } from '../components/LegalPageLayout';
-import { COMPANY, COMPANY_FULL_ADDRESS } from '../constants/company';
+import { COMPANY } from '../constants/company';
 import { getLegalSections } from '../utils/legalSections';
 import { getSupportEmail } from '../utils/supportContact';
 
-export default function TermsPage() {
+export default function RefundPage() {
   const { t } = useTranslation();
   const supportEmail = getSupportEmail();
-  const sections = getLegalSections(t, 'legal.terms.sections');
+  const sections = getLegalSections(t, 'legal.refund.sections');
 
   return (
     <LegalPageLayout
-      title={t('legal.terms.title')}
-      lastUpdated={t('legal.terms.updated')}
+      title={t('legal.refund.title')}
+      lastUpdated={t('legal.refund.updated')}
     >
-      <p>
-        {t('legal.terms.intro', {
-          brand: COMPANY.brand,
-          legalName: COMPANY.legalName,
-        })}
-      </p>
+      <p>{t('legal.refund.intro', { brand: COMPANY.brand })}</p>
       <LegalSections sections={sections} />
       <section className="space-y-2">
         <h2 className="text-base font-semibold text-slate-900">
-          {t('legal.terms.contactTitle')}
+          {t('legal.refund.contactTitle')}
         </h2>
         <p>
-          {t('legal.terms.contactBody')}{' '}
+          {t('legal.refund.contactBody')}{' '}
           <a
             href={`mailto:${supportEmail}`}
             className="font-medium text-slate-900 underline-offset-2 hover:underline"
           >
             {supportEmail}
           </a>
+          . {t('legal.refund.seeAlso')}{' '}
+          <Link
+            to="/terms"
+            className="font-medium text-slate-900 underline-offset-2 hover:underline"
+          >
+            {t('legal.footer.terms')}
+          </Link>
           .
-        </p>
-        <p>
-          {COMPANY.legalName}
-          <br />
-          {COMPANY_FULL_ADDRESS}
         </p>
       </section>
     </LegalPageLayout>

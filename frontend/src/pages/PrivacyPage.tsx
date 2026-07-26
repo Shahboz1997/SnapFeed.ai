@@ -1,48 +1,60 @@
-import { Link } from 'react-router-dom';
+import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import Header from '../components/Header';
-import Logo from '../components/Logo';
+import { useLocation } from 'react-router-dom';
+import LegalPageLayout, { LegalSections } from '../components/LegalPageLayout';
+import { COMPANY, COMPANY_FULL_ADDRESS } from '../constants/company';
+import { getLegalSections } from '../utils/legalSections';
 import { getSupportEmail } from '../utils/supportContact';
 
 export default function PrivacyPage() {
   const { t } = useTranslation();
+  const { hash } = useLocation();
   const supportEmail = getSupportEmail();
+  const sections = getLegalSections(t, 'legal.privacy.sections');
+
+  useEffect(() => {
+    if (!hash) return;
+    const id = hash.replace(/^#/, '');
+    const el = document.getElementById(id);
+    if (el) {
+      requestAnimationFrame(() => {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }
+  }, [hash, sections.length]);
 
   return (
-    <div className="h-[100dvh] overflow-y-auto overscroll-y-contain bg-white text-slate-900">
-      <Header credits={0} />
-
-      <main className="mx-auto max-w-2xl px-4 pt-24 pb-12 sm:px-6">
-        <div className="mb-8 flex items-center gap-3">
-          <Logo className="h-9 w-9 shadow-sm" />
-          <h1 className="text-2xl font-extrabold tracking-tight">{t('legal.privacyTitle')}</h1>
-        </div>
-
-        <div className="prose prose-slate max-w-none space-y-4 text-sm leading-relaxed text-slate-600">
-          <p>{t('legal.privacyIntro')}</p>
-          <h2 className="text-base font-semibold text-slate-900">{t('legal.privacyDataTitle')}</h2>
-          <p>{t('legal.privacyDataBody')}</p>
-          <h2 className="text-base font-semibold text-slate-900">{t('legal.privacyGuestTitle')}</h2>
-          <p>{t('legal.privacyGuestBody')}</p>
-          <h2 className="text-base font-semibold text-slate-900">{t('legal.privacyContactTitle')}</h2>
-          <p>
-            {t('legal.privacyContactBody')}{' '}
-            <a
-              href={`mailto:${supportEmail}`}
-              className="font-medium text-slate-900 underline-offset-2 hover:underline"
-            >
-              {supportEmail}
-            </a>
-            .
-          </p>
-        </div>
-
-        <p className="mt-8">
-          <Link to="/" className="text-sm font-medium text-slate-700 underline-offset-2 hover:underline">
-            ← {t('auth.backToApp')}
-          </Link>
+    <LegalPageLayout
+      title={t('legal.privacy.title')}
+      lastUpdated={t('legal.privacy.updated')}
+    >
+      <p>
+        {t('legal.privacy.intro', {
+          brand: COMPANY.brand,
+          legalName: COMPANY.legalName,
+        })}
+      </p>
+      <LegalSections sections={sections} />
+      <section className="space-y-2">
+        <h2 className="text-base font-semibold text-slate-900">
+          {t('legal.privacy.contactTitle')}
+        </h2>
+        <p>
+          {t('legal.privacy.contactBody')}{' '}
+          <a
+            href={`mailto:${supportEmail}`}
+            className="font-medium text-slate-900 underline-offset-2 hover:underline"
+          >
+            {supportEmail}
+          </a>
+          .
         </p>
-      </main>
-    </div>
+        <p>
+          {COMPANY.legalName}
+          <br />
+          {COMPANY_FULL_ADDRESS}
+        </p>
+      </section>
+    </LegalPageLayout>
   );
 }

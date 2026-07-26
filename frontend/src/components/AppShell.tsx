@@ -1,10 +1,11 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { ReactNode } from 'react';
 import { Home, Images, Sparkles, UserRound } from 'lucide-react';
 import { motion } from 'framer-motion';
 import HeaderRightSection from './HeaderRightSection';
 import Logo from './Logo';
+import SiteFooter from './SiteFooter';
 
 type AppShellProps = {
   children: ReactNode;
@@ -35,6 +36,9 @@ export default function AppShell({
   onSignInClick,
 }: AppShellProps) {
   const { t } = useTranslation();
+  const { pathname } = useLocation();
+  // Studio uses a fixed mobile dock that would cover the footer.
+  const showFooter = pathname !== '/studio';
 
   return (
     <div className="relative flex h-dvh max-h-dvh overflow-hidden bg-zinc-50 text-zinc-900">
@@ -120,21 +124,18 @@ export default function AppShell({
           className="z-50 shrink-0 border-b border-zinc-200/60 bg-white/80 backdrop-blur-md"
           style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
         >
-          <div className="flex h-14 items-center justify-between gap-3 px-3 sm:gap-4 sm:px-6">
-            <div className="min-w-0">
-              <p className="truncate text-[11px] font-medium uppercase tracking-[0.14em] text-zinc-400">
-                SnapFeed.ai
-              </p>
+          <div className="safe-area-x flex h-14 items-center justify-between gap-2 px-3 sm:gap-3 sm:px-4 lg:gap-4 lg:px-6">
+            <div className="min-w-0 flex-1">
               <h1 className="truncate font-display text-base tracking-tight text-zinc-900 sm:text-lg">
                 {t('header.productName')}
               </h1>
             </div>
 
-            <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+            <div className="flex min-w-0 shrink-0 items-center gap-1.5 sm:gap-2 lg:gap-3">
               <button
                 type="button"
                 onClick={onCreditsClick}
-                className="hidden h-9 items-center rounded-xl bg-zinc-900 px-3 text-xs font-semibold text-white shadow-sm shadow-zinc-300/50 transition hover:bg-zinc-800 sm:inline-flex"
+                className="hidden h-9 items-center rounded-xl bg-zinc-900 px-3 text-xs font-semibold text-white shadow-sm shadow-zinc-300/50 transition hover:bg-zinc-800 lg:inline-flex"
               >
                 {t('pricing.upgrade')}
               </button>
@@ -150,7 +151,10 @@ export default function AppShell({
         </header>
 
         <div className="mobile-tab-offset min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain [-webkit-overflow-scrolling:touch]">
-          {children}
+          <div className={`flex flex-col ${showFooter ? 'min-h-full' : 'h-full min-h-0'}`}>
+            <div className="flex min-h-0 flex-1 flex-col">{children}</div>
+            {showFooter ? <SiteFooter /> : null}
+          </div>
         </div>
       </div>
 

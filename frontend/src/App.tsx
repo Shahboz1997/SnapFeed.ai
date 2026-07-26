@@ -10,7 +10,7 @@ import PricingModal from './components/PricingModal';
 import TryOnWorkspace, { type StudioMode, type TryOnHistoryItem } from './components/TryOnWorkspace';
 import { useAuth } from './context/AuthContext';
 import { useToast } from './context/ToastContext';
-import { POST_AUTH_MODAL_KEY } from './constants/authFlow';
+import { POST_AUTH_FIRST_SUCCESS_KEY, POST_AUTH_MODAL_KEY } from './constants/authFlow';
 import {
   GUEST_CREDITS_INITIAL,
   readGuestCreditsFromStorage,
@@ -33,6 +33,7 @@ import {
 } from './constants/studioPromptPresets';
 import { fetchCloudGallery } from './api/cloudGallery';
 import { addGalleryItem, listGalleryItems } from './lib/galleryStorage';
+import { downloadWithWatermark, shareOrDownloadResult } from './utils/shareResult';
 
 interface AlertState {
   message: string;
@@ -67,7 +68,7 @@ export default function App() {
   const [guestCreditsLoading, setGuestCreditsLoading] = useState(() => !user && readGuestCreditsFromStorage() === null);
   const [showPricingModal, setShowPricingModal] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [pricingWelcome, setPricingWelcome] = useState(false);
+  const [showFirstSuccessHint, setShowFirstSuccessHint] = useState(false);
 
   const studioModeRef = useRef(studioMode);
   const generationIdRef = useRef(0);
@@ -110,16 +111,19 @@ export default function App() {
 
   useEffect(() => {
     if (authLoading || !user || !profile) return;
-    if (sessionStorage.getItem(POST_AUTH_MODAL_KEY)) {
+    if (
+      sessionStorage.getItem(POST_AUTH_FIRST_SUCCESS_KEY)
+      || sessionStorage.getItem(POST_AUTH_MODAL_KEY)
+    ) {
+      sessionStorage.removeItem(POST_AUTH_FIRST_SUCCESS_KEY);
       sessionStorage.removeItem(POST_AUTH_MODAL_KEY);
-      setPricingWelcome(true);
-      setShowPricingModal(true);
+      setShowFirstSuccessHint(true);
+      showToast(t('studio.firstSuccessToast'), 'success');
     }
-  }, [authLoading, user, profile]);
+  }, [authLoading, user, profile, showToast, t]);
 
   function closePricingModal() {
     setShowPricingModal(false);
-    setPricingWelcome(false);
   }
 
   function openCreditsFlow() {
@@ -128,6 +132,54 @@ export default function App() {
       return;
     }
     setShowPricingModal(true);
+  }
+
+  async function handleShareResult() {
+    if (!imageUrl) return;
+    try {
+      const result = await shareOrDownloadResult(imageUrl, t('studio.shareCaption'));
+      if (result === 'shared') showToast(t('studio.shareDone'), 'success');
+      else if (result === 'copied') showToast(t('studio.shareCopied'), 'success');
+      else showToast(t('alerts.downloadSuccess'), 'success');
+    } catch (err) {
+      if ((err as Error)?.name === 'AbortError') return;
+      showToast(t('studio.shareFailed'), 'error');
+    }
+  }
+
+  async function handleDownloadWatermarked() {
+    if (!imageUrl) return;
+    try {
+      await downloadWithWatermark(imageUrl);
+      showToast(t('alerts.downloadSuccess'), 'success');
+    } catch {
+      showToast(t('alerts.downloadWarning'), 'error');
+    }
+  }
+
+  function handleMoreVariants() {
+    setOutputSettings((current) => ({
+      ...current,
+      numImages: 3,
+    }));
+    if (!hasCredits && displayCredits < creditCostForVariantCount(3)) {
+      openCreditsFlow();
+      return;
+    }
+    showToast(t('studio.moreVariantsHint'), 'success');
+  }
+
+  function handleHdUpsell() {
+    setOutputSettings((current) => ({
+      ...current,
+      qualityMode: 'quality',
+      resolution: '2k',
+    }));
+    if (!hasCredits) {
+      openCreditsFlow();
+      return;
+    }
+    showToast(t('studio.hdUpsellHint'), 'success');
   }
 
   function showAlert(message: string, type: AlertType = 'error') {
@@ -421,12 +473,11 @@ export default function App() {
         open={showPricingModal}
         onClose={closePricingModal}
         credits={displayCredits}
-        welcome={pricingWelcome}
       />
 
-      <main className="mobile-sticky-offset relative mx-auto flex w-full max-w-6xl min-w-0 flex-col px-2 py-2 sm:px-6 sm:py-5 lg:px-8">
+      <main className="mobile-sticky-offset relative mx-auto flex h-full w-full max-w-6xl min-h-0 min-w-0 flex-1 flex-col px-2 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4 lg:px-8 lg:py-5">
         {alert && (
-          <div className="pointer-events-none absolute inset-x-2 top-2 z-30 sm:inset-x-6 sm:top-5 lg:inset-x-8">
+          <div className="pointer-events-none absolute inset-x-2 top-2 z-30 sm:inset-x-4 sm:top-3 md:inset-x-6 md:top-4 lg:inset-x-8 lg:top-5">
             <div className="pointer-events-auto mx-auto max-w-6xl [&_[role=alert]]:mb-0">
               <AlertBanner
                 message={alert.message}
@@ -438,7 +489,13 @@ export default function App() {
           </div>
         )}
 
-        <fieldset className="min-w-0 border-0 p-0">
+        {showFirstSuccessHint && !imageUrl && !loading ? (
+          <div className="mb-2 shrink-0 rounded-2xl border border-zinc-200/70 bg-white/90 px-3 py-2.5 text-sm text-zinc-600 sm:mb-3 sm:px-4">
+            {t('studio.firstSuccessHint', { count: displayCredits })}
+          </div>
+        ) : null}
+
+        <fieldset className="flex min-h-0 min-w-0 flex-1 flex-col border-0 p-0">
           <TryOnWorkspace
             disabled={loading && runningMode === studioMode}
             studioMode={studioMode}
@@ -476,10 +533,14 @@ export default function App() {
             onSelectHistory={handleSelectHistory}
             onBackToSetup={handleBackToSetup}
             onNotify={showAlert}
+            onShareResult={() => void handleShareResult()}
+            onDownloadWatermarked={() => void handleDownloadWatermarked()}
+            onMoreVariants={handleMoreVariants}
+            onHdUpsell={handleHdUpsell}
           />
         </fieldset>
 
-        <div className="mt-2 hidden justify-end gap-2 sm:mt-4 sm:flex">
+        <div className="mt-2 hidden shrink-0 justify-end gap-2 sm:mt-3 sm:flex md:mt-4">
           {(imageUrl || (loading && runningMode === studioMode)) && (
             <button
               type="button"
