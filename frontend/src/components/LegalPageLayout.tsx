@@ -1,5 +1,5 @@
-import { useEffect, useState, type ReactNode } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { fetchGuestCredits } from '../api/guestCredits';
 import {
@@ -27,6 +27,8 @@ export default function LegalPageLayout({
 }: LegalPageLayoutProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { pathname, hash } = useLocation();
+  const scrollRef = useRef<HTMLDivElement>(null);
   const { user, profile, loading: authLoading } = useAuth();
   const [guestCredits, setGuestCredits] = useState<number | null>(() =>
     readGuestCreditsFromStorage(),
@@ -64,6 +66,28 @@ export default function LegalPageLayout({
     };
   }, [user]);
 
+  // html/body/#root are overflow:hidden + fixed height — this page must be the scroller.
+  useEffect(() => {
+    const node = scrollRef.current;
+    if (!node) return;
+
+    if (!hash) {
+      node.scrollTop = 0;
+      return;
+    }
+
+    const id = hash.replace(/^#/, '');
+    const el = node.querySelector<HTMLElement>(`#${CSS.escape(id)}`);
+    if (!el) {
+      node.scrollTop = 0;
+      return;
+    }
+
+    requestAnimationFrame(() => {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }, [pathname, hash, title]);
+
   function openCreditsFlow() {
     if (!user) {
       setShowLoginModal(true);
@@ -73,7 +97,10 @@ export default function LegalPageLayout({
   }
 
   return (
-    <div className="flex min-h-[100dvh] flex-col overflow-y-auto overscroll-y-contain bg-white text-slate-900">
+    <div
+      ref={scrollRef}
+      className="flex h-dvh max-h-dvh flex-col overflow-x-hidden overflow-y-auto overscroll-y-contain bg-white text-slate-900 [-webkit-overflow-scrolling:touch]"
+    >
       <Header
         credits={displayCredits}
         creditsLoading={creditsLoading}
@@ -98,8 +125,8 @@ export default function LegalPageLayout({
           >
             <Logo className="h-9 w-9 shadow-sm" />
           </button>
-          <div>
-            <h1 className="text-2xl font-extrabold tracking-tight">{title}</h1>
+          <div className="min-w-0">
+            <h1 className="text-xl font-extrabold tracking-tight sm:text-2xl">{title}</h1>
             {lastUpdated ? (
               <p className="mt-1 text-xs text-slate-400">
                 {t('legal.lastUpdated', { date: lastUpdated })}
@@ -115,7 +142,7 @@ export default function LegalPageLayout({
         <p className="mt-10">
           <Link
             to="/"
-            className="text-sm font-medium text-slate-700 underline-offset-2 hover:underline"
+            className="inline-flex min-h-11 items-center text-sm font-medium text-slate-700 underline-offset-2 hover:underline"
           >
             ← {t('auth.backToApp')}
           </Link>

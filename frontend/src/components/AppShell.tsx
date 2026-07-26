@@ -151,8 +151,16 @@ export default function AppShell({
         </header>
 
         <div className="mobile-tab-offset min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain [-webkit-overflow-scrolling:touch]">
+          {/*
+            With footer: let page content grow so this scroller can scroll.
+            min-h-0 + flex-1 on the content wrapper would clamp height to the
+            viewport and clip overflow (footer unreachable / no scroll).
+            Studio (no footer): fill the shell and manage overflow internally.
+          */}
           <div className={`flex flex-col ${showFooter ? 'min-h-full' : 'h-full min-h-0'}`}>
-            <div className="flex min-h-0 flex-1 flex-col">{children}</div>
+            <div className={showFooter ? 'flex flex-col' : 'flex min-h-0 flex-1 flex-col'}>
+              {children}
+            </div>
             {showFooter ? <SiteFooter /> : null}
           </div>
         </div>

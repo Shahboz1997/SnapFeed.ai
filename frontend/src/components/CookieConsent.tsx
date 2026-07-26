@@ -20,6 +20,12 @@ export default function CookieConsent() {
   const { pathname } = useLocation();
   const [visible, setVisible] = useState(false);
   const onStudio = pathname === '/studio';
+  // AppShell mobile tab bar only on these routes.
+  const hasMobileTabBar =
+    pathname === '/' ||
+    pathname === '/studio' ||
+    pathname === '/gallery' ||
+    pathname === '/cabinet';
 
   useEffect(() => {
     setVisible(getCookieConsent() === null);
@@ -32,14 +38,16 @@ export default function CookieConsent() {
 
   if (!visible) return null;
 
+  const bottomClass = onStudio
+    ? // Phones: above fixed dock + tab. From sm dock is in-flow — only clear tab bar.
+      'bottom-[calc(var(--tab-bar-height)+var(--studio-dock-height)+env(safe-area-inset-bottom,0px))] pb-3 sm:bottom-[calc(var(--tab-bar-height)+env(safe-area-inset-bottom,0px))] lg:bottom-0 lg:pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]'
+    : hasMobileTabBar
+      ? 'bottom-0 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px)+var(--tab-bar-height))] lg:pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]'
+      : 'bottom-0 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]';
+
   return (
     <div
-      className={`fixed inset-x-0 z-[80] px-3 sm:px-4 ${
-        onStudio
-          ? // Phones: above fixed dock + tab. From sm dock is in-flow — only clear tab bar.
-            'bottom-[calc(var(--tab-bar-height)+var(--studio-dock-height)+env(safe-area-inset-bottom,0px))] pb-3 sm:bottom-[calc(var(--tab-bar-height)+env(safe-area-inset-bottom,0px))] lg:bottom-0 lg:pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]'
-          : 'bottom-0 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px)+var(--tab-bar-height))] lg:pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]'
-      }`}
+      className={`fixed inset-x-0 z-[80] px-3 sm:px-4 ${bottomClass}`}
       role="dialog"
       aria-label={t('legal.cookieBanner.title')}
     >

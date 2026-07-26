@@ -49,7 +49,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative flex min-h-[100dvh] flex-col overflow-y-auto overscroll-y-contain bg-white text-slate-900">
+    <div className="relative flex h-dvh max-h-dvh flex-col overflow-x-hidden overflow-y-auto overscroll-y-contain bg-white text-slate-900 [-webkit-overflow-scrolling:touch]">
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden="true">
         <div className="absolute -right-16 -top-16 h-[280px] w-[280px] rounded-full bg-indigo-200/30 blur-[100px]" />
         <div className="absolute -bottom-20 -left-16 h-[260px] w-[260px] rounded-full bg-purple-200/20 blur-[100px]" />

@@ -1,6 +1,4 @@
-import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useLocation } from 'react-router-dom';
 import LegalPageLayout, { LegalSections } from '../components/LegalPageLayout';
 import { COMPANY, COMPANY_FULL_ADDRESS } from '../constants/company';
 import { getLegalSections } from '../utils/legalSections';
@@ -8,20 +6,8 @@ import { getSupportEmail } from '../utils/supportContact';
 
 export default function PrivacyPage() {
   const { t } = useTranslation();
-  const { hash } = useLocation();
   const supportEmail = getSupportEmail();
   const sections = getLegalSections(t, 'legal.privacy.sections');
-
-  useEffect(() => {
-    if (!hash) return;
-    const id = hash.replace(/^#/, '');
-    const el = document.getElementById(id);
-    if (el) {
-      requestAnimationFrame(() => {
-        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      });
-    }
-  }, [hash, sections.length]);
 
   return (
     <LegalPageLayout
