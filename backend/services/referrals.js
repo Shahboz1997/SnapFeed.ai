@@ -56,28 +56,49 @@ async function ensureReferralCode(supabase, userId) {
 }
 
 async function addCredits(supabase, userId, amount) {
-  const { data: row, error } = await supabase
-    .from('profiles')
-    .select('credits')
-    .eq('id', userId)
-    .maybeSingle();
+  const { data: rpcBalance, error: rpcError } = await supabase.rpc('add_profile_credits', {
+    p_user_id: userId,
+    p_amount: amount,
+  });
 
-  if (error || !row) {
-    throw createError('Failed to update credits.', 500);
+  if (!rpcError && typeof rpcBalance === 'number') {
+    return rpcBalance;
   }
 
-  const next = (row.credits ?? 0) + amount;
-  const { error: updateError } = await supabase
-    .from('profiles')
-    .update({ credits: next })
-    .eq('id', userId)
-    .eq('credits', row.credits);
-
-  if (updateError) {
-    throw createError('Failed to update credits.', 500);
+  if (rpcError) {
+    console.warn('[referrals] add_profile_credits RPC unavailable, falling back:', rpcError.message);
   }
 
-  return next;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const { data: row, error } = await supabase
+      .from('profiles')
+      .select('credits')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (error || !row) {
+      throw createError('Failed to update credits.', 500);
+    }
+
+    const next = (row.credits ?? 0) + amount;
+    const { data: updated, error: updateError } = await supabase
+      .from('profiles')
+      .update({ credits: next })
+      .eq('id', userId)
+      .eq('credits', row.credits)
+      .select('credits')
+      .maybeSingle();
+
+    if (!updateError && updated) {
+      return updated.credits ?? next;
+    }
+
+    if (updateError) {
+      throw createError('Failed to update credits.', 500);
+    }
+  }
+
+  throw createError('Failed to update credits (concurrent update).', 500);
 }
 
 export async function getReferralSummary(userId) {

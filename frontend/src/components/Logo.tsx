@@ -1,3 +1,5 @@
+import { COMPANY } from '../constants/company';
+
 interface LogoProps {
   className?: string;
   title?: string;
@@ -5,7 +7,7 @@ interface LogoProps {
 
 export default function Logo({
   className = 'h-9 w-9 shrink-0',
-  title = 'SnapFeed.ai',
+  title = COMPANY.brand,
 }: LogoProps) {
   return (
     <svg

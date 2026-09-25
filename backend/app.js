@@ -5,6 +5,7 @@ import helmet from 'helmet';
 import imageRoutes from './routes/imageRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
 import authRoutes from './routes/authRoutes.js';
+import billingRoutes, { lemonWebhookHandler } from './routes/billingRoutes.js';
 import galleryRoutes from './routes/galleryRoutes.js';
 import { isSupabaseConfigured } from './config/supabase.js';
 import {
@@ -15,6 +16,7 @@ import {
 import { protect } from './middleware/supabaseAuth.js';
 import { apiRateLimiter } from './middleware/rateLimit.js';
 import { errorHandler } from './utils/errors.js';
+import { isLemonSqueezyConfigured } from './services/lemonSqueezy.js';
 
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -82,13 +84,26 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Guest-Fingerprint'],
 }));
 
-// Two full-res try-on photos as base64 can exceed 15mb.
-app.use(express.json({ limit: '40mb' }));
-app.use(express.urlencoded({ limit: '40mb', extended: true }));
+// Lemon webhooks need the raw body for HMAC verification (before JSON parser).
+app.post(
+  '/api/billing/webhook',
+  express.raw({ type: '*/*' }),
+  lemonWebhookHandler,
+);
+
+// Cap body size to reduce OOM under Ads concurrency (try-on = 1–2 images).
+// Clients should compress / downscale before upload when possible.
+app.use(express.json({ limit: '12mb' }));
+app.use(express.urlencoded({ limit: '12mb', extended: true }));
 
 app.use('/api', apiRateLimiter);
 
 app.get('/api/health', (_req, res) => {
+  // Public probe only — do not leak stack/provider configuration to Ads scrapers.
+  res.json({ status: 'ok' });
+});
+
+app.get('/api/health/detail', protect, (_req, res) => {
   const apiKey = process.env.OPENAI_API_KEY || '';
   res.json({
     status: 'ok',
@@ -98,6 +113,7 @@ app.get('/api/health', (_req, res) => {
     fashnConfigured: isFashnConfigured(),
     fashnModel: isFashnConfigured() ? getFashnModelName() : null,
     supabaseConfigured: isSupabaseConfigured(),
+    lemonConfigured: isLemonSqueezyConfigured(),
     bgRemovalBackend: process.env.PRODUCT_BG_REMOVAL_BACKEND || 'auto',
     imageUpscaleEnabled: process.env.IMAGE_UPSCALE_ENABLED !== 'false',
   });
@@ -139,7 +155,7 @@ app.get('/api/fashn/credits', protect, async (_req, res, next) => {
 
 app.get('/', (_req, res) => {
   res.json({
-    message: 'SnapFeed.ai API',
+    message: 'snapfeed.help API',
     endpoints: [
       'GET /api/health',
       'GET /api/ready',
@@ -150,10 +166,9 @@ app.get('/', (_req, res) => {
       'POST /api/chat/generate-prompt',
       'GET /api/auth/me',
       'POST /api/auth/claim-guest-credits',
-      'POST /api/auth/preview-deposit',
-      'POST /api/auth/create-deposit-request',
-      'POST /api/auth/notify-deposit-paid',
-      'GET /api/auth/deposit-requests',
+      'POST /api/billing/checkout',
+      'POST /api/billing/webhook',
+      'GET /api/billing/status',
       'GET /api/auth/referral',
       'POST /api/auth/referral/redeem',
       'POST /api/auth/welcome-email',
@@ -164,6 +179,7 @@ app.get('/', (_req, res) => {
 });
 
 app.use('/api', authRoutes);
+app.use('/api', billingRoutes);
 app.use('/api', galleryRoutes);
 app.use('/api', imageRoutes);
 app.use('/api', chatRoutes);
@@ -202,6 +218,10 @@ process.on('SIGINT', () => shutdown('SIGINT'));
 
 process.on('unhandledRejection', (reason) => {
   console.error('Unhandled promise rejection:', reason);
+  // Under Ads load, a leaked rejection can leave corrupted state — restart cleanly in production.
+  if (isProduction) {
+    shutdown('unhandledRejection');
+  }
 });
 
 process.on('uncaughtException', (error) => {

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import type { ReactNode } from 'react';
 import { Home, Images, Sparkles, UserRound } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { COMPANY } from '../constants/company';
 import HeaderRightSection from './HeaderRightSection';
 import Logo from './Logo';
 import SiteFooter from './SiteFooter';
@@ -50,7 +51,7 @@ export default function AppShell({
 
       {/* Desktop / tablet sidebar — hidden on phones */}
       <aside className="safe-area-top fixed inset-y-0 left-0 z-40 hidden w-16 flex-col items-center border-r border-zinc-200/70 bg-white/80 py-4 backdrop-blur-xl lg:flex">
-        <NavLink to="/" className="mb-6" aria-label="SnapFeed.ai">
+        <NavLink to="/" className="mb-6" aria-label={COMPANY.brand}>
           <Logo className="h-9 w-9 shadow-md shadow-zinc-200/60" />
         </NavLink>
 
@@ -127,7 +128,7 @@ export default function AppShell({
           <div className="safe-area-x flex h-14 items-center justify-between gap-2 px-3 sm:gap-3 sm:px-4 lg:gap-4 lg:px-6">
             <div className="min-w-0 flex-1">
               <h1 className="truncate font-display text-base tracking-tight text-zinc-900 sm:text-lg">
-                {t('header.productName')}
+                {COMPANY.brand}
               </h1>
             </div>
 

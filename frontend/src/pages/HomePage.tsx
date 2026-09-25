@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, Images, Sparkles } from 'lucide-react';
 import AppShell from '../components/AppShell';
+import LandingPricingCard from '../components/LandingPricingCard';
 import LoginModal from '../components/LoginModal';
 import PricingModal from '../components/PricingModal';
 import { useAuth } from '../context/AuthContext';
@@ -11,6 +12,7 @@ import { fetchGuestCredits } from '../api/guestCredits';
 import { POST_AUTH_FIRST_SUCCESS_KEY, POST_AUTH_MODAL_KEY } from '../constants/authFlow';
 import {
   GUEST_CREDITS_INITIAL,
+  mergeGuestCredits,
   readGuestCreditsFromStorage,
   writeGuestCreditsToStorage,
 } from '../constants/guestCredits';
@@ -80,8 +82,9 @@ export default function HomePage() {
       if (cancelled) return;
       setGuestCreditsLoading(false);
       if (typeof serverCredits === 'number') {
-        setGuestCredits(serverCredits);
-        writeGuestCreditsToStorage(serverCredits);
+        const merged = mergeGuestCredits(serverCredits, cached);
+        setGuestCredits(merged);
+        writeGuestCreditsToStorage(merged);
         return;
       }
       setGuestCredits(cached ?? GUEST_CREDITS_INITIAL);
@@ -339,6 +342,8 @@ export default function HomePage() {
             </Link>
           </div>
         </section>
+
+        <LandingPricingCard onSelectPlan={openCreditsFlow} />
       </main>
     </AppShell>
   );

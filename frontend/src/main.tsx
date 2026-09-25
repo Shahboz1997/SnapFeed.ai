@@ -16,32 +16,35 @@ import PrivacyPage from './pages/PrivacyPage';
 import RefundPage from './pages/RefundPage';
 import TermsPage from './pages/TermsPage';
 import CookieConsent from './components/CookieConsent';
+import ErrorBoundary from './components/ErrorBoundary';
 import './i18n';
 import './index.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <BrowserRouter>
-      <AuthProvider>
-        <ToastProvider>
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/studio" element={<App />} />
-            <Route path="/gallery" element={<GalleryPage />} />
-            <Route path="/try-on" element={<Navigate to="/studio" replace />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/auth/callback" element={<AuthCallback />} />
-            <Route path="/cabinet" element={<CabinetPage />} />
-            <Route path="/about" element={<AboutPage />} />
-            <Route path="/contact" element={<ContactPage />} />
-            <Route path="/terms" element={<TermsPage />} />
-            <Route path="/privacy" element={<PrivacyPage />} />
-            <Route path="/cookies" element={<CookiesPage />} />
-            <Route path="/refund" element={<RefundPage />} />
-          </Routes>
-          <CookieConsent />
-        </ToastProvider>
-      </AuthProvider>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <AuthProvider>
+          <ToastProvider>
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/studio" element={<App />} />
+              <Route path="/gallery" element={<GalleryPage />} />
+              <Route path="/try-on" element={<Navigate to="/studio" replace />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/auth/callback" element={<AuthCallback />} />
+              <Route path="/cabinet" element={<CabinetPage />} />
+              <Route path="/about" element={<AboutPage />} />
+              <Route path="/contact" element={<ContactPage />} />
+              <Route path="/terms" element={<TermsPage />} />
+              <Route path="/privacy" element={<PrivacyPage />} />
+              <Route path="/cookies" element={<CookiesPage />} />
+              <Route path="/refund" element={<RefundPage />} />
+            </Routes>
+            <CookieConsent />
+          </ToastProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   </StrictMode>,
 );

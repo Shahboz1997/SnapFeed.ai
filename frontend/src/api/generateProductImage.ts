@@ -7,7 +7,7 @@ import type {
 } from '../constants/studioOutputSettings';
 import { ApiError } from './generateImage';
 import type { AspectRatio, Platform } from './generateImage';
-import { authApiFetch } from './authFetch';
+import { authApiFetch, GENERATION_API_TIMEOUT_MS } from './authFetch';
 import { parseApiResponse } from './parseApiResponse';
 
 export type { TryOnCategory, TryOnGender } from '../constants/tryOnOptions';
@@ -32,6 +32,15 @@ export interface GenerateProductImageRequest {
   includeText?: boolean;
   overlayText?: string;
   lang?: string;
+  /** Cancels the in-flight HTTP request when aborted. */
+  signal?: AbortSignal;
+}
+
+export function isAbortError(error: unknown): boolean {
+  return (
+    (error instanceof DOMException && error.name === 'AbortError')
+    || (error instanceof Error && error.name === 'AbortError')
+  );
 }
 
 export type ProductBranchUsed = 'product' | 'tryon' | 'packshot' | 'product-to-model';
@@ -59,6 +68,8 @@ export async function generateProductImage(
   try {
     response = await authApiFetch('/api/generate-product-image', {
       method: 'POST',
+      signal: request.signal,
+      timeoutMs: GENERATION_API_TIMEOUT_MS,
       body: JSON.stringify({
         image: request.base64Image,
         base64Image: request.base64Image,
@@ -80,7 +91,8 @@ export async function generateProductImage(
         lang: request.lang,
       }),
     });
-  } catch {
+  } catch (error) {
+    if (isAbortError(error)) throw error;
     throw new ApiError('Unable to reach the server.', undefined, 'api.serverUnreachable');
   }
 

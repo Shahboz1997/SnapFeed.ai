@@ -1,7 +1,7 @@
 {
   "header": {
     "subtitle": "Virtual kiyim kiydirish",
-    "productName": "SnapFeed.ai"
+    "productName": "snapfeed.help"
   },
   "nav": {
     "label": "Asosiy navigatsiya",
@@ -10,7 +10,7 @@
     "gallery": "Galereya"
   },
   "home": {
-    "eyebrow": "SnapFeed.ai",
+    "eyebrow": "snapfeed.help",
     "title": "Bugun nima kiydirasiz?",
     "subtitle": "Kiyim va odam fotosini yuklang — bir necha soniyada virtual kiydirish.",
     "promptHint": "Kiyim + odam → natija",
@@ -63,7 +63,43 @@
         "desc": "Ilgichda yoki polda"
       }
     },
-    "freeTrialHint": "{{count}} bepul generatsiya — kirish shart emas"
+    "freeTrialHint": "{{count}} bepul generatsiya — kirish shart emas",
+    "pricingTitle": "Kredit paketlari",
+    "pricingSubtitle": "Bir marta to'lang va kerak bo'lganda generatsiya qiling.",
+    "pricingLegalNote": "Xarid qilib, siz rozilik bildirasiz:",
+    "pricingTierLabel": {
+      "starter": "Start",
+      "pro": "Pro",
+      "business": "Studio"
+    },
+    "pricingFeatureGenerations": "{{count}} AI generatsiya",
+    "pricingFeatureModes": "Try-on, packshot va product-to-model",
+    "proof": {
+      "eyebrow": "Farqni ko'ring",
+      "title": "Oldin va keyin",
+      "subtitle": "Haqiqiy SnapFeed natijalari: try-on, packshot va product-to-model.",
+      "tabsLabel": "Namuna rejimlari",
+      "dragHint": "Taqqoslash uchun slayderni torting",
+      "beforeAlt": "Oldin",
+      "afterAlt": "Keyin — SnapFeed natijasi",
+      "tabs": {
+        "tryon": "Try-On",
+        "packshot": "Packshot",
+        "productToModel": "Mahsulot → Model"
+      },
+      "tryon": {
+        "title": "Virtual kiydirish",
+        "desc": "Kiyimni odam fotosiga tabiiy o'tirish, mato va yorug'lik bilan kiydiring."
+      },
+      "packshot": {
+        "title": "Toza packshot",
+        "desc": "Kiyilgan yoki chalkash mahsulot suratlarini katalog packshotiga aylantiring."
+      },
+      "productToModel": {
+        "title": "Mahsulotdan modelga",
+        "desc": "Tekis mahsulot fotosini professional model suratiga aylantiring."
+      }
+    }
   },
   "studio": {
     "eyebrow": "Studiya",
@@ -102,6 +138,7 @@
     "history": "History",
     "historyEmpty": "Hali generatsiya yo‘q",
     "running": "Yaratilmoqda…",
+    "cancel": "Bekor qilish",
     "readyInGallery": "Tayyor — Galereyaga saqlandi",
     "waitTips": {
       "fitting": "Kiyim modelga kiydirilmoqda…",
@@ -172,7 +209,7 @@
     },
     "compare": "Solishtirish",
     "share": "Ulashish",
-    "shareCaption": "SnapFeed.ai da yaratilgan — virtual kiyish",
+    "shareCaption": "snapfeed.help da yaratilgan — https://snapfeed.help",
     "shareDone": "Ulashildi",
     "shareCopied": "Rasm saqlandi — matn nusxalandi",
     "shareFailed": "Ulashib bo‘lmadi. Yuklab ko‘ring.",
@@ -413,7 +450,10 @@
     "insufficientCredits": "Kreditlar tugadi. Davom etish uchun balansni to'ldiring.",
     "fingerprintRequired": "Brauzer sessiyasini tasdiqlab bo'lmadi. Sahifani yangilang.",
     "rateLimited": "Juda ko'p so'rovlar. Keyinroq qayta urinib ko'ring.",
-    "authUnavailable": "Autentifikatsiya vaqtincha mavjud emas."
+    "generationInProgress": "Generatsiya allaqachon ishlamoqda. Tugashini kuting.",
+    "generationTimeout": "Generatsiya vaqti tugadi. Qayta urinib ko'ring.",
+    "authUnavailable": "Autentifikatsiya vaqtincha mavjud emas.",
+    "creditsUnavailable": "Kreditlar vaqtincha mavjud emas. Qayta urinib ko‘ring."
   },
   "auth": {
     "signIn": "Kirish",
@@ -446,30 +486,17 @@
     "creditsPack_one": "{{count}} kredit",
     "creditsPack_other": "{{count}} kredit",
     "perCreditApprox": "≈ {{price}} / generatsiya",
-    "currency": "Valyuta",
-    "currencyLabel": {
-      "RUB": "₽ RU",
-      "USD": "$ EN",
-      "UZS": "soʻm UZ",
-      "TJS": "с. TG"
-    },
-    "buyButton": "Paket sotib olish",
+    "buyButton": "Sotib olish",
     "buyCredits": "Kredit sotib olish",
     "upgrade": "Yangilash",
     "popular": "Mashhur",
     "close": "Yopish",
-    "hint": "O'tkazma tekshirilgach, kreditlar 10–15 daqiqada qo'shiladi.",
-    "manualPaymentNotice": {
-      "RUB": "Paketni tanlang — SBP / karta / kripto rekvizitlari. To'lov tekshirilgach kreditlar qo'shiladi.",
-      "USD": "Paketni tanlang — karta / kripto / PayPal rekvizitlari. To'lov tekshirilgach kreditlar qo'shiladi.",
-      "UZS": "Paketni tanlang — soʻmda karta / kripto rekvizitlari. To'lov tekshirilgach kreditlar qo'shiladi.",
-      "TJS": "Paketni tanlang — somonida karta / kripto rekvizitlari. To'lov tekshirilgach kreditlar qo'shiladi."
-    },
+    "hint": "Lemon Squeezy muvaffaqiyatli to'lovidan so'ng kreditlar darhol hisobga o'tadi.",
     "contactButton": "Bog'lanish",
     "topUpTitle": "Balansni to'ldirish",
-    "topUpDescription": "Generatorda paket tanlang yoki to'g'ridan-to'g'ri bizga yozing.",
-    "mailSubject": "SnapFeed.ai — {{tier}}",
-    "mailBody": "Assalomu alaykum!\n\nMen {{tier}} ({{price}}) paketini sotib olmoqchiman.\nSnapFeed.ai emailim: {{email}}\n\nO'z hisobidan ishlovchi shaxsga to'lashga tayyorman. Rekvizitlarni yuboring.",
+    "topUpDescription": "Lemon Squeezy orqali karta to'lovi.",
+    "mailSubject": "snapfeed.help — {{tier}}",
+    "mailBody": "Assalomu alaykum!\n\n{{brand}} da kredit xaridida yordam kerak.\nEmailim: {{email}}\n\nRahmat!",
     "guestTitle": "Bepul generatsiyalar tugadi",
     "guestDescription": "Siz bepul mehmon generatsiyasidan foydalandingiz. Akkaunt ochish va kredit sotib olish uchun Google orqali kiring.",
     "guestBenefit1": "Kirishsiz {{count}} bepul generatsiya",
@@ -479,41 +506,20 @@
     "welcomeDescription": "Akkaunt tayyor. Davom etish uchun balansni to'ldiring.",
     "welcomeHint": "Ko'proq kerakmi? Quyidan paket tanlang.",
     "selectPlan": "Tanlash",
-    "backToPlans": "Tariflarga qaytish",
-    "invoiceTitle": "To'lov hisobi",
-    "invoiceHint": "Aniq summani quyidagi rekvizitlarga o'tkazing. To'lov izohida SnapFeed.ai emailingizni yozing.",
-    "invoicePack": "Paket",
-    "invoiceAmount": "Summa",
-    "invoiceStatusAwaitingPayment": "To'lov kutilmoqda",
-    "invoiceStatusPending": "Tekshiruv kutilmoqda",
-    "paymentDetails": "O'tkazma rekvizitlari",
-    "copyDetails": "Rekvizitlarni nusxalash",
-    "copyCard": "Kartani nusxalash",
     "copied": "Nusxalandi",
-    "copiedCard": "Karta raqami nusxalandi",
     "copyFailed": "Nusxalab bo'lmadi",
-    "iPaidButton": "To'ladim — adminni xabardor qilish",
-    "iPaidSending": "Bildirishnoma yuborilmoqda…",
-    "paidNotifyToast": "Ariza yuborildi. To'lov tekshirilgach, kreditlar 10–15 daqiqada qo'shiladi.",
-    "paidNotifyFailed": "Adminni xabardor qilib bo'lmadi. Qayta urinib ko'ring yoki supportga yozing.",
-    "paidNotifyNotConfigured": "Bildirishnomalar vaqtincha ishlamayapti. To'lovdan so'ng supportga yozing.",
-    "invoiceFooter": "Kreditlar chiqguncha chekni saqlang.",
     "billingHistory": "To'ldirish tarixi",
-    "billingEmpty": "Hali to'ldirish arizalari yo'q.",
-    "billingDate": "Sana",
-    "billingPlan": "Paket",
-    "billingAmount": "Summa",
-    "billingStatus": "Holat",
-    "statusPending": "Tekshiruv kutilmoqda",
-    "statusApproved": "Tasdiqlangan",
-    "statusRejected": "Rad etilgan",
+    "billingEmpty": "Xaridlar tarixi Lemon Squeezy ulanishidan keyin paydo bo'ladi.",
     "invalidPlan": "Noto'g'ri tarif tanlandi.",
     "authRequired": "To'lovni rasmiylashtirish uchun qayta tizimga kiring.",
-    "depositCreateFailed": "Ariza yaratib bo'lmadi. Qayta urinib ko'ring.",
-    "depositLoadFailed": "To'ldirish tarixini yuklab bo'lmadi.",
     "monthlyPack_one": "{{count}} kredit / oy",
     "monthlyPack_other": "{{count}} kredit / oy",
-    "subscriptionBadge": "Oylik paket"
+    "subscriptionBadge": "Oylik paket",
+    "lemonNotice": "Lemon Squeezy orqali xavfsiz karta to'lovi ({{brand}} uchun Merchant of Record). Kreditlar to'lovdan so'ng avtomatik qo'shiladi.",
+    "checkoutOpened": "Xavfsiz to'lov ochilmoqda…",
+    "checkoutFailed": "To'lovni boshlab bo'lmadi. Qayta urinib ko'ring.",
+    "lemonNotConfigured": "Karta to'lovi ulanmoqda. Hozir kredit kerak bo'lsa, supportga yozing.",
+    "checkoutSuccess": "To'lov qabul qilindi — balans yangilanmoqda."
   },
   "chat": {
     "title": "✨ AI Yordamchi (O'z tilingizda yozing)",
@@ -536,32 +542,38 @@
       "terms": "Foydalanish shartlari",
       "privacy": "Maxfiylik",
       "cookies": "Cookie",
-      "refunds": "Qaytarish",
+      "refunds": "Qaytarish siyosati",
       "rights": "Maxfiylik huquqlari",
-      "copyright": "© {{year}} {{legalName}}. {{jurisdiction}} da ro'yxatdan o'tgan. Barcha huquqlar himoyalangan.",
-      "operatedBy": "{{legalName}} SnapFeed.ai ni boshqaradi."
+      "copyright": "© {{year}} {{brand}}. Barcha huquqlar himoyalangan.",
+      "operatedBy": "{{legalName}} snapfeed.help ni boshqaradi.",
+      "supportEmail": "Qo'llab-quvvatlash",
+      "tagline": "Fashion brendlar uchun AI virtual kiydirish va mahsulot tasvirlari."
     },
     "cookieBanner": {
       "title": "Cookie va mahalliy saqlash",
-      "body": "SnapFeed.ai ishlashi uchun zarur cookie va local storage ishlatamiz (kirish, til, kredit limitlari, sozlamalar). Keyinroq analitika yoki reklama teglari qo'shilsa, ular faqat sizning tanlovingizga muvofiq ishlatiladi.",
+      "body": "snapfeed.help ishlashi uchun zarur cookie va local storage ishlatamiz (kirish, til, kredit limitlari, sozlamalar). Keyinroq analitika yoki reklama teglari qo'shilsa, ular faqat sizning tanlovingizga muvofiq ishlatiladi.",
       "accept": "Qabul qilish",
       "essential": "Faqat zaruriy",
       "learnMore": "Cookie siyosati"
     },
     "terms": {
       "title": "Foydalanish shartlari",
-      "updated": "2026-yil 26-iyul",
+      "updated": "2026-yil 25-sentabr",
       "intro": "Ushbu Foydalanish shartlari («Shartlar») {{brand}} dan foydalanishni tartibga soladi. Xizmatni {{legalName}} («Kompaniya», «biz») boshqaradi. Xizmatdan foydalanish orqali siz Shartlarga rozilik bildirasiz.",
       "contactTitle": "Aloqa",
       "contactBody": "To'lov, qo'llab-quvvatlash yoki huquqiy xabarlar uchun yozing:",
       "sections": [
         {
           "title": "Biz kimimiz",
-          "body": "SnapFeed.ai ni Stratum Technologies LLC boshqaradi — Wyoming, USA da ro'yxatdan o'tgan MChJ. Manzil: 30 N Gould St #28330, Sheridan, WY 82801, USA."
+          "body": "snapfeed.help ni ESD Media LLC boshqaradi — Wyoming, USA da ro'yxatdan o'tgan MChJ. Manzil: 30 N Gould St Ste N, Sheridan, WY 82801, USA."
+        },
+        {
+          "title": "Merchant of Record",
+          "body": "snapfeed.help dagi pullik kredit paketlari Lemon Squeezy, Inc. tomonidan sotiladi — rasmiy Merchant of Record. Lemon Squeezy checkout, to'lov, hisob-faktura va soliqni (sales tax / VAT) boshqaradi. ESD Media LLC snapfeed.help dasturini ishlatadi va muvaffaqiyatli to'lovdan keyin kreditlar va AI funksiyalariga kirishni ta'minlaydi."
         },
         {
           "title": "Xizmat",
-          "body": "SnapFeed.ai AI asosida virtual kiyim sinash va rasm generatsiyasi vositalarini taqdim etadi. Natijalar mashina tomonidan yaratiladi va noaniq yoki tijorat uchun mos kelmasligi mumkin. Natijalarni nashr yoki sotishdan oldin o'zingiz tekshirasiz."
+          "body": "snapfeed.help AI asosida virtual kiyim sinash va rasm generatsiyasi vositalarini taqdim etadi. Natijalar mashina tomonidan yaratiladi va noaniq yoki tijorat uchun mos kelmasligi mumkin. Natijalarni nashr yoki sotishdan oldin o'zingiz tekshirasiz."
         },
         {
           "title": "Yosh va akkaunt",
@@ -569,11 +581,11 @@
         },
         {
           "title": "Kreditlar va to'lov",
-          "body": "Generatsiyalar oldindan to'langan kreditlarni sarflaydi. Paketlarni ilova ichidagi depozit oqimi orqali sotib olish mumkin. Kreditlar odatda to'lov tekshirilgach hisobga o'tkaziladi (ko'pincha ~15 daqiqa ichida). Narxlar tanlangan valyutada ko'rsatiladi."
+          "body": "Generatsiyalar oldindan to'langan kreditlarni sarflaydi. Paketlar snapfeed.help orqali Lemon Squeezy checkout orqali sotib olinadi. Kreditlar odatda Lemon Squeezy muvaffaqiyatli to'lovni tasdiqlagach hisobga o'tkaziladi. Soliqni Merchant of Record sifatida Lemon Squeezy yig'ishi mumkin."
         },
         {
           "title": "Qaytarish",
-          "body": "Kreditlar raqamli tovarlar. Qaytarishlar Qaytarish siyosatiga muvofiq. Sarflangan kreditlar odatda qaytarilmaydi, qonun talab qilganda yoki jiddiy xizmat xatosi bo'lganda bundan mustasno."
+          "body": "Kreditlar raqamli tovarlar. Qaytarishlar Qaytarish siyosatiga muvofiq. AI generatsiyalari GPU va infratuzilma xarajatlarini talab qilgani uchun, sotib olingan kreditlar bilan birinchi AI generatsiyasidan keyin qaytarish odatda mumkin emas (qonun talab qilganda bundan mustasno)."
         },
         {
           "title": "Ruxsat etilgan foydalanish va AI kontent",
@@ -581,7 +593,7 @@
         },
         {
           "title": "Intellektual mulk",
-          "body": "SnapFeed.ai platformasi va brendi bizga tegishli. Yuklangan kontentga huquqlaringiz saqlanadi. Shartlarga muvofiq, akkauntingizdagi generatsiya natijalari sizniki; xizmatni ko'rsatish uchun cheklangan litsenziya berasiz."
+          "body": "snapfeed.help platformasi va brendi bizga tegishli. Yuklangan kontentga huquqlaringiz saqlanadi. Shartlarga muvofiq, akkauntingizdagi generatsiya natijalari sizniki; xizmatni ko'rsatish uchun cheklangan litsenziya berasiz."
         },
         {
           "title": "Kafolatlarning rad etilishi",
@@ -589,11 +601,11 @@
         },
         {
           "title": "Javobgarlikni cheklash",
-          "body": "Qonun ruxsat bergan darajada Stratum Technologies LLC bilvosita zararlarga javobgar emas. Umumiy javobgarlik da'vodan oldingi uch (3) oy ichida kreditlar uchun to'lagan summadan oshmaydi."
+          "body": "Qonun ruxsat bergan darajada ESD Media LLC bilvosita zararlarga javobgar emas. Umumiy javobgarlik da'vodan oldingi uch (3) oy ichida kreditlar uchun to'lagan summadan oshmaydi."
         },
         {
           "title": "Zararni qoplash",
-          "body": "Yuklamalar, promptlar, generatsiya qilingan rasmlar yoki xizmatni noto'g'ri ishlatishdan kelib chiqqan da'volar bo'yicha Stratum Technologies LLC ni himoya qilishga rozisiz."
+          "body": "Yuklamalar, promptlar, generatsiya qilingan rasmlar yoki xizmatni noto'g'ri ishlatishdan kelib chiqqan da'volar bo'yicha ESD Media LLC ni himoya qilishga rozisiz."
         },
         {
           "title": "To'xtatish",
@@ -601,7 +613,7 @@
         },
         {
           "title": "Amaldagi qonun",
-          "body": "Shartlar Wyoming, USA qonunlariga bo'ysunadi. Iste'molchi qonuni boshqacha talab qilmasa, sud yurisdiktsiyasi Wyomingda."
+          "body": "Shartlar Wyoming, USA qonunlariga bo'ysunadi. Iste'molchi qonuni boshqacha talab qilmasa, sud yurisdiktsiyasi Wyomingda. Lemon Squeezy xaridlariga Merchant of Record sifatida Lemon Squeezy shartlari ham tatbiq etilishi mumkin."
         },
         {
           "title": "O'zgarishlar",
@@ -611,14 +623,14 @@
     },
     "privacy": {
       "title": "Maxfiylik siyosati",
-      "updated": "2026-yil 26-iyul",
+      "updated": "2026-yil 25-sentabr",
       "intro": "Ushbu Maxfiylik siyosati {{legalName}} («Kompaniya», «biz») {{brand}} dan foydalanganda shaxsiy ma'lumotlarni qanday yig'ishi, ishlatishi va ulashishi haqida.",
       "contactTitle": "Aloqa",
       "contactBody": "Maxfiylik so'rovlari (kirish, o'chirish, tuzatish, CCPA) uchun yozing:",
       "sections": [
         {
           "title": "Ma'lumotlar nazoratchisi",
-          "body": "Stratum Technologies LLC, Wyoming, USA.\n30 N Gould St #28330, Sheridan, WY 82801, USA."
+          "body": "ESD Media LLC, Wyoming, USA.\n30 N Gould St Ste N, Sheridan, WY 82801, USA."
         },
         {
           "title": "Qanday ma'lumot yig'amiz",
@@ -626,11 +638,19 @@
         },
         {
           "title": "Qanday ishlatamiz",
-          "body": "SnapFeed.ai ni taqdim etish.\nTo'lovlarni qayta ishlash va firibgarlikni oldini olish.\nQo'llab-quvvatlash.\nXavfsizlik va ishonchlilik.\nQonun va Shartlarga rioya."
+          "body": "snapfeed.help ni taqdim etish.\nTo'lovlarni qayta ishlash va firibgarlikni oldini olish.\nQo'llab-quvvatlash.\nXavfsizlik va ishonchlilik.\nQonun va Shartlarga rioya."
         },
         {
           "title": "AI qayta ishlash va subprotsessorlar",
-          "body": "Natija yaratish uchun kerakli ma'lumotlar subprotsessorlarga yuboriladi:\n• Supabase\n• OpenAI\n• Replicate\n• FASHN\n• Hosting provayderlari"
+          "body": "Natija yaratish uchun kerakli ma'lumotlar subprotsessorlarga yuboriladi:\n• Supabase\n• OpenAI\n• Replicate\n• FASHN\n• Lemon Squeezy (Merchant of Record / to'lovlar)\n• Hosting provayderlari"
+        },
+        {
+          "title": "Yuklangan fotolar — xavfsiz qayta ishlash",
+          "body": "Virtual try-on uchun kiyim va odam fotolarini yuklashingiz mumkin. Fotolar faqat so'ralgan AI generatsiyasi, galereya va qo'llab-quvvatlash uchun ishlatiladi. Biz fotolarni sotmaymiz va reklama uchun ishlatmaymiz. Uzatish HTTPS/TLS orqali; saqlash cheklangan kirish bilan. Faqat huquqingiz bo'lgan fotolarni yuklang."
+        },
+        {
+          "title": "To'lovlar va Merchant of Record",
+          "body": "Lemon Squeezy, Inc. — snapfeed.help pullik kreditlari uchun rasmiy Merchant of Record. To'lovni Lemon Squeezy qayta ishlaydi; biz buyurtma tasdiqi va kredit hisobga o'tkazish uchun kerakli ma'lumotni olamiz. To'liq karta raqamlari snapfeed.help serverlarida saqlanmaydi."
         },
         {
           "title": "Mehmon rejimi",
@@ -655,7 +675,7 @@
         },
         {
           "title": "Bolalar maxfiyligi",
-          "body": "SnapFeed.ai 13 yoshdan kichik bolalarga mo'ljallanmagan. Agar bola ma'lumot yuborgan deb hisoblasangiz, bog'laning — o'chiramiz."
+          "body": "snapfeed.help 13 yoshdan kichik bolalarga mo'ljallanmagan. Agar bola ma'lumot yuborgan deb hisoblasangiz, bog'laning — o'chiramiz."
         },
         {
           "title": "Xalqaro foydalanuvchilar",
@@ -669,18 +689,18 @@
     },
     "about": {
       "title": "Biz haqimizda",
-      "updated": "2026-yil 26-iyul",
+      "updated": "2026-yil 25-sentabr",
       "intro": "{{brand}} — {{legalName}} tomonidan boshqariladigan AI virtual kiyim sinash va mahsulot tasvirlari studiyasi.",
       "entityTitle": "Yuridik shaxs",
       "registeredIn": "{{jurisdiction}} da ro'yxatdan o'tgan.",
       "sections": [
         {
           "title": "Nima qilamiz",
-          "body": "SnapFeed.ai brendlar va ijodkorlarga AI yordamida kiyimni modellarda ko'rsatishga yordam beradi — virtual try-on, packshot va product-to-model — oldindan to'langan kreditlar orqali."
+          "body": "snapfeed.help brendlar va ijodkorlarga AI yordamida kiyimni modellarda ko'rsatishga yordam beradi — virtual try-on, packshot va product-to-model — oldindan to'langan kreditlar orqali."
         },
         {
           "title": "Kim boshqaradi",
-          "body": "SnapFeed.ai — Wyoming MChJ Stratum Technologies LLC mahsuloti. Mijozlarga onlayn xizmat ko'rsatamiz va email orqali yordam beramiz."
+          "body": "snapfeed.help — Wyoming MChJ ESD Media LLC mahsuloti. Pullik xaridlar Lemon Squeezy, Inc. tomonidan Merchant of Record sifatida qayta ishlanadi. Mijozlarga onlayn xizmat ko'rsatamiz va email orqali yordam beramiz."
         }
       ]
     },
@@ -699,42 +719,42 @@
       ]
     },
     "refund": {
-      "title": "Qaytarish va bekor qilish siyosati",
-      "updated": "2026-yil 26-iyul",
-      "intro": "Ushbu siyosat {{brand}} dagi oldindan to'langan kreditlar qaytarilishini tushuntiradi.",
+      "title": "Qaytarish siyosati",
+      "updated": "2026-yil 25-sentabr",
+      "intro": "Ushbu siyosat {{brand}} dagi oldindan to'langan kreditlar qaytarilishini tushuntiradi. Lemon Squeezy, Inc. ushbu xaridlar uchun rasmiy Merchant of Record hisoblanadi.",
       "contactTitle": "Qaytarishni qanday so'rash",
       "contactBody": "Yozing:",
       "seeAlso": "Shuningdek qarang:",
       "sections": [
         {
-          "title": "Raqamli tovarlar",
-          "body": "Kreditlar AI generatsiyalari uchun oldindan to'langan raqamli tovarlar. Hisobga tushgach darhol foydalanish mumkin."
+          "title": "Raqamli tovarlar va Merchant of Record",
+          "body": "Kreditlar snapfeed.help dagi AI generatsiyalari uchun oldindan to'langan raqamli tovarlar. Xaridlarni Lemon Squeezy, Inc. Merchant of Record sifatida sotadi va qayta ishlaydi. Muvaffaqiyatli to'lovdan keyin kreditlar hisobga o'tkaziladi."
         },
         {
-          "title": "Kreditlarni yetkazish",
-          "body": "Depozit so'rovi va to'lov tasdiqidan keyin o'tkazmani tekshiramiz va kreditlarni hisobga o'tkazamiz — odatda ~15 daqiqa ichida."
+          "title": "Birinchi AI generatsiyasidan keyin qaytarish yo'q",
+          "body": "Har bir AI generatsiyasi GPU va infratuzilma xarajatini talab qiladi. Sotib olingan kreditlar bilan birinchi AI generatsiyasidan (yoki compute xarajatini keltiradigan ekvivalent urinishdan) keyin qaytarish mumkin emas, qonun talab qilganda bundan mustasno.\n\nAgar pullik AI generatsiyasini hali ishga tushirmagan bo'lsangiz, tezda qaytarish so'rovi uchun bog'laning."
         },
         {
           "title": "Qachon qaytarilishi mumkin",
-          "body": "To'lov qabul qilingan lekin kreditlar bizning xatoyimiz tufayli tushmagan; xariddan keyin jiddiy uzilish va kreditlar ishlatilmagan; yoki qonun talab qilganda."
+          "body": "To'lov qabul qilingan lekin kreditlar bizning xatoyimiz tufayli tushmagan; bir xil buyurtma uchun ikki marta yechilgan; xariddan keyin jiddiy uzilish va kreditlar ishlatilmagan; yoki qonun talab qilganda."
         },
         {
           "title": "Qachon qaytarilmaydi",
-          "body": "Sarflangan kreditlar; faqat AI sifati bo'yicha norozilik; Shartlar buzilishi; kreditlar ishlatilgandan keyingi xato xaridlari."
+          "body": "Birinchi AI generatsiyasidan keyin (GPU infratuzilma xarajatlari tufayli); sarflangan kreditlar; faqat AI sifati bo'yicha norozilik; Shartlar buzilishi; foydalanishdan keyin fikr o'zgartirish."
         },
         {
           "title": "Bekor qilish",
-          "body": "Istalgan vaqtda foydalanishni to'xtatishingiz mumkin. Bir martalik paketlar uchun obuna bekor qilish yo'q."
+          "body": "Istalgan vaqtda foydalanishni to'xtatishingiz mumkin. Lemon Squeezy orqali bir martalik paketlar uchun obuna bekor qilish yo'q (agar obuna aniq taklif etilmasa)."
         },
         {
           "title": "Chargeback",
-          "body": "To'lovni bahslashishdan oldin biz bilan bog'laning. Firibgarlik chargeback akkauntni bloklashi mumkin."
+          "body": "To'lovni bahslashishdan oldin biz (va kerak bo'lsa Lemon Squeezy) bilan bog'laning. Firibgarlik chargeback akkauntni bloklashi mumkin."
         }
       ]
     },
     "cookies": {
       "title": "Cookie siyosati",
-      "updated": "2026-yil 26-iyul",
+      "updated": "2026-yil 25-sentabr",
       "intro": "Ushbu Cookie siyosati {{brand}} cookie va o'xshash texnologiyalarni qanday ishlatishini tushuntiradi.",
       "contactTitle": "Aloqa",
       "contactBody": "Cookie haqida savollar uchun yozing:",

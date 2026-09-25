@@ -20,3 +20,13 @@ export function readGuestCreditsFromStorage(): number | null {
 export function writeGuestCreditsToStorage(credits: number): void {
   localStorage.setItem(GUEST_CREDITS_STORAGE_KEY, String(Math.max(0, credits)));
 }
+
+/**
+ * Guest credits only decrease. Prefer the lower of server vs local cache so a
+ * stale server "3" cannot restore free gens after a successful local spend.
+ */
+export function mergeGuestCredits(serverCredits: number, cached: number | null): number {
+  const server = Math.max(0, serverCredits);
+  if (cached === null) return Math.min(GUEST_CREDITS_INITIAL, server);
+  return Math.min(GUEST_CREDITS_INITIAL, server, Math.max(0, cached));
+}

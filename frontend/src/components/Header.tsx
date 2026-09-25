@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { COMPANY } from '../constants/company';
 import HeaderRightSection from './HeaderRightSection';
 import Logo from './Logo';
 
@@ -19,7 +20,7 @@ export default function Header({ credits, creditsLoading = false, onCreditsClick
           <Logo className="h-9 w-9 shrink-0 shadow-sm" />
           <div className="min-w-0 leading-tight">
             <h1 className="truncate text-base font-semibold tracking-tight text-slate-900">
-              SnapFeed.ai
+              {COMPANY.brand}
             </h1>
             <p className="hidden truncate text-xs text-slate-500 sm:block">
               {t('header.subtitle')}

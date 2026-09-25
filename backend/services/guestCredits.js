@@ -57,6 +57,14 @@ function getMemoryGuestCreditsRemaining(guestKey) {
   return Math.max(0, GUEST_MAX_GENERATIONS - used);
 }
 
+/** Prefer the stricter of DB and in-memory usage (avoids reset-to-3 after memory-only consume). */
+function mergeWithMemoryRemaining(guestKey, dbRemaining) {
+  if (!memoryGuestUsage.has(guestKey)) {
+    return dbRemaining;
+  }
+  return Math.min(dbRemaining, getMemoryGuestCreditsRemaining(guestKey));
+}
+
 function consumeMemoryGuestCredit(guestKey, amount = 1) {
   const cost = Math.max(1, Math.floor(Number(amount) || 1));
   const used = memoryGuestUsage.get(guestKey) ?? 0;
@@ -90,7 +98,29 @@ export function isGuestCreditsEnabled() {
   return isSupabaseConfigured();
 }
 
-export async function getGuestCreditsRemaining(guestKey) {
+/** Total free generations already used by this IP across all fingerprints. */
+async function getIpGenerationsUsed(supabase, ipAddress) {
+  if (!ipAddress) return 0;
+
+  const { data, error } = await supabase
+    .from('guest_usage')
+    .select('generations_used')
+    .eq('ip_address', ipAddress);
+
+  if (error) {
+    if (isGuestUsageSchemaError(error) || isGuestUsageTableMissing(error)) {
+      logGuestTableMissingOnce();
+      return 0;
+    }
+    console.error('[guestCredits] getIpGenerationsUsed failed:', error.message || error, error.code || '');
+    return 0;
+  }
+
+  if (!data?.length) return 0;
+  return data.reduce((sum, row) => sum + (Number(row.generations_used) || 0), 0);
+}
+
+export async function getGuestCreditsRemaining(guestKey, ipAddress = null) {
   const supabase = getSupabaseAdmin();
 
   if (!supabase || !guestKey) {
@@ -115,7 +145,16 @@ export async function getGuestCreditsRemaining(guestKey) {
 
   const used = data?.generations_used ?? 0;
   const max = data?.max_generations ?? GUEST_MAX_GENERATIONS;
-  return Math.max(0, max - used);
+  let remaining = mergeWithMemoryRemaining(guestKey, Math.max(0, max - used));
+
+  // Same IP must not get a fresh 3 free gens by clearing fingerprint / localStorage.
+  if (ipAddress) {
+    const ipUsed = await getIpGenerationsUsed(supabase, ipAddress);
+    const ipRemaining = Math.max(0, GUEST_MAX_GENERATIONS - ipUsed);
+    remaining = Math.min(remaining, ipRemaining);
+  }
+
+  return remaining;
 }
 
 export async function consumeGuestCredit(guestKey, ipAddress = null, amount = 1) {
@@ -126,7 +165,7 @@ export async function consumeGuestCredit(guestKey, ipAddress = null, amount = 1)
     return null;
   }
 
-  const remainingBefore = await getGuestCreditsRemaining(guestKey);
+  const remainingBefore = await getGuestCreditsRemaining(guestKey, ipAddress);
 
   if (remainingBefore < cost) {
     throw createError('Insufficient credits.', 402);
@@ -175,7 +214,7 @@ export async function consumeGuestCredit(guestKey, ipAddress = null, amount = 1)
       return consumeMemoryGuestCredit(guestKey, cost);
     }
 
-    return Math.max(0, data.max_generations - data.generations_used);
+    return getGuestCreditsRemaining(guestKey, ipAddress);
   }
 
   if (existing.generations_used + cost > existing.max_generations) {
@@ -207,8 +246,7 @@ export async function consumeGuestCredit(guestKey, ipAddress = null, amount = 1)
     return consumeGuestCredit(guestKey, ipAddress, cost);
   }
 
-  const totalAllowance = data.max_generations;
-  return Math.max(0, totalAllowance - data.generations_used);
+  return getGuestCreditsRemaining(guestKey, ipAddress);
 }
 
 function isMissingColumnError(error, column) {

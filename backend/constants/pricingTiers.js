@@ -1,5 +1,5 @@
 // Keep in sync with frontend/src/constants/depositCurrency.ts
-// Manual deposit amounts. Credits granted after admin approval.
+// Display prices for UI. Card checkout + credit grant go through Lemon Squeezy.
 // Target ≈ $0.25 / credit (API ≈ $0.07).
 export const PRICING_TIERS = {
   single: {
@@ -39,7 +39,7 @@ export const PRICING_TIERS = {
     priceTjs: 400,
     label: 'Business',
   },
-  /** Manual “subscription” pack — renew by buying again each month. */
+  /** One-time “monthly” pack — renew by buying again (or map to Lemon subscription variant). */
   monthly: {
     id: 'monthly',
     credits: 60,

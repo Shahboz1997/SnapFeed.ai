@@ -15,6 +15,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import {
   GUEST_CREDITS_INITIAL,
+  mergeGuestCredits,
   readGuestCreditsFromStorage,
   writeGuestCreditsToStorage,
 } from '../constants/guestCredits';
@@ -82,7 +83,20 @@ export default function GalleryPage() {
       }
     }
 
-    if (authLoading) return;
+    // Don't block forever on hung auth — show local/empty gallery after a short wait.
+    if (authLoading) {
+      const waitId = window.setTimeout(() => {
+        if (!cancelled) {
+          setItems(listGalleryItems());
+          setGalleryLoading(false);
+        }
+      }, 8_000);
+      return () => {
+        cancelled = true;
+        window.clearTimeout(waitId);
+      };
+    }
+
     void loadGallery();
     return () => { cancelled = true; };
   }, [user, authLoading, showToast, t]);
@@ -98,8 +112,9 @@ export default function GalleryPage() {
       if (cancelled) return;
       setGuestCreditsLoading(false);
       if (typeof serverCredits === 'number') {
-        setGuestCredits(serverCredits);
-        writeGuestCreditsToStorage(serverCredits);
+        const merged = mergeGuestCredits(serverCredits, cached);
+        setGuestCredits(merged);
+        writeGuestCreditsToStorage(merged);
         return;
       }
       setGuestCredits(cached ?? GUEST_CREDITS_INITIAL);

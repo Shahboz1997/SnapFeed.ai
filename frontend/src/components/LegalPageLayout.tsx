@@ -4,9 +4,11 @@ import { useTranslation } from 'react-i18next';
 import { fetchGuestCredits } from '../api/guestCredits';
 import {
   GUEST_CREDITS_INITIAL,
+  mergeGuestCredits,
   readGuestCreditsFromStorage,
   writeGuestCreditsToStorage,
 } from '../constants/guestCredits';
+import { COMPANY } from '../constants/company';
 import { useAuth } from '../context/AuthContext';
 import Header from './Header';
 import LoginModal from './LoginModal';
@@ -53,8 +55,9 @@ export default function LegalPageLayout({
       if (cancelled) return;
       setGuestCreditsLoading(false);
       if (typeof serverCredits === 'number') {
-        setGuestCredits(serverCredits);
-        writeGuestCreditsToStorage(serverCredits);
+        const merged = mergeGuestCredits(serverCredits, cached);
+        setGuestCredits(merged);
+        writeGuestCreditsToStorage(merged);
         return;
       }
       setGuestCredits(cached ?? GUEST_CREDITS_INITIAL);
@@ -121,7 +124,7 @@ export default function LegalPageLayout({
             type="button"
             onClick={() => navigate('/')}
             className="shrink-0"
-            aria-label="SnapFeed.ai"
+            aria-label={COMPANY.brand}
           >
             <Logo className="h-9 w-9 shadow-sm" />
           </button>

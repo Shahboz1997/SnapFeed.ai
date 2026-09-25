@@ -13,7 +13,6 @@ import { redeemReferralCode, requestWelcomeEmail } from '../api/referral';
 import { REFERRAL_CODE_STORAGE_KEY } from '../constants/authFlow';
 import { getSupabaseClient, isSupabaseConfigured } from '../lib/supabase';
 import type { UserProfile } from '../types/profile';
-import { DEFAULT_FREE_CREDITS } from '../types/profile';
 
 interface AuthContextValue {
   authEnabled: boolean;
@@ -29,13 +28,14 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+/** Never invent a free credit balance — show 0 until the real profile loads. */
 function buildFallbackProfile(user: User): UserProfile {
   return {
     id: user.id,
     email: user.email ?? null,
     full_name: user.user_metadata?.full_name ?? user.user_metadata?.name ?? null,
     avatar_url: user.user_metadata?.avatar_url ?? user.user_metadata?.picture ?? null,
-    credits: DEFAULT_FREE_CREDITS,
+    credits: 0,
     plan: 'free',
   };
 }
@@ -126,14 +126,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(initialSession?.user ?? null);
 
       if (initialSession?.user) {
-        loadProfile(initialSession.user)
-          .then(() => tryClaimGuestCredits())
-          .then(() => tryRedeemReferralAndWelcome())
-          .finally(() => {
-            if (mounted) setLoading(false);
-          });
+        // Auth UI must not wait on claim/referral network calls.
+        void loadProfile(initialSession.user).finally(() => {
+          if (mounted) setLoading(false);
+        });
+        void tryClaimGuestCredits().then(() => tryRedeemReferralAndWelcome());
       } else {
-        // Capture ?ref=CODE before OAuth for invite funnel.
         try {
           const ref = new URLSearchParams(window.location.search).get('ref');
           if (ref && ref.trim().length >= 4) {
@@ -151,9 +149,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(nextSession?.user ?? null);
 
       if (nextSession?.user) {
-        loadProfile(nextSession.user).then(() => {
+        void loadProfile(nextSession.user).then(() => {
           if (event === 'SIGNED_IN') {
-            tryClaimGuestCredits().then(() => tryRedeemReferralAndWelcome());
+            void tryClaimGuestCredits().then(() => tryRedeemReferralAndWelcome());
           }
         });
       } else {

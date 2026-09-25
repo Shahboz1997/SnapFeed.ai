@@ -123,6 +123,7 @@ type TryOnWorkspaceProps = {
   onModelSelect: (url: string) => void;
   onModelClear: () => void;
   onRun: () => void;
+  onCancel?: () => void;
   canRun: boolean;
   running?: boolean;
   runLabel: string;
@@ -188,6 +189,7 @@ export default function TryOnWorkspace({
   onModelSelect: _onModelSelect,
   onModelClear,
   onRun,
+  onCancel,
   canRun,
   running = false,
   runLabel,
@@ -647,6 +649,7 @@ export default function TryOnWorkspace({
                   <ModeTab
                     key={mode}
                     active={active}
+                    disabled={running}
                     onClick={() => onStudioModeChange?.(mode)}
                     icon={meta.icon}
                     label={meta.label}
@@ -692,24 +695,21 @@ export default function TryOnWorkspace({
 
             <motion.button
               type="button"
-              onClick={onRun}
-              disabled={
-                waitingInThisMode
-                  ? false
-                  : (!canRun || disabled || running)
-              }
+              onClick={running ? onCancel : onRun}
+              disabled={running ? !onCancel : (!canRun || disabled)}
               aria-busy={waitingInThisMode}
-              whileTap={waitingInThisMode ? undefined : { scale: 0.98 }}
+              aria-label={running ? t('studio.cancel') : runLabel}
+              whileTap={running ? undefined : { scale: 0.98 }}
               className={`run-btn-shimmer relative inline-flex h-10 shrink-0 items-center justify-center overflow-hidden rounded-xl transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/20 disabled:cursor-not-allowed disabled:opacity-40 sm:h-11 sm:w-auto sm:min-w-[7.5rem] sm:gap-2 sm:rounded-2xl sm:px-4 sm:text-sm sm:font-semibold md:h-12 md:min-w-[9rem] md:px-5 ${
-                waitingInThisMode
-                  ? 'w-10 bg-zinc-100 text-zinc-600 sm:w-auto'
+                running
+                  ? 'w-10 bg-zinc-100 text-zinc-700 hover:bg-zinc-200 sm:w-auto'
                   : 'w-10 bg-zinc-900 text-white hover:bg-zinc-800 sm:w-auto'
               }`}
             >
-              {waitingInThisMode ? (
+              {running ? (
                 <>
-                  <span className="meditative-spinner !h-4 !w-4 sm:!h-5 sm:!w-5" />
-                  <span className="hidden sm:inline">{runLabel}</span>
+                  <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" strokeWidth={2.5} />
+                  <span className="hidden sm:inline">{t('studio.cancel')}</span>
                 </>
               ) : (
                 <>

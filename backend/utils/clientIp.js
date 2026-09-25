@@ -1,13 +1,16 @@
+/**
+ * Client IP for rate limits / guest billing.
+ * Uses Express `req.ip` (honors `trust proxy`) — never the leftmost
+ * client-supplied X-Forwarded-For hop, which is trivial to spoof.
+ */
 export function getClientIp(req) {
-  const forwarded = req.headers['x-forwarded-for'];
+  const raw = req.ip || req.socket?.remoteAddress || null;
+  if (!raw || typeof raw !== 'string') return null;
 
-  if (typeof forwarded === 'string' && forwarded.trim()) {
-    return forwarded.split(',')[0].trim();
+  // Express may return IPv4-mapped IPv6 (::ffff:1.2.3.4)
+  if (raw.startsWith('::ffff:')) {
+    return raw.slice(7);
   }
 
-  if (Array.isArray(forwarded) && forwarded[0]) {
-    return forwarded[0].trim();
-  }
-
-  return req.socket?.remoteAddress || req.ip || null;
+  return raw;
 }

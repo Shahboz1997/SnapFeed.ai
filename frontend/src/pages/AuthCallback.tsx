@@ -5,6 +5,8 @@ import { POST_AUTH_FIRST_SUCCESS_KEY } from '../constants/authFlow';
 import { getSupabaseClient } from '../lib/supabase';
 import Spinner from '../components/Spinner';
 
+const AUTH_CALLBACK_TIMEOUT_MS = 12_000;
+
 export default function AuthCallback() {
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -17,37 +19,57 @@ export default function AuthCallback() {
     }
 
     let active = true;
+    let settled = false;
 
     function goToFirstSuccess() {
+      if (!active || settled) return;
+      settled = true;
       sessionStorage.setItem(POST_AUTH_FIRST_SUCCESS_KEY, '1');
       navigate('/studio', { replace: true });
     }
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!active) return;
-
-      if (session) {
-        goToFirstSuccess();
-        return;
-      }
-
+    function goToLogin() {
+      if (!active || settled) return;
+      settled = true;
       navigate('/login', { replace: true });
-    });
+    }
 
+    // Wait for PKCE exchange / SIGNED_IN — do not bounce to /login on the first empty getSession().
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!active) return;
 
-      if (event === 'SIGNED_IN' && session) {
+      if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
         goToFirstSuccess();
       }
 
       if (event === 'SIGNED_OUT') {
-        navigate('/login', { replace: true });
+        goToLogin();
       }
     });
 
+    void supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!active) return;
+      if (session) {
+        goToFirstSuccess();
+      }
+      // If empty, keep waiting for onAuthStateChange / timeout — code exchange may still be in flight.
+    });
+
+    const timeoutId = window.setTimeout(() => {
+      if (!active || settled) return;
+      void supabase.auth.getSession().then(({ data: { session } }) => {
+        if (!active || settled) return;
+        if (session) {
+          goToFirstSuccess();
+        } else {
+          goToLogin();
+        }
+      });
+    }, AUTH_CALLBACK_TIMEOUT_MS);
+
     return () => {
       active = false;
+      window.clearTimeout(timeoutId);
       subscription.unsubscribe();
     };
   }, [navigate, supabase]);

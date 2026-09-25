@@ -1,7 +1,9 @@
+import { COMPANY_SITE_HOST } from '../constants/company';
+
 /** Draw a light SnapFeed watermark on a PNG/JPEG blob for share/download. */
 export async function watermarkImageBlob(
   blob: Blob,
-  label = 'SnapFeed.ai',
+  label = COMPANY_SITE_HOST,
 ): Promise<Blob> {
   const bitmap = await createImageBitmap(blob);
   const canvas = document.createElement('canvas');

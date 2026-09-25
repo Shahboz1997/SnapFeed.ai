@@ -1,7 +1,7 @@
 {
   "header": {
     "subtitle": "Virtual clothing try-on",
-    "productName": "SnapFeed.ai"
+    "productName": "snapfeed.help"
   },
   "nav": {
     "label": "Main navigation",
@@ -10,12 +10,48 @@
     "gallery": "Gallery"
   },
   "home": {
-    "eyebrow": "SnapFeed.ai",
+    "eyebrow": "snapfeed.help",
     "title": "What will you try on today?",
     "subtitle": "Upload a garment and a photo — see a realistic virtual try-on in seconds.",
     "promptHint": "Clothing photo + person photo → try-on result",
     "cta": "Open Studio",
     "freeTrialHint": "{{count}} free generations — no sign-in required",
+    "pricingTitle": "Credit packs",
+    "pricingSubtitle": "Pay once, generate when you need — no commitment required.",
+    "pricingLegalNote": "By purchasing you agree to our",
+    "pricingTierLabel": {
+      "starter": "Starter",
+      "pro": "Pro",
+      "business": "Studio"
+    },
+    "pricingFeatureGenerations": "{{count}} AI generations",
+    "pricingFeatureModes": "Try-on, packshot & product-to-model",
+    "proof": {
+      "eyebrow": "See the difference",
+      "title": "Before & after",
+      "subtitle": "Real SnapFeed results for try-on, packshot, and product-to-model.",
+      "tabsLabel": "Example modes",
+      "dragHint": "Drag the slider to compare before and after",
+      "beforeAlt": "Before",
+      "afterAlt": "After — SnapFeed result",
+      "tabs": {
+        "tryon": "Try-On",
+        "packshot": "Packshot",
+        "productToModel": "Product → Model"
+      },
+      "tryon": {
+        "title": "Virtual try-on",
+        "desc": "Place a garment on a real person photo with natural fit, fabric, and lighting."
+      },
+      "packshot": {
+        "title": "Clean packshot",
+        "desc": "Turn worn or messy product shots into catalog-ready packshots."
+      },
+      "productToModel": {
+        "title": "Product to model",
+        "desc": "Transform a flat product photo into professional model photography."
+      }
+    },
     "shortcutsTitle": "Studio Shortcuts",
     "tryOnBadge": "Primary",
     "tryOnTitle": "Try-On",
@@ -92,7 +128,7 @@
     },
     "compare": "Compare",
     "share": "Share",
-    "shareCaption": "Made with SnapFeed.ai — virtual try-on & fashion studio",
+    "shareCaption": "Made with snapfeed.help — https://snapfeed.help",
     "shareDone": "Shared",
     "shareCopied": "Image saved — caption copied",
     "shareFailed": "Could not share. Try download instead.",
@@ -132,6 +168,7 @@
     "history": "History",
     "historyEmpty": "No generations yet",
     "running": "Running",
+    "cancel": "Cancel",
     "readyInGallery": "Ready — saved to Gallery",
     "waitTips": {
       "fitting": "Fitting the garment on the model…",
@@ -429,7 +466,10 @@
     "insufficientCredits": "You have no credits left. Top up your balance to continue.",
     "fingerprintRequired": "Could not verify your browser session. Please refresh the page.",
     "rateLimited": "Too many requests. Please try again later.",
-    "authUnavailable": "Authentication is temporarily unavailable."
+    "generationInProgress": "A generation is already in progress. Please wait for it to finish.",
+    "generationTimeout": "Generation timed out. Please try again.",
+    "authUnavailable": "Authentication is temporarily unavailable.",
+    "creditsUnavailable": "Credits are temporarily unavailable. Please try again."
   },
   "auth": {
     "signIn": "Sign in",
@@ -462,30 +502,17 @@
     "creditsPack_one": "{{count}} credit",
     "creditsPack_other": "{{count}} credits",
     "perCreditApprox": "≈ {{price}} / generation",
-    "currency": "Currency",
-    "currencyLabel": {
-      "RUB": "₽ RU",
-      "USD": "$ EN",
-      "UZS": "soʻm UZ",
-      "TJS": "с. TG"
-    },
-    "manualPaymentNotice": {
-      "RUB": "Choose a pack — invoice with SBP / card / crypto details. Credits after payment check.",
-      "USD": "Choose a pack — invoice with card / crypto / PayPal details. Credits after payment check.",
-      "UZS": "Choose a pack — invoice with card / crypto details (UZS). Credits after payment check.",
-      "TJS": "Choose a pack — invoice with card / crypto details (TJS). Credits after payment check."
-    },
-    "buyButton": "Buy pack",
+    "buyButton": "Buy",
     "buyCredits": "Buy credits",
     "upgrade": "Upgrade",
     "popular": "Popular",
     "close": "Close",
-    "hint": "Credits are added within 10–15 minutes after we verify your transfer.",
+    "hint": "Credits appear in your account right after a successful Lemon Squeezy payment.",
     "contactButton": "Contact",
     "topUpTitle": "Top up balance",
-    "topUpDescription": "Choose a pack in the generator or contact us directly.",
-    "mailSubject": "SnapFeed.ai — {{tier}}",
-    "mailBody": "Hello!\n\nI'd like to buy: {{tier}} ({{price}}).\nMy SnapFeed.ai email: {{email}}\n\nReady to pay to a self-employed provider. Please send payment details.",
+    "topUpDescription": "Pay securely with card via Lemon Squeezy.",
+    "mailSubject": "snapfeed.help — {{tier}}",
+    "mailBody": "Hello!\n\nI'd like help with a credit purchase on {{brand}}.\nMy email: {{email}}\n\nThanks!",
     "guestTitle": "Free generations used up",
     "guestDescription": "You've used your free guest generations. Sign in to create an account and purchase credits.",
     "guestBenefit1": "{{count}} free generations without sign-in",
@@ -498,38 +525,17 @@
     "monthlyPack_other": "{{count}} credits / month",
     "subscriptionBadge": "Monthly pack",
     "selectPlan": "Select",
-    "backToPlans": "Back to plans",
-    "invoiceTitle": "Payment invoice",
-    "invoiceHint": "Transfer the exact amount using the details below. Include your SnapFeed.ai email in the payment comment.",
-    "invoicePack": "Pack",
-    "invoiceAmount": "Amount",
-    "invoiceStatusAwaitingPayment": "Awaiting payment",
-    "invoiceStatusPending": "Awaiting review",
-    "paymentDetails": "Payment details",
-    "copyDetails": "Copy details",
-    "copyCard": "Copy card number",
     "copied": "Copied",
-    "copiedCard": "Card number copied",
     "copyFailed": "Could not copy to clipboard",
-    "iPaidButton": "I paid — notify admin",
-    "iPaidSending": "Sending notification…",
-    "paidNotifyToast": "Request submitted. Credits will be added within 10–15 minutes after payment review.",
-    "paidNotifyFailed": "Could not notify admin. Try again or contact support.",
-    "paidNotifyNotConfigured": "Notifications are temporarily unavailable. Contact support after paying.",
-    "invoiceFooter": "Keep the receipt until credits appear in your account.",
     "billingHistory": "Top-up history",
-    "billingEmpty": "No deposit requests yet.",
-    "billingDate": "Date",
-    "billingPlan": "Pack",
-    "billingAmount": "Amount",
-    "billingStatus": "Status",
-    "statusPending": "Pending review",
-    "statusApproved": "Approved",
-    "statusRejected": "Rejected",
+    "billingEmpty": "Purchases appear here after Lemon Squeezy checkout is connected.",
     "invalidPlan": "Invalid plan selected.",
     "authRequired": "Sign in again to complete payment.",
-    "depositCreateFailed": "Could not create a deposit request. Please try again.",
-    "depositLoadFailed": "Could not load deposit history."
+    "lemonNotice": "Secure card checkout via Lemon Squeezy (Merchant of Record for {{brand}}). Credits are added automatically after payment.",
+    "checkoutOpened": "Opening secure checkout…",
+    "checkoutFailed": "Could not start checkout. Please try again.",
+    "lemonNotConfigured": "Card payments are being connected. Contact support if you need credits now.",
+    "checkoutSuccess": "Payment received — refreshing your credits."
   },
   "chat": {
     "title": "✨ AI Assistant (Write in your language)",
@@ -552,32 +558,38 @@
       "terms": "Terms of Service",
       "privacy": "Privacy Policy",
       "cookies": "Cookie Policy",
-      "refunds": "Refunds",
+      "refunds": "Refund Policy",
       "rights": "Privacy Rights",
-      "copyright": "© {{year}} {{legalName}}. Registered in {{jurisdiction}}. All rights reserved.",
-      "operatedBy": "{{legalName}} operates SnapFeed.ai."
+      "copyright": "© {{year}} {{brand}}. All rights reserved.",
+      "operatedBy": "{{legalName}} operates snapfeed.help.",
+      "supportEmail": "Support",
+      "tagline": "AI virtual try-on and product imagery for fashion brands."
     },
     "cookieBanner": {
       "title": "Cookies & local storage",
-      "body": "We use essential cookies and local storage to run SnapFeed.ai (sign-in, language, credit limits, and preferences). If we add analytics or advertising tags later, we will only use them according to your choice.",
+      "body": "We use essential cookies and local storage to run snapfeed.help (sign-in, language, credit limits, and preferences). If we add analytics or advertising tags later, we will only use them according to your choice.",
       "accept": "Accept",
       "essential": "Essential only",
       "learnMore": "Cookie Policy"
     },
     "terms": {
       "title": "Terms of Service",
-      "updated": "July 26, 2026",
+      "updated": "September 25, 2026",
       "intro": "These Terms of Service (“Terms”) govern your access to and use of {{brand}}, a product operated by {{legalName}} (“Company,” “we,” “us”). By accessing or using the service, you agree to these Terms.",
       "contactTitle": "Contact",
       "contactBody": "For billing, support, or legal notices, email",
       "sections": [
         {
           "title": "Who we are",
-          "body": "SnapFeed.ai is operated by Stratum Technologies LLC, a limited liability company registered in Wyoming, USA. Mailing address: 30 N Gould St #28330, Sheridan, WY 82801, USA."
+          "body": "snapfeed.help is operated by ESD Media LLC, a limited liability company registered in Wyoming, USA. Mailing address: 30 N Gould St Ste N, Sheridan, WY 82801, USA."
+        },
+        {
+          "title": "Merchant of Record",
+          "body": "Paid credit packs and related digital purchases on snapfeed.help are sold by Lemon Squeezy, Inc. (“Lemon Squeezy”), which acts as the official Merchant of Record. Lemon Squeezy handles checkout, payment processing, invoicing, and applicable sales tax / VAT collection and remittance. ESD Media LLC operates the snapfeed.help software and fulfills digital access to credits and AI features after a successful purchase. For payment-method questions, charge disputes related to Lemon Squeezy checkout, or tax invoices, Lemon Squeezy’s terms and customer support also apply."
         },
         {
           "title": "The service",
-          "body": "SnapFeed.ai provides AI-powered virtual try-on and related image generation tools (including garment try-on, packshot, and product-to-model workflows). Outputs are machine-generated and may be inaccurate, incomplete, or unsuitable for a particular commercial use. You are solely responsible for reviewing results before publishing or selling them."
+          "body": "snapfeed.help provides AI-powered virtual try-on and related image generation tools (including garment try-on, packshot, and product-to-model workflows). Outputs are machine-generated and may be inaccurate, incomplete, or unsuitable for a particular commercial use. You are solely responsible for reviewing results before publishing or selling them."
         },
         {
           "title": "Eligibility and accounts",
@@ -585,11 +597,11 @@
         },
         {
           "title": "Credits and payments",
-          "body": "Generations consume prepaid credits. Credit packs may be purchased through the in-app deposit flow. Payment instructions may include bank/card transfer or other methods we display at checkout. Credits are typically applied after we verify payment (often within about 15 minutes during business hours, but timing may vary). Prices are shown in the selected currency before you confirm a deposit request. Taxes may apply where required by law."
+          "body": "Generations consume prepaid credits. Credit packs may be purchased through Lemon Squeezy checkout linked from snapfeed.help. Prices are shown before you confirm payment. Credits are typically applied to your account after Lemon Squeezy confirms a successful payment (usually promptly; timing may vary if additional verification is required). Taxes may be calculated and collected by Lemon Squeezy as Merchant of Record where required by law."
         },
         {
           "title": "Refunds",
-          "body": "Credits are digital goods. Refunds are handled under our Refund Policy. Consumed credits (used generations) are generally non-refundable except where required by law or when we determine a material service failure occurred."
+          "body": "Credits are digital goods delivered electronically. Refunds are governed by our Refund Policy. Because AI generations incur immediate GPU and infrastructure costs, refunds are generally not available after the first AI generation has been run with purchased credits, except where required by law or as otherwise stated in the Refund Policy."
         },
         {
           "title": "Acceptable use and AI content",
@@ -597,7 +609,7 @@
         },
         {
           "title": "Intellectual property",
-          "body": "We own the SnapFeed.ai platform, branding, and software. You retain rights in content you upload. Subject to these Terms and applicable law, you own the outputs you generate for your account, and you grant us a limited license to process uploads and outputs solely to provide, secure, and improve the service (including through subprocessors listed in the Privacy Policy)."
+          "body": "We own the snapfeed.help platform, branding, and software. You retain rights in content you upload. Subject to these Terms and applicable law, you own the outputs you generate for your account, and you grant us a limited license to process uploads and outputs solely to provide, secure, and improve the service (including through subprocessors listed in the Privacy Policy)."
         },
         {
           "title": "Disclaimer of warranties",
@@ -605,11 +617,11 @@
         },
         {
           "title": "Limitation of liability",
-          "body": "TO THE MAXIMUM EXTENT PERMITTED BY LAW, STRATUM TECHNOLOGIES LLC AND ITS OFFICERS, DIRECTORS, AND AGENTS WILL NOT BE LIABLE FOR INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR ANY LOSS OF PROFITS, DATA, OR GOODWILL. OUR TOTAL LIABILITY FOR ANY CLAIM RELATING TO THE SERVICE WILL NOT EXCEED THE AMOUNT YOU PAID US FOR CREDITS IN THE THREE (3) MONTHS BEFORE THE CLAIM."
+          "body": "TO THE MAXIMUM EXTENT PERMITTED BY LAW, ESD MEDIA LLC AND ITS OFFICERS, DIRECTORS, AND AGENTS WILL NOT BE LIABLE FOR INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR ANY LOSS OF PROFITS, DATA, OR GOODWILL. OUR TOTAL LIABILITY FOR ANY CLAIM RELATING TO THE SERVICE WILL NOT EXCEED THE AMOUNT YOU PAID FOR CREDITS IN THE THREE (3) MONTHS BEFORE THE CLAIM."
         },
         {
           "title": "Indemnity",
-          "body": "You agree to indemnify and hold harmless Stratum Technologies LLC from claims arising out of your uploads, prompts, generated images, or misuse of the service."
+          "body": "You agree to indemnify and hold harmless ESD Media LLC from claims arising out of your uploads, prompts, generated images, or misuse of the service."
         },
         {
           "title": "Termination",
@@ -617,7 +629,7 @@
         },
         {
           "title": "Governing law",
-          "body": "These Terms are governed by the laws of the State of Wyoming, USA, without regard to conflict-of-law rules. Courts located in Wyoming will have exclusive jurisdiction, except where applicable law requires otherwise for consumers."
+          "body": "These Terms are governed by the laws of the State of Wyoming, USA, without regard to conflict-of-law rules. Courts located in Wyoming will have exclusive jurisdiction, except where applicable law requires otherwise for consumers. Lemon Squeezy purchases may also be subject to Lemon Squeezy’s own terms as Merchant of Record."
         },
         {
           "title": "Changes",
@@ -627,26 +639,34 @@
     },
     "privacy": {
       "title": "Privacy Policy",
-      "updated": "July 26, 2026",
+      "updated": "September 25, 2026",
       "intro": "This Privacy Policy explains how {{legalName}} (“Company,” “we,” “us”) collects, uses, and shares personal information when you use {{brand}}.",
       "contactTitle": "Contact",
       "contactBody": "For privacy requests (access, deletion, correction, or CCPA inquiries), email",
       "sections": [
         {
           "title": "Controller",
-          "body": "Stratum Technologies LLC, registered in Wyoming, USA.\n30 N Gould St #28330, Sheridan, WY 82801, USA."
+          "body": "ESD Media LLC, registered in Wyoming, USA.\n30 N Gould St Ste N, Sheridan, WY 82801, USA."
         },
         {
           "title": "Information we collect",
-          "body": "Account data from Google sign-in (email, name, profile photo).\nCredit balance, plan, and deposit/payment request records.\nImages you upload and images generated by the service.\nGuest usage data: a browser fingerprint hash and optional IP address to enforce free limits.\nTechnical data such as device/browser type, language preference, and basic logs needed for security and reliability.\nSupport communications you send us."
+          "body": "Account data from Google sign-in (email, name, profile photo).\nCredit balance, plan, and purchase / payment records.\nImages you upload (including garment and person/model photos) and images generated by the service.\nGuest usage data: a browser fingerprint hash and optional IP address to enforce free limits.\nTechnical data such as device/browser type, language preference, and basic logs needed for security and reliability.\nSupport communications you send us.\nPayment-related identifiers shared by our Merchant of Record as needed to fulfill an order (for example, order ID and purchase status)."
         },
         {
           "title": "How we use information",
-          "body": "Provide and operate SnapFeed.ai (accounts, credits, generations, gallery).\nProcess payments and prevent fraud or abuse.\nProvide customer support.\nImprove reliability and safety of the service.\nComply with law and enforce our Terms."
+          "body": "Provide and operate snapfeed.help (accounts, credits, generations, gallery).\nProcess and fulfill purchases and prevent fraud or abuse.\nProvide customer support.\nImprove reliability and safety of the service.\nComply with law and enforce our Terms."
+        },
+        {
+          "title": "Photos you upload — secure processing",
+          "body": "snapfeed.help is a virtual try-on and product imagery service. To create results, you may upload photos of garments and people. We treat these uploads as sensitive user content and process them only as needed to deliver the feature you request.\n\n• Purpose limitation: uploaded photos are used to run AI generation (and related quality/safety checks), store results in your gallery when applicable, and provide support if you contact us about a specific job.\n• Access controls: access to uploaded and generated images is limited to systems and personnel needed to operate, secure, and support the service.\n• Transmission & storage: photos are transmitted over encrypted connections (HTTPS/TLS) and stored with our infrastructure providers under access-restricted accounts.\n• No sale of photos: we do not sell your uploaded photos, and we do not use them for advertising or unrelated third-party marketing.\n• Subprocessors: to generate try-on and related imagery, necessary image/prompt data is sent to AI and hosting subprocessors listed below, solely to perform the requested processing.\n• Retention: you may delete gallery items where the product allows; account deletion and support requests for deletion of associated uploads are handled as described in “Retention” and “Your privacy rights.” Backup copies may persist for a limited period.\n• Your responsibility: only upload photos you have the right to use (including consent/model releases where required)."
+        },
+        {
+          "title": "Payments and Merchant of Record",
+          "body": "Lemon Squeezy, Inc. is the official Merchant of Record for paid credit packs sold through snapfeed.help. When you checkout, Lemon Squeezy processes your payment and may collect billing details, tax information, and related transaction data under Lemon Squeezy’s privacy policy. We receive confirmation of purchase and the information needed to credit your account; we do not store full payment card numbers on snapfeed.help servers."
         },
         {
           "title": "AI processing and subprocessors",
-          "body": "To generate results, we send necessary image/prompt data to subprocessors, which may include:\n• Supabase (authentication, database, storage)\n• OpenAI (prompt assistance / image-related AI)\n• Replicate (image generation models)\n• FASHN (virtual try-on processing)\n• Hosting providers for our frontend/backend\nThese providers process data on our instructions to deliver the service."
+          "body": "To generate results, we send necessary image/prompt data to subprocessors, which may include:\n• Supabase (authentication, database, storage)\n• OpenAI (prompt assistance / image-related AI)\n• Replicate (image generation models)\n• FASHN (virtual try-on processing)\n• Lemon Squeezy (Merchant of Record / payments)\n• Hosting providers for our frontend/backend\nThese providers process data on our instructions (or, for Lemon Squeezy, as independent Merchant of Record for payment data) to deliver the service."
         },
         {
           "title": "Guest usage",
@@ -658,11 +678,11 @@
         },
         {
           "title": "Retention",
-          "body": "We keep account and credit records while your account is active and as needed for legal, tax, and fraud-prevention purposes. Generated gallery images are kept until you delete them or your account is deleted, subject to backup retention windows. Guest fingerprint/IP limit data is retained only as long as needed to enforce abuse controls."
+          "body": "We keep account and credit records while your account is active and as needed for legal, tax, and fraud-prevention purposes. Uploaded and generated gallery images are kept until you delete them or your account is deleted, subject to backup retention windows. Guest fingerprint/IP limit data is retained only as long as needed to enforce abuse controls."
         },
         {
           "title": "Security",
-          "body": "We use reasonable administrative and technical safeguards. No method of transmission or storage is 100% secure."
+          "body": "We use reasonable administrative and technical safeguards appropriate to an image-processing SaaS, including encrypted transit, access-restricted storage, and least-privilege practices for production systems. No method of transmission or storage is 100% secure. If you believe your account or uploads have been compromised, contact us immediately."
         },
         {
           "id": "privacy-rights",
@@ -671,7 +691,7 @@
         },
         {
           "title": "Children’s privacy",
-          "body": "SnapFeed.ai is not directed to children under 13, and we do not knowingly collect personal information from children under 13. If you believe a child provided data, contact us and we will take appropriate steps to delete it."
+          "body": "snapfeed.help is not directed to children under 13, and we do not knowingly collect personal information from children under 13. If you believe a child provided data, contact us and we will take appropriate steps to delete it."
         },
         {
           "title": "International users",
@@ -685,24 +705,24 @@
     },
     "about": {
       "title": "About",
-      "updated": "July 26, 2026",
+      "updated": "September 25, 2026",
       "intro": "{{brand}} is an AI virtual try-on and product imagery studio operated by {{legalName}}.",
       "entityTitle": "Legal entity",
       "registeredIn": "Registered in {{jurisdiction}}.",
       "sections": [
         {
           "title": "What we do",
-          "body": "SnapFeed.ai helps brands and creators visualize garments on models using AI—virtual try-on, packshot cleanup, and product-to-model imagery—metered by prepaid credits."
+          "body": "snapfeed.help helps brands and creators visualize garments on models using AI—virtual try-on, packshot cleanup, and product-to-model imagery—metered by prepaid credits."
         },
         {
-          "title": "Who operates SnapFeed.ai",
-          "body": "SnapFeed.ai is a product of Stratum Technologies LLC, a Wyoming limited liability company. We serve customers online and provide support by email."
+          "title": "Who operates snapfeed.help",
+          "body": "snapfeed.help is a product of ESD Media LLC, a Wyoming limited liability company. Paid purchases are processed by Lemon Squeezy, Inc. as Merchant of Record. We serve customers online and provide support by email."
         }
       ]
     },
     "contact": {
       "title": "Contact",
-      "updated": "July 26, 2026",
+      "updated": "September 25, 2026",
       "intro": "Reach the {{brand}} team for support, billing, privacy, or partnership questions.",
       "emailTitle": "Email",
       "mailTitle": "Mailing address",
@@ -710,47 +730,47 @@
       "sections": [
         {
           "title": "What to include",
-          "body": "For faster help, include your account email, a short description of the issue, and (for payments) your deposit request details or transfer reference."
+          "body": "For faster help, include your account email, a short description of the issue, and (for payments) your Lemon Squeezy order ID or receipt details."
         }
       ]
     },
     "refund": {
-      "title": "Refund & Cancellation Policy",
-      "updated": "July 26, 2026",
-      "intro": "This policy explains how refunds work for prepaid credits on {{brand}}.",
+      "title": "Refund Policy",
+      "updated": "September 25, 2026",
+      "intro": "This Refund Policy explains how refunds work for prepaid credits purchased on {{brand}}. Lemon Squeezy, Inc. is the official Merchant of Record for these purchases.",
       "contactTitle": "How to request a refund",
       "contactBody": "Email",
       "seeAlso": "Also see our",
       "sections": [
         {
-          "title": "Digital goods",
-          "body": "Credits are prepaid digital goods used to run AI generations. Once purchased and applied to your account, they are available for immediate use."
+          "title": "Digital goods and Merchant of Record",
+          "body": "Credits are prepaid digital goods used to run AI generations on snapfeed.help. Purchases are sold and processed by Lemon Squeezy, Inc. as Merchant of Record. After a successful payment, credits are applied to your snapfeed.help account so you can use the service immediately."
         },
         {
-          "title": "Delivery of credits",
-          "body": "After you submit a deposit request and confirm payment, we review the transfer and apply credits to your account—typically within about 15 minutes during monitoring hours. Delays can occur outside business hours or if payment details are incomplete."
+          "title": "No refunds after the first AI generation",
+          "body": "Because each AI generation consumes paid GPU compute and related infrastructure, refunds are not available once you have used purchased credits to complete your first AI generation (or an equivalent paid generation attempt that incurs compute cost), except where required by applicable law.\n\nIf you have not yet run any paid AI generation with the purchased credits, you may contact us promptly to request a refund review."
         },
         {
           "title": "When refunds may be granted",
-          "body": "We may refund or re-credit when:\n• Payment was received but credits were not applied due to our error\n• A material service outage prevented use shortly after purchase and credits remain unused\n• Required by applicable law"
+          "body": "We (and/or Lemon Squeezy, as applicable) may refund or re-credit when:\n• Payment was received but credits were not applied to your account due to our error\n• A duplicate charge occurred for the same order\n• A material service outage prevented use shortly after purchase and credits remain unused\n• Required by applicable law"
         },
         {
           "title": "When refunds are not available",
-          "body": "Refunds are generally not available for:\n• Credits already consumed by successful or attempted generations\n• Dissatisfaction with subjective AI output quality alone\n• Violations of our Terms (including payment abuse)\n• Duplicate or mistaken purchases after credits were used"
+          "body": "Refunds are generally not available for:\n• Purchases after the first AI generation has been run with those credits (due to GPU infrastructure costs)\n• Credits already consumed by successful or attempted generations\n• Dissatisfaction with subjective AI output quality alone\n• Violations of our Terms (including payment abuse)\n• Change of mind after digital delivery and use"
         },
         {
           "title": "Cancellation",
-          "body": "You can stop using SnapFeed.ai at any time. There is no recurring subscription cancellation for one-time credit packs. Unused credits remain on the account unless refunded under this policy or required by law."
+          "body": "You can stop using snapfeed.help at any time. There is no recurring subscription cancellation for one-time credit packs sold through Lemon Squeezy unless a subscription product is explicitly offered. Unused credits remain on the account unless refunded under this policy or required by law."
         },
         {
           "title": "Chargebacks",
-          "body": "Please contact us before filing a payment dispute so we can investigate. Fraudulent chargebacks may result in account suspension."
+          "body": "Please contact us (and, where relevant, Lemon Squeezy) before filing a payment dispute so we can investigate. Fraudulent chargebacks may result in account suspension."
         }
       ]
     },
     "cookies": {
       "title": "Cookie Policy",
-      "updated": "July 26, 2026",
+      "updated": "September 25, 2026",
       "intro": "This Cookie Policy explains how {{brand}} uses cookies and similar technologies.",
       "contactTitle": "Contact",
       "contactBody": "Questions about cookies? Email",

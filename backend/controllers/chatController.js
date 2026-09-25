@@ -2,11 +2,28 @@ import { generateDallePrompt, generateGrokPromptFromUserText } from '../services
 import { mapOpenAIError } from '../utils/errors.js';
 import { normalizeLangCode } from '../utils/languages.js';
 
+const MAX_MESSAGE_CHARS = 4000;
+const MAX_HISTORY_ENTRIES = 20;
+const MAX_HISTORY_CONTENT_CHARS = 2000;
+
+function truncate(value, max) {
+  if (typeof value !== 'string') return '';
+  const trimmed = value.trim();
+  return trimmed.length > max ? trimmed.slice(0, max) : trimmed;
+}
+
 function validateHistory(history) {
   if (history === undefined) return [];
 
   if (!Array.isArray(history)) {
     throw Object.assign(new Error('history must be an array when provided.'), { statusCode: 400 });
+  }
+
+  if (history.length > MAX_HISTORY_ENTRIES) {
+    throw Object.assign(
+      new Error(`history cannot exceed ${MAX_HISTORY_ENTRIES} entries.`),
+      { statusCode: 400 },
+    );
   }
 
   const invalidEntry = history.find(
@@ -25,7 +42,10 @@ function validateHistory(history) {
     );
   }
 
-  return history;
+  return history.map((entry) => ({
+    role: entry.role,
+    content: truncate(entry.content, MAX_HISTORY_CONTENT_CHARS),
+  }));
 }
 
 export async function chatAssistant(req, res) {
@@ -49,7 +69,17 @@ export async function chatAssistant(req, res) {
         });
       }
 
-      const result = await generateGrokPromptFromUserText(grokInput, normalizedLang);
+      if (grokInput.length > MAX_MESSAGE_CHARS) {
+        return res.status(400).json({
+          success: false,
+          error: `userText cannot exceed ${MAX_MESSAGE_CHARS} characters.`,
+        });
+      }
+
+      const result = await generateGrokPromptFromUserText(
+        truncate(grokInput, MAX_MESSAGE_CHARS),
+        normalizedLang,
+      );
 
       return res.json({
         success: true,
@@ -68,6 +98,13 @@ export async function chatAssistant(req, res) {
       });
     }
 
+    if (message.length > MAX_MESSAGE_CHARS) {
+      return res.status(400).json({
+        success: false,
+        error: `Message cannot exceed ${MAX_MESSAGE_CHARS} characters.`,
+      });
+    }
+
     let validatedHistory;
     try {
       validatedHistory = validateHistory(history);
@@ -78,7 +115,11 @@ export async function chatAssistant(req, res) {
       });
     }
 
-    const prompt = await generateDallePrompt(message, validatedHistory, normalizedLang);
+    const prompt = await generateDallePrompt(
+      truncate(message, MAX_MESSAGE_CHARS),
+      validatedHistory,
+      normalizedLang,
+    );
 
     return res.json({ success: true, prompt });
   } catch (error) {

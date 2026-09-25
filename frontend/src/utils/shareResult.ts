@@ -1,10 +1,15 @@
 import { downloadImageBlob, triggerBlobDownload } from '../api/downloadImage';
+import { COMPANY, COMPANY_SITE_HOST } from '../constants/company';
 import { watermarkImageBlob } from './watermarkImage';
 
 export async function shareOrDownloadResult(imageUrl: string, caption: string): Promise<'shared' | 'downloaded' | 'copied'> {
   const raw = await downloadImageBlob(imageUrl);
   const blob = await watermarkImageBlob(raw);
   const file = new File([blob], `snapfeed-${Date.now()}.png`, { type: 'image/png' });
+  const shareTitle = COMPANY.brand;
+  const shareText = caption.includes(COMPANY_SITE_HOST)
+    ? caption
+    : `${caption}\n${COMPANY.siteUrl}`;
 
   if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
     try {
@@ -14,12 +19,12 @@ export async function shareOrDownloadResult(imageUrl: string, caption: string): 
       if (canFiles) {
         await navigator.share({
           files: [file],
-          title: 'SnapFeed.ai',
-          text: caption,
+          title: shareTitle,
+          text: shareText,
         });
         return 'shared';
       }
-      await navigator.share({ title: 'SnapFeed.ai', text: caption });
+      await navigator.share({ title: shareTitle, text: shareText });
       triggerBlobDownload(blob, file.name);
       return 'shared';
     } catch (err) {
@@ -31,7 +36,7 @@ export async function shareOrDownloadResult(imageUrl: string, caption: string): 
 
   triggerBlobDownload(blob, file.name);
   try {
-    await navigator.clipboard?.writeText(caption);
+    await navigator.clipboard?.writeText(shareText);
     return 'copied';
   } catch {
     return 'downloaded';

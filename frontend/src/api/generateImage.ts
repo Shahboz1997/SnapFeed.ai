@@ -1,7 +1,7 @@
 export type Platform = 'instagram' | 'facebook';
 export type AspectRatio = 'square' | 'story';
 
-import { authApiFetch } from './authFetch';
+import { authApiFetch, GENERATION_API_TIMEOUT_MS } from './authFetch';
 import { parseApiResponse } from './parseApiResponse';
 
 export interface GenerateImageRequest {
@@ -39,6 +39,7 @@ export async function generateImage(
   try {
     response = await authApiFetch('/api/generate-image', {
       method: 'POST',
+      timeoutMs: GENERATION_API_TIMEOUT_MS,
       body: JSON.stringify({
         userPrompt: request.userPrompt.trim(),
         platform: request.platform,

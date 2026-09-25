@@ -17,7 +17,7 @@ export async function requireCredits(req, res, next) {
     return next();
   }
 
-  // OCR / text-extraction endpoints do not bill.
+  // OCR / text-extraction: still gated by lock + timeout + rate limit, but not billed.
   if (req.body?.extractText === true) {
     req.creditCost = 0;
     req.skipCreditCharge = true;
@@ -28,20 +28,20 @@ export async function requireCredits(req, res, next) {
   req.creditCost = creditCost;
 
   try {
-    // Token was sent but optionalAuth could not verify it — do not silently bill as guest
-    // for truly invalid/expired sessions. Infra/DNS outages fall through to guest billing
-    // so generation keeps working while Supabase is briefly unreachable.
+    // Token was sent but optionalAuth could not verify it.
     if (hasBearerToken(req) && !req.user?.id) {
       if (req.authError === 'unavailable') {
-        console.warn(
-          '[credits] auth verify unavailable (Supabase unreachable); falling through to guest path',
-        );
-      } else {
-        return res.status(401).json({
-          error: 'Invalid or expired token.',
-          messageKey: 'api.authInvalid',
+        // Fail closed: do not silently bill authenticated attempts as guest.
+        return res.status(503).json({
+          error: 'Authentication temporarily unavailable. Please try again.',
+          messageKey: 'api.authUnavailable',
         });
       }
+
+      return res.status(401).json({
+        error: 'Invalid or expired token.',
+        messageKey: 'api.authInvalid',
+      });
     }
 
     if (req.user?.id) {
@@ -49,14 +49,15 @@ export async function requireCredits(req, res, next) {
       try {
         credits = await getCredits(req.user.id);
       } catch (creditsError) {
-        // Supabase outage must not hard-block generation after retries in getCredits.
-        // Charge still happens in finishGenerationResponse (or is deferred there).
-        console.warn(
-          '[credits] requireCredits skipping pre-check after load failure:',
+        // Fail closed under load — never allow unmetered paid API usage.
+        console.error(
+          '[credits] requireCredits pre-check failed:',
           creditsError?.message || creditsError,
         );
-        req.creditsCheckSkipped = true;
-        return next();
+        return res.status(503).json({
+          error: 'Credits temporarily unavailable. Please try again.',
+          messageKey: 'api.creditsUnavailable',
+        });
       }
 
       if (credits < creditCost) {
@@ -85,7 +86,8 @@ export async function requireCredits(req, res, next) {
       });
     }
 
-    const credits = await getGuestCreditsRemaining(guestKey);
+    const guestIp = getClientIp(req);
+    const credits = await getGuestCreditsRemaining(guestKey, guestIp);
 
     if (credits < creditCost) {
       return res.status(402).json({
@@ -97,7 +99,7 @@ export async function requireCredits(req, res, next) {
     }
 
     req.guestKey = guestKey;
-    req.guestIp = getClientIp(req);
+    req.guestIp = guestIp;
     req.guestCreditsBefore = credits;
     return next();
   } catch (error) {

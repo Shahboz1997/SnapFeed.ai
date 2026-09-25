@@ -22,46 +22,6 @@ export function isAdminEmailConfigured() {
   return isSmtpConfigured() || isResendConfigured();
 }
 
-function buildDepositPaidContent({
-  requestId,
-  userEmail,
-  userId,
-  planName,
-  planLabel,
-  amount,
-  currency,
-  credits,
-}) {
-  const subject = `[SnapFeed] Payment notified — ${planLabel} (${amount} ${currency})`;
-  const text = [
-    'User tapped “I paid — notify admin”.',
-    '',
-    `Request ID: ${requestId}`,
-    `User email: ${userEmail || '—'}`,
-    `User ID: ${userId}`,
-    `Plan: ${planLabel} (${planName})`,
-    `Amount: ${amount} ${currency}`,
-    `Credits: ${credits}`,
-    '',
-    'Approve the deposit in Supabase (deposit_requests) after verifying the transfer.',
-  ].join('\n');
-
-  const html = `
-    <p><strong>User tapped “I paid — notify admin”.</strong></p>
-    <ul>
-      <li><strong>Request ID:</strong> ${requestId}</li>
-      <li><strong>User email:</strong> ${userEmail || '—'}</li>
-      <li><strong>User ID:</strong> ${userId}</li>
-      <li><strong>Plan:</strong> ${planLabel} (${planName})</li>
-      <li><strong>Amount:</strong> ${amount} ${currency}</li>
-      <li><strong>Credits:</strong> ${credits}</li>
-    </ul>
-    <p>Approve the deposit in Supabase (<code>deposit_requests</code>) after verifying the transfer.</p>
-  `;
-
-  return { subject, text, html };
-}
-
 async function sendViaSmtp({ to, subject, text, html }) {
   const port = Number(process.env.SMTP_PORT || 587);
   const secure = process.env.SMTP_SECURE === 'true' || port === 465;
@@ -113,21 +73,4 @@ export async function sendViaConfiguredProvider({ to, subject, text, html }) {
 
   await sendViaResend({ to, subject, text, html });
   return { to, provider: 'resend' };
-}
-
-/**
- * Notify admin that a user paid for a deposit request.
- * Prefers SMTP when configured; otherwise Resend.
- */
-export async function sendDepositPaidAdminEmail(payload) {
-  if (!isAdminEmailConfigured()) {
-    const err = new Error('Admin email is not configured.');
-    err.code = 'EMAIL_NOT_CONFIGURED';
-    throw err;
-  }
-
-  const to = getAdminNotifyEmail();
-  const content = buildDepositPaidContent(payload);
-  const result = await sendViaConfiguredProvider({ to, ...content });
-  return result;
 }

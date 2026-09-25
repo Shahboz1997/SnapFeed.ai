@@ -1,29 +1,19 @@
 import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react';
-import { ArrowLeft, Check, CheckCheck, Copy, X, Zap } from 'lucide-react';
+import { Check, X, Zap } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import {
-  createDepositRequest,
-  formatDepositAmount,
-  notifyDepositPaid,
-  type DepositCurrency,
-  type DepositInvoiceDraft,
-} from '../api/depositRequests';
+import { createLemonCheckout, openLemonCheckout } from '../api/billing';
 import { ApiError } from '../api/generateImage';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { GUEST_CREDITS_INITIAL } from '../constants/guestCredits';
 import {
-  DEPOSIT_CURRENCIES,
   PRICING_TIERS,
-  currencyFromLang,
-  extractPaymentCardNumber,
+  formatDepositAmount,
   formatPerCredit,
-  getClientPaymentDetails,
-  langFromCurrency,
-  tierAmountForCurrency,
-  tierLabel,
   type PricingTierPrices,
 } from '../constants/depositCurrency';
+import { COMPANY } from '../constants/company';
+import { buildCreditPurchaseMailto, getSupportEmail } from '../utils/supportContact';
 import BottomSheet from './BottomSheet';
 import Spinner from './Spinner';
 
@@ -56,11 +46,9 @@ function TiltCard({
     const px = (e.clientX - rect.left) / rect.width;
     const py = (e.clientY - rect.top) / rect.height;
     const rotateY = (px - 0.5) * 10;
-    const rotateX = (0.5 - py) * 10;
-    setStyle({
-      transform: `perspective(800px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`,
-    });
-    setGlow({ x: px * 100, y: py * 100, opacity: 1 });
+    const rotateX = (0.5 - py) * 8;
+    setStyle({ transform: `perspective(800px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)` });
+    setGlow({ x: px * 100, y: py * 100, opacity: 0.35 });
   }
 
   function handleLeave() {
@@ -74,58 +62,64 @@ function TiltCard({
       onMouseMove={handleMove}
       onMouseLeave={handleLeave}
       style={style}
-      className={`relative overflow-hidden rounded-2xl border px-4 py-4 transition-transform duration-200 will-change-transform ${
-        popular
-          ? 'popular-border'
-          : 'border-zinc-200/60 bg-white/70'
+      className={`relative rounded-2xl border p-4 transition-transform duration-150 will-change-transform ${
+        popular ? 'border-zinc-900/30 bg-white shadow-sm' : 'border-zinc-200/80 bg-white'
       }`}
     >
       <div
-        className="pointer-events-none absolute inset-0 transition-opacity duration-200"
+        className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 transition-opacity"
         style={{
-          opacity: glow.opacity * 0.35,
-          background: `radial-gradient(420px circle at ${glow.x}% ${glow.y}%, rgb(24 24 27 / 0.06), transparent 55%)`,
+          opacity: glow.opacity,
+          background: `radial-gradient(circle at ${glow.x}% ${glow.y}%, rgba(24,24,27,0.06), transparent 55%)`,
         }}
       />
-      <div className="relative z-10">{children}</div>
+      {children}
     </div>
   );
 }
 
-export default function PricingModal({ open, onClose, credits = 0, welcome = false }: PricingModalProps) {
-  const { t, i18n } = useTranslation();
+export default function PricingModal({
+  open,
+  onClose,
+  credits = 0,
+  welcome = false,
+}: PricingModalProps) {
+  const { t } = useTranslation();
   const { showToast } = useToast();
-  const { user, authEnabled, signInWithGoogle } = useAuth();
+  const { user, authEnabled, signInWithGoogle, refreshProfile } = useAuth();
   const [signingIn, setSigningIn] = useState(false);
   const [signInError, setSignInError] = useState<string | null>(null);
-  const [createError, setCreateError] = useState<string | null>(null);
-  const [createErrorNeedsAuth, setCreateErrorNeedsAuth] = useState(false);
-  const [invoice, setInvoice] = useState<DepositInvoiceDraft | null>(null);
-  const [copied, setCopied] = useState(false);
-  const [notifyingPaid, setNotifyingPaid] = useState(false);
-  const [currency, setCurrency] = useState<DepositCurrency>(() => currencyFromLang(i18n.language));
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [checkoutPlan, setCheckoutPlan] = useState<string | null>(null);
+  const [cardCheckoutUnavailable, setCardCheckoutUnavailable] = useState(false);
+  const checkoutInFlight = useRef(false);
+  const refreshTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!open) {
       setSigningIn(false);
       setSignInError(null);
-      setCreateError(null);
-      setCreateErrorNeedsAuth(false);
-      setInvoice(null);
-      setCopied(false);
-      setNotifyingPaid(false);
-      return;
+      setCheckoutError(null);
+      setCheckoutPlan(null);
+      setCardCheckoutUnavailable(false);
+      checkoutInFlight.current = false;
     }
-    setCurrency(currencyFromLang(i18n.language));
-  }, [open, i18n.language]);
+  }, [open]);
 
-  function handleCurrencyChange(next: DepositCurrency) {
-    setCurrency(next);
-    const lang = langFromCurrency(next);
-    if (currencyFromLang(i18n.language) !== next) {
-      void i18n.changeLanguage(lang);
+  useEffect(() => {
+    if (!open) return;
+    try {
+      window.createLemonSqueezy?.();
+    } catch {
+      // Lemon.js optional until keys are wired
     }
-  }
+  }, [open]);
+
+  useEffect(() => () => {
+    if (refreshTimerRef.current != null) {
+      window.clearTimeout(refreshTimerRef.current);
+    }
+  }, []);
 
   async function handleGoogleSignIn() {
     setSigningIn(true);
@@ -138,67 +132,46 @@ export default function PricingModal({ open, onClose, credits = 0, welcome = fal
     }
   }
 
-  function handleSelectPlan(tier: PricingTier) {
-    if (!user) return;
-    setCreateError(null);
-    setCreateErrorNeedsAuth(false);
-    // Local preview only — no API call / no deposit_requests row until “I paid”.
-    setInvoice({
-      success: true,
-      requestId: null,
-      amount: tierAmountForCurrency(tier, currency),
-      currency,
-      credits: tier.credits,
-      planName: tier.id,
-      planLabel: tierLabel(tier.id),
-      status: null,
-      paymentDetails: getClientPaymentDetails(currency),
-    });
-  }
+  async function handleSelectPlan(tier: PricingTier) {
+    if (!user || checkoutInFlight.current) return;
+    checkoutInFlight.current = true;
+    setCheckoutError(null);
+    setCheckoutPlan(tier.id);
 
-  async function handleCopyDetails() {
-    if (!invoice?.paymentDetails) return;
-    const cardNumber = extractPaymentCardNumber(invoice.paymentDetails);
-    const toCopy = cardNumber || invoice.paymentDetails;
     try {
-      await navigator.clipboard.writeText(toCopy);
-      setCopied(true);
-      showToast(
-        cardNumber ? t('pricing.copiedCard') : t('pricing.copied'),
-        'success',
-      );
-      window.setTimeout(() => setCopied(false), 2000);
-    } catch {
-      showToast(t('pricing.copyFailed'), 'error');
-    }
-  }
-
-  async function handleNotifyPaid() {
-    if (!invoice || notifyingPaid) return;
-    setNotifyingPaid(true);
-    try {
-      let requestId = invoice.requestId;
-      if (!requestId) {
-        const created = await createDepositRequest(invoice.planName, invoice.currency);
-        requestId = created.requestId;
-        setInvoice(created);
-      }
-      await notifyDepositPaid(requestId);
-      showToast(t('pricing.paidNotifyToast'), 'success');
+      const redirectUrl = `${window.location.origin}/cabinet?checkout=success`;
+      const result = await createLemonCheckout(tier.id, redirectUrl);
+      openLemonCheckout(result.checkoutUrl);
+      showToast(t('pricing.checkoutOpened'), 'success');
       onClose();
+      refreshTimerRef.current = window.setTimeout(() => {
+        void refreshProfile();
+      }, 2500);
     } catch (err) {
-      if (err instanceof ApiError && err.messageKey) {
+      if (err instanceof ApiError && err.messageKey === 'pricing.lemonNotConfigured') {
+        setCardCheckoutUnavailable(true);
+        setCheckoutError(t('pricing.lemonNotConfigured'));
+      } else if (err instanceof ApiError && err.messageKey) {
         const translated = t(err.messageKey);
-        showToast(translated !== err.messageKey ? translated : err.message, 'error');
+        setCheckoutError(translated !== err.messageKey ? translated : err.message);
       } else if (err instanceof Error) {
-        showToast(err.message, 'error');
+        setCheckoutError(err.message);
       } else {
-        showToast(t('pricing.paidNotifyFailed'), 'error');
+        setCheckoutError(t('pricing.checkoutFailed'));
       }
     } finally {
-      setNotifyingPaid(false);
+      checkoutInFlight.current = false;
+      setCheckoutPlan(null);
     }
   }
+
+  const supportMailto = buildCreditPurchaseMailto({
+    subject: t('pricing.mailSubject', { tier: 'credits' }),
+    body: t('pricing.mailBody', {
+      brand: COMPANY.brand,
+      email: user?.email ?? '',
+    }),
+  });
 
   return (
     <BottomSheet
@@ -273,91 +246,6 @@ export default function PricingModal({ open, onClose, credits = 0, welcome = fal
 
             <p className="mt-4 text-center text-xs text-zinc-400">{t('auth.loginHint')}</p>
           </>
-        ) : invoice ? (
-          <div className="space-y-5">
-            <button
-              type="button"
-              onClick={() => setInvoice(null)}
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-500 transition hover:text-zinc-900"
-            >
-              <ArrowLeft className="h-3.5 w-3.5" />
-              {t('pricing.backToPlans')}
-            </button>
-
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-amber-700">
-                {invoice.requestId
-                  ? t('pricing.invoiceStatusPending')
-                  : t('pricing.invoiceStatusAwaitingPayment')}
-              </p>
-              <h2 id="pricing-modal-title" className="mt-1 pr-10 font-display text-xl font-bold tracking-tight text-zinc-900">
-                {t('pricing.invoiceTitle')}
-              </h2>
-              <p className="mt-2 text-sm text-zinc-500">{t('pricing.invoiceHint')}</p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-2xl border border-zinc-200/60 bg-zinc-50 p-4">
-                <p className="text-[11px] uppercase tracking-wide text-zinc-500">{t('pricing.invoicePack')}</p>
-                <p className="mt-1 text-sm font-semibold text-zinc-900">
-                  {t('pricing.creditsPack', { count: invoice.credits })}
-                </p>
-                <p className="text-xs capitalize text-zinc-500">{invoice.planLabel}</p>
-              </div>
-              <div className="rounded-2xl border border-zinc-200/60 bg-zinc-50 p-4">
-                <p className="text-[11px] uppercase tracking-wide text-zinc-500">{t('pricing.invoiceAmount')}</p>
-                <p className="mt-1 text-2xl font-bold tabular-nums text-zinc-900">
-                  {formatDepositAmount(invoice.amount, invoice.currency)}
-                </p>
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-zinc-200/60 bg-zinc-50 p-4">
-              <div className="mb-2 flex items-center justify-between gap-2">
-                <p className="text-xs font-semibold uppercase tracking-wide text-zinc-700">
-                  {t('pricing.paymentDetails')}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => void handleCopyDetails()}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-zinc-700 transition hover:border-zinc-300 hover:bg-zinc-50"
-                >
-                  {copied ? (
-                    <>
-                      <CheckCheck className="h-3.5 w-3.5 text-emerald-700" />
-                      {t('pricing.copied')}
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="h-3.5 w-3.5" />
-                      {t('pricing.copyCard')}
-                    </>
-                  )}
-                </button>
-              </div>
-              <pre className="whitespace-pre-wrap break-words font-sans text-sm leading-relaxed text-zinc-700">
-                {invoice.paymentDetails}
-              </pre>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => void handleNotifyPaid()}
-              disabled={notifyingPaid}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3.5 text-base font-semibold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60 sm:text-sm"
-            >
-              {notifyingPaid ? (
-                <>
-                  <Spinner className="h-4 w-4" />
-                  {t('pricing.iPaidSending')}
-                </>
-              ) : (
-                t('pricing.iPaidButton')
-              )}
-            </button>
-
-            <p className="text-center text-xs text-zinc-400">{t('pricing.invoiceFooter')}</p>
-          </div>
         ) : (
           <>
             {welcome ? (
@@ -388,100 +276,84 @@ export default function PricingModal({ open, onClose, credits = 0, welcome = fal
               </>
             )}
 
-            <div className="mb-5 rounded-xl border border-zinc-200/60 bg-zinc-50 px-4 py-3 text-sm leading-relaxed text-zinc-500">
-              {t(`pricing.manualPaymentNotice.${currency}`)}
-            </div>
-
-            <div
-              className="mb-4 flex flex-wrap gap-1 rounded-xl border border-zinc-200/70 bg-white p-1"
-              role="group"
-              aria-label={t('pricing.currency')}
-            >
-              {DEPOSIT_CURRENCIES.map((code) => {
-                const active = currency === code;
-                return (
-                  <button
-                    key={code}
-                    type="button"
-                    onClick={() => handleCurrencyChange(code)}
-                    className={`min-w-[4.25rem] flex-1 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold transition sm:text-xs ${
-                      active
-                        ? 'bg-zinc-900 text-white'
-                        : 'text-zinc-500 hover:text-zinc-900'
-                    }`}
-                  >
-                    {t(`pricing.currencyLabel.${code}`)}
-                  </button>
-                );
-              })}
-            </div>
-
-            {createError && (
-              <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                <p>{createError}</p>
-                {createErrorNeedsAuth && (
-                  <button
-                    type="button"
-                    onClick={() => void handleGoogleSignIn()}
-                    disabled={!authEnabled || signingIn}
-                    className="mt-3 inline-flex items-center justify-center rounded-lg bg-zinc-900 px-3 py-2 text-xs font-semibold text-white transition hover:bg-zinc-800 disabled:opacity-50"
-                  >
-                    {signingIn ? <Spinner className="h-3.5 w-3.5" /> : t('auth.signInWithGoogle')}
-                  </button>
-                )}
+            {cardCheckoutUnavailable ? (
+              <div className="mb-5 space-y-3">
+                <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-800">
+                  {t('pricing.lemonNotConfigured')}
+                </div>
+                <a
+                  href={supportMailto}
+                  className="flex w-full items-center justify-center rounded-xl bg-zinc-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-zinc-800"
+                >
+                  {t('pricing.contactButton')} · {getSupportEmail()}
+                </a>
               </div>
+            ) : (
+              <>
+                <div className="mb-5 rounded-xl border border-zinc-200/60 bg-zinc-50 px-4 py-3 text-sm leading-relaxed text-zinc-500">
+                  {t('pricing.lemonNotice', { brand: COMPANY.brand })}
+                </div>
+
+                {checkoutError && (
+                  <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                    {checkoutError}
+                  </div>
+                )}
+
+                <div className="space-y-3">
+                  {TIERS.map((tier) => {
+                    const amount = tier.priceUsd;
+                    const perCredit = amount / tier.credits;
+                    const busy = checkoutPlan === tier.id;
+                    return (
+                      <TiltCard key={tier.id} popular={tier.popular}>
+                        {tier.popular && (
+                          <span className="absolute -top-2.5 left-4 rounded-md border border-zinc-900/20 bg-white px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-zinc-900 backdrop-blur-md">
+                            {t('pricing.popular')}
+                          </span>
+                        )}
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-semibold text-zinc-900">
+                              {tier.subscription
+                                ? t('pricing.monthlyPack', { count: tier.credits })
+                                : t('pricing.creditsPack', { count: tier.credits })}
+                            </p>
+                            {tier.subscription ? (
+                              <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-500">
+                                {t('pricing.subscriptionBadge')}
+                              </p>
+                            ) : null}
+                            <p className="text-xs text-zinc-500">
+                              {formatDepositAmount(amount, 'USD')}
+                            </p>
+                            <p className="mt-0.5 text-[10px] text-zinc-400">
+                              {t('pricing.perCreditApprox', {
+                                price: formatPerCredit(perCredit, 'USD'),
+                              })}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => void handleSelectPlan(tier)}
+                            disabled={Boolean(checkoutPlan) || checkoutInFlight.current}
+                            className={`inline-flex min-h-11 min-w-[6.5rem] items-center justify-center rounded-xl px-4 py-2 text-xs font-semibold transition disabled:opacity-60 ${
+                              tier.popular
+                                ? 'bg-zinc-900 text-white hover:bg-zinc-800'
+                                : 'border border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50'
+                            }`}
+                          >
+                            {busy ? <Spinner className="h-3.5 w-3.5" /> : t('pricing.buyButton')}
+                          </button>
+                        </div>
+                      </TiltCard>
+                    );
+                  })}
+                </div>
+
+                <p className="mt-5 text-center text-xs text-zinc-400">{t('pricing.hint')}</p>
+              </>
             )}
-
-            <div className="space-y-3">
-              {TIERS.map((tier) => {
-                const amount = tierAmountForCurrency(tier, currency);
-                const perCredit = amount / tier.credits;
-                return (
-                  <TiltCard key={tier.id} popular={tier.popular}>
-                    {tier.popular && (
-                      <span className="absolute -top-2.5 left-4 rounded-md border border-zinc-900/20 bg-white px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-zinc-900 backdrop-blur-md">
-                        {t('pricing.popular')}
-                      </span>
-                    )}
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-semibold text-zinc-900">
-                          {tier.subscription
-                            ? t('pricing.monthlyPack', { count: tier.credits })
-                            : t('pricing.creditsPack', { count: tier.credits })}
-                        </p>
-                        {tier.subscription ? (
-                          <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-500">
-                            {t('pricing.subscriptionBadge')}
-                          </p>
-                        ) : null}
-                        <p className="text-xs text-zinc-500">
-                          {formatDepositAmount(amount, currency)}
-                        </p>
-                        <p className="mt-0.5 text-[10px] text-zinc-400">
-                          {t('pricing.perCreditApprox', {
-                            price: formatPerCredit(perCredit, currency),
-                          })}
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleSelectPlan(tier)}
-                        className={`inline-flex min-h-11 min-w-[6.5rem] items-center justify-center rounded-xl px-4 py-2 text-xs font-semibold transition disabled:opacity-60 ${
-                          tier.popular
-                            ? 'bg-zinc-900 text-white hover:bg-zinc-800'
-                            : 'border border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50'
-                        }`}
-                      >
-                        {t('pricing.selectPlan')}
-                      </button>
-                    </div>
-                  </TiltCard>
-                );
-              })}
-            </div>
-
-            <p className="mt-5 text-center text-xs text-zinc-400">{t('pricing.hint')}</p>
           </>
         )}
       </div>

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ApiError } from './api/generateImage';
 import { fetchGuestCredits } from './api/guestCredits';
-import { generateProductImage } from './api/generateProductImage';
+import { generateProductImage, isAbortError } from './api/generateProductImage';
 import AlertBanner, { type AlertType } from './components/AlertBanner';
 import AppShell from './components/AppShell';
 import LoginModal from './components/LoginModal';
@@ -13,6 +13,7 @@ import { useToast } from './context/ToastContext';
 import { POST_AUTH_FIRST_SUCCESS_KEY, POST_AUTH_MODAL_KEY } from './constants/authFlow';
 import {
   GUEST_CREDITS_INITIAL,
+  mergeGuestCredits,
   readGuestCreditsFromStorage,
   writeGuestCreditsToStorage,
 } from './constants/guestCredits';
@@ -72,7 +73,13 @@ export default function App() {
 
   const studioModeRef = useRef(studioMode);
   const generationIdRef = useRef(0);
+  const abortControllerRef = useRef<AbortController | null>(null);
   studioModeRef.current = studioMode;
+
+  useEffect(() => () => {
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
+  }, []);
 
   const garmentReady = Boolean(garmentBase64) && !garmentFileError;
   const tryOnHumanReady = (Boolean(humanBase64) && !humanFileError) || Boolean(selectedModelUrl);
@@ -98,8 +105,9 @@ export default function App() {
       if (cancelled) return;
       setGuestCreditsLoading(false);
       if (typeof serverCredits === 'number') {
-        setGuestCredits(serverCredits);
-        writeGuestCreditsToStorage(serverCredits);
+        const merged = mergeGuestCredits(serverCredits, cached);
+        setGuestCredits(merged);
+        writeGuestCreditsToStorage(merged);
         return;
       }
       setGuestCredits(cached ?? GUEST_CREDITS_INITIAL);
@@ -336,6 +344,14 @@ export default function App() {
     setAlert(null);
   }
 
+  const handleCancelGeneration = useCallback(() => {
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
+    generationIdRef.current += 1;
+    setLoading(false);
+    setRunningMode(null);
+  }, []);
+
   const handleGenerate = useCallback(async () => {
     if (loading) return;
 
@@ -346,6 +362,10 @@ export default function App() {
     }
 
     if (!canGenerate || !garmentBase64) return;
+
+    abortControllerRef.current?.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
 
     const jobId = ++generationIdRef.current;
     const jobMode = studioMode;
@@ -380,6 +400,7 @@ export default function App() {
         extractText: false,
         includeText: false,
         lang: currentLanguage,
+        signal: controller.signal,
       });
 
       applyCreditsAndToast(data.creditsRemaining, data.creditsCharged ?? creditCost);
@@ -405,14 +426,19 @@ export default function App() {
         void refreshHistory();
       }
 
-      // Only bind result to UI if user is still on the mode that started this job.
-      if (jobId === generationIdRef.current && studioModeRef.current === jobMode) {
+      // Only bind result to UI if this job is still current and user is on the same mode.
+      if (jobId !== generationIdRef.current) {
+        if (urls.length) showToast(t('studio.readyInGallery'), 'success');
+        return;
+      }
+      if (studioModeRef.current === jobMode) {
         setResultVariantUrls(urls);
         setImageUrl(urls[0] ?? null);
       } else if (urls.length) {
         showToast(t('studio.readyInGallery'), 'success');
       }
     } catch (err) {
+      if (isAbortError(err)) return;
       if (err instanceof ApiError && err.statusCode === 402) {
         if (!user) {
           setGuestCredits(0);
@@ -427,6 +453,9 @@ export default function App() {
         showAlert(resolveApiError(err), 'error');
       }
     } finally {
+      if (abortControllerRef.current === controller) {
+        abortControllerRef.current = null;
+      }
       if (jobId === generationIdRef.current) {
         setLoading(false);
         setRunningMode(null);
@@ -452,13 +481,11 @@ export default function App() {
     showToast,
   ]);
 
-  const generateButtonLabel = loading
-    ? t('studio.running')
-    : !hasCredits
-      ? t('pricing.buyCredits')
-      : generationCreditCost > 1
-        ? t('studio.runWithCredits', { count: generationCreditCost })
-        : t('studio.run');
+  const generateButtonLabel = !hasCredits
+    ? t('pricing.buyCredits')
+    : generationCreditCost > 1
+      ? t('studio.runWithCredits', { count: generationCreditCost })
+      : t('studio.run');
 
   return (
     <AppShell
@@ -497,7 +524,7 @@ export default function App() {
 
         <fieldset className="flex min-h-0 min-w-0 flex-1 flex-col border-0 p-0">
           <TryOnWorkspace
-            disabled={loading && runningMode === studioMode}
+            disabled={loading}
             studioMode={studioMode}
             runningMode={runningMode}
             onStudioModeChange={handleStudioModeChange}
@@ -521,6 +548,7 @@ export default function App() {
             onModelSelect={handleTryOnModelSelect}
             onModelClear={() => setSelectedModelUrl(null)}
             onRun={handleGenerate}
+            onCancel={handleCancelGeneration}
             canRun={canGenerate || !hasCredits}
             running={loading}
             runLabel={generateButtonLabel}
@@ -545,7 +573,7 @@ export default function App() {
             <button
               type="button"
               onClick={handleBackToSetup}
-              disabled={loading && runningMode === studioMode}
+              disabled={loading}
               className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-500 transition hover:border-zinc-300 hover:bg-zinc-50 hover:text-zinc-900 disabled:opacity-50"
             >
               {t('studio.newGeneration')}
@@ -554,7 +582,7 @@ export default function App() {
           <button
             type="button"
             onClick={handleReset}
-            disabled={loading && runningMode === studioMode}
+            disabled={loading}
             className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-500 transition hover:border-zinc-300 hover:bg-zinc-50 hover:text-zinc-900 disabled:opacity-50"
           >
             {t('form.reset')}

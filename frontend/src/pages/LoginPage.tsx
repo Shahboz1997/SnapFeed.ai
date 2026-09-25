@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
+import { COMPANY } from '../constants/company';
 import Spinner from '../components/Spinner';
 import Logo from '../components/Logo';
 import SiteFooter from '../components/SiteFooter';
@@ -60,7 +61,7 @@ export default function LoginPage() {
           <Link to="/" className="inline-flex items-center gap-3">
             <Logo className="h-11 w-11 shadow-md" />
             <div className="text-left">
-              <p className="text-xl font-bold tracking-tight">SnapFeed.ai</p>
+              <p className="text-xl font-bold tracking-tight">{COMPANY.brand}</p>
               <p className="text-sm text-slate-500">{t('header.subtitle')}</p>
             </div>
           </Link>

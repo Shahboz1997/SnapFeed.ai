@@ -262,11 +262,19 @@ async function attachCreditsRemaining(req, body) {
 
   if (isGuestCreditsEnabled() && req.guestKey) {
     const { getGuestCreditsRemaining } = await import('./guestCredits.js');
-    body.creditsRemaining = await getGuestCreditsRemaining(req.guestKey);
+    body.creditsRemaining = await getGuestCreditsRemaining(
+      req.guestKey,
+      req.guestIp ?? null,
+    );
   }
 }
 
 export async function finishGenerationResponse(res, req, body, statusCode = 200) {
+  // Timed-out / already-closed responses must not charge or double-write.
+  if (req.generationTimedOut || res.headersSent) {
+    return res;
+  }
+
   // OCR / extract-only (and any explicitly free paths) must not bill.
   if (req.skipCreditCharge) {
     body.creditsCharged = 0;

@@ -4,7 +4,9 @@ import { prepareFashnImageInput } from './fashnImagePrep.js';
 
 /** @see https://docs.fashn.ai — Try-On Max (recommended) + Try-On v1.6 */
 const DEFAULT_MODEL = 'tryon-max';
-const POLL_TIMEOUT_MS = Number(process.env.FASHN_POLL_TIMEOUT_MS) || 180000;
+// Must stay below GENERATION_TIMEOUT_MS (default 120s) so the HTTP request
+// does not 504 while FASHN keeps burning paid API time.
+const POLL_TIMEOUT_MS = Number(process.env.FASHN_POLL_TIMEOUT_MS) || 100000;
 
 const CATEGORY_MAP = {
   top: 'tops',

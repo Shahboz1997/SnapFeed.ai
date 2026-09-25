@@ -35,7 +35,7 @@ export async function sendWelcomeUserEmail({ email, fullName, credits = 3 }) {
     '',
     'Tip: try Product → Model with a clear garment photo for the best first result.',
     '',
-    '— SnapFeed.ai',
+    '— snapfeed.help',
   ].join('\n');
 
   const html = `
@@ -43,7 +43,7 @@ export async function sendWelcomeUserEmail({ email, fullName, credits = 3 }) {
     <p>Your SnapFeed account is ready with <strong>${credits}</strong> free credit(s).</p>
     <p><a href="${studioUrl()}">Open Studio</a> and create your first look.</p>
     <p style="color:#71717a">Tip: try Product → Model with a clear garment photo for the best first result.</p>
-    <p>— SnapFeed.ai</p>
+    <p>— snapfeed.help</p>
   `;
 
   return sendViaConfiguredProvider({ to: email, subject, text, html });
@@ -65,7 +65,7 @@ export async function sendLowCreditsUserEmail({ email, fullName, credits = 0 }) 
       : `You have ${credits} credit left. Top up so you don’t get stuck mid-session.`,
     pricingUrl(),
     '',
-    '— SnapFeed.ai',
+    '— snapfeed.help',
   ].join('\n');
 
   const html = `
@@ -76,7 +76,7 @@ export async function sendLowCreditsUserEmail({ email, fullName, credits = 0 }) 
         : `You have <strong>${credits}</strong> credit left. Top up so you don’t get stuck mid-session.`
     }</p>
     <p><a href="${pricingUrl()}">Top up credits</a></p>
-    <p>— SnapFeed.ai</p>
+    <p>— snapfeed.help</p>
   `;
 
   return sendViaConfiguredProvider({ to: email, subject, text, html });

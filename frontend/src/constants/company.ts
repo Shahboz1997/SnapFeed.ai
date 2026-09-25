@@ -1,14 +1,16 @@
 export const COMPANY = {
-  brand: 'SnapFeed.ai',
-  legalName: 'Stratum Technologies LLC',
+  brand: 'snapfeed.help',
+  siteUrl: 'https://snapfeed.help',
+  legalName: 'ESD Media LLC',
   jurisdiction: 'Wyoming, USA',
-  addressLine1: '30 N Gould St #28330',
+  addressLine1: '30 N Gould St Ste N',
   addressLine2: 'Sheridan, WY 82801, USA',
   copyrightYear: 2026,
   governingLaw: 'State of Wyoming, United States',
 } as const;
 
 export const COMPANY_FULL_ADDRESS = `${COMPANY.addressLine1}, ${COMPANY.addressLine2}`;
+export const COMPANY_SITE_HOST = 'snapfeed.help';
 
 export const COOKIE_CONSENT_KEY = 'snapfeed_cookie_consent';
 
