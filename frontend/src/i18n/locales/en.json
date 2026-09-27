@@ -209,6 +209,8 @@
     "uploading": "Uploading",
     "historyCollapse": "Collapse history",
     "historyExpand": "Expand history",
+    "outputSettings": "Output settings",
+    "promptIdeas": "Prompt ideas",
     "promptPresets": {
       "studioLight": "studio light",
       "softShadows": "soft shadows",
@@ -241,6 +243,7 @@
   },
   "referral": {
     "title": "Invite friends",
+    "inviteShort": "Invite",
     "description": "Share your link — you both get {{count}} free credits when they sign up.",
     "codeLabel": "Your code",
     "copyLink": "Copy invite link",

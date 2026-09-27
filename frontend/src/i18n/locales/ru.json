@@ -179,6 +179,8 @@
     "uploading": "Загрузка",
     "historyCollapse": "Свернуть историю",
     "historyExpand": "Развернуть историю",
+    "outputSettings": "Настройки вывода",
+    "promptIdeas": "Идеи для промпта",
     "promptPresets": {
       "studioLight": "студийный свет",
       "softShadows": "мягкие тени",
@@ -782,6 +784,7 @@
   },
   "referral": {
     "title": "Пригласите друзей",
+    "inviteShort": "Пригласить",
     "description": "Поделитесь ссылкой — вы оба получите {{count}} бесплатных кредита после регистрации.",
     "codeLabel": "Ваш код",
     "copyLink": "Скопировать ссылку",

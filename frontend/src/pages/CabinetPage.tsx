@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Copy, Zap } from 'lucide-react';
+import { Zap } from 'lucide-react';
 import { fetchReferralSummary, type ReferralSummary } from '../api/referral';
 import AppShell from '../components/AppShell';
 import LoginModal from '../components/LoginModal';
 import PricingModal from '../components/PricingModal';
+import ReferralInviteCard from '../components/ReferralInviteCard';
 import Spinner from '../components/Spinner';
-import { COMPANY } from '../constants/company';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 
@@ -127,48 +127,30 @@ export default function CabinetPage() {
             </div>
           </div>
 
+          {referral ? (
+            <div className="mt-6">
+              <ReferralInviteCard
+                referral={referral}
+                onCopy={() => void copyReferralLink()}
+              />
+            </div>
+          ) : null}
+
           <p className="mt-6 text-sm text-zinc-500">{t('auth.cabinetHint')}</p>
 
-          <div className="mt-6 rounded-2xl border border-zinc-200/60 bg-zinc-50 p-5">
-            <h2 className="mb-2 text-sm font-semibold text-zinc-900">{t('pricing.topUpTitle')}</h2>
-            <p className="mb-3 text-sm leading-relaxed text-zinc-500">
-              {t('pricing.lemonNotice', { brand: COMPANY.brand })}
-            </p>
-            <p className="mb-4 text-xs text-zinc-500">{t('pricing.topUpDescription')}</p>
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-zinc-200/60 bg-zinc-50 px-4 py-4 sm:px-5">
+            <div className="min-w-0">
+              <h2 className="text-sm font-semibold text-zinc-900">{t('pricing.topUpTitle')}</h2>
+              <p className="mt-0.5 text-xs text-zinc-500">{t('pricing.topUpDescription')}</p>
+            </div>
             <button
               type="button"
               onClick={() => setShowPricingModal(true)}
-              className="inline-flex items-center justify-center rounded-xl bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-800"
+              className="inline-flex shrink-0 items-center justify-center rounded-xl bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-800"
             >
               {t('pricing.upgrade')}
             </button>
           </div>
-
-          {referral ? (
-            <div className="mt-6 rounded-2xl border border-zinc-200/60 bg-zinc-50 p-5">
-              <h2 className="mb-2 text-sm font-semibold text-zinc-900">{t('referral.title')}</h2>
-              <p className="mb-3 text-sm leading-relaxed text-zinc-500">
-                {t('referral.description', { count: referral.bonusCredits })}
-              </p>
-              <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-zinc-500">
-                {t('referral.codeLabel')}
-              </p>
-              <p className="mb-3 font-mono text-lg font-semibold tracking-wider text-zinc-900">
-                {referral.code}
-              </p>
-              <p className="mb-4 text-xs text-zinc-500">
-                {t('referral.invited', { count: referral.invitedCount })}
-              </p>
-              <button
-                type="button"
-                onClick={() => void copyReferralLink()}
-                className="inline-flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-800 transition hover:border-zinc-300 hover:bg-zinc-50"
-              >
-                <Copy className="h-4 w-4" />
-                {t('referral.copyLink')}
-              </button>
-            </div>
-          ) : null}
 
           <div className="mt-8 border-t border-zinc-200/60 pt-6">
             <h2 className="mb-4 font-display text-lg font-semibold text-zinc-900">

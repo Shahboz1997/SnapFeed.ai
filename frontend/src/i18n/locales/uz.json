@@ -179,6 +179,8 @@
     "uploading": "Yuklanmoqda",
     "historyCollapse": "Tarixni yigish",
     "historyExpand": "Tarixni ochish",
+    "outputSettings": "Chiqish sozlamalari",
+    "promptIdeas": "Prompt g‘oyalari",
     "promptPresets": {
       "studioLight": "studiya yorug'ligi",
       "softShadows": "yumshoq soyalar",
@@ -780,6 +782,7 @@
   },
   "referral": {
     "title": "Do‘stlarni taklif qiling",
+    "inviteShort": "Taklif",
     "description": "Havolani ulashing — ikkalangiz ham {{count}} bepul kredit olasiz.",
     "codeLabel": "Kodingiz",
     "copyLink": "Havolani nusxalash",

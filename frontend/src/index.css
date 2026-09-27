@@ -17,7 +17,7 @@
   --safe-area-left: env(safe-area-inset-left, 0px);
   --app-header-height: 3.5rem;
   --tab-bar-height: 3.75rem;
-  --studio-dock-height: 16rem;
+  --studio-dock-height: 9.5rem;
   /* Remaining viewport for upload stage (header + dock + tab bar + main padding) */
   --studio-stage-height: max(
     11.5rem,

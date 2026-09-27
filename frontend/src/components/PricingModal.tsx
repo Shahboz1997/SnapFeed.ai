@@ -205,6 +205,12 @@ export default function PricingModal({
       ]
     : TIERS;
 
+  const preferredTier = preferredPlan
+    ? TIERS.find((tier) => tier.id === preferredPlan)
+    : null;
+  /** Landing pack already chosen — skip guest form / full pack list while Lemon opens. */
+  const autoCheckoutPending = Boolean(user && preferredPlan && !checkoutError && !cardCheckoutUnavailable);
+
   return (
     <BottomSheet
       open={open}
@@ -223,7 +229,23 @@ export default function PricingModal({
           <X className="h-4 w-4" />
         </button>
 
-        {!user ? (
+        {autoCheckoutPending ? (
+          <>
+            <h2 id="pricing-modal-title" className="mb-2 pr-10 font-display text-xl font-bold tracking-tight text-zinc-900">
+              {t('pricing.checkoutOpened')}
+            </h2>
+            {preferredTier ? (
+              <p className="mb-6 text-sm leading-relaxed text-zinc-500">
+                {preferredTier.subscription
+                  ? t('pricing.monthlyPack', { count: preferredTier.credits })
+                  : t('pricing.creditsPack', { count: preferredTier.credits })}
+              </p>
+            ) : null}
+            <div className="flex items-center justify-center rounded-xl border border-zinc-200/60 bg-zinc-50 px-4 py-8">
+              <Spinner className="h-5 w-5" />
+            </div>
+          </>
+        ) : !user ? (
           <>
             <h2 id="pricing-modal-title" className="mb-2 pr-10 font-display text-xl font-bold tracking-tight text-zinc-900">
               {t('pricing.guestTitle')}
@@ -309,7 +331,7 @@ export default function PricingModal({
             )}
 
             {cardCheckoutUnavailable ? (
-              <div className="mb-5 space-y-3">
+              <div className="mb-1 space-y-3 sm:mb-5">
                 <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-800">
                   {t('pricing.lemonNotConfigured')}
                 </div>

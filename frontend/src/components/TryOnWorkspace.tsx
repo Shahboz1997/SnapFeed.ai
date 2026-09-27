@@ -17,9 +17,6 @@ import {
   ChevronUp,
   Download,
   Gem,
-  Grid2x2,
-  ImageIcon,
-  Layers,
   Maximize2,
   Package,
   Pencil,
@@ -639,9 +636,9 @@ export default function TryOnWorkspace({
         ref={studioDockRef}
         className="studio-dock-mobile fixed inset-x-0 z-40 shrink-0 border-t border-zinc-200/80 bg-white/95 px-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] shadow-[0_-12px_40px_rgb(24_24_27/0.08)] backdrop-blur-xl sm:static sm:z-auto sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none sm:backdrop-blur-none"
       >
-        <div className="glass-panel mx-auto w-full max-w-6xl rounded-2xl border border-zinc-200/60 bg-white/90 p-2 shadow-xl shadow-zinc-200/40 sm:p-3 md:p-3.5 lg:rounded-3xl lg:bg-white/70 lg:p-4">
+        <div className="mx-auto w-full max-w-6xl sm:rounded-2xl sm:border sm:border-zinc-200/50 sm:bg-white/80 sm:p-2.5 sm:backdrop-blur-md lg:rounded-3xl lg:p-3">
           <LayoutGroup>
-            <div className="relative mb-2 flex gap-0.5 overflow-x-auto scrollbar-none rounded-xl border border-zinc-200/60 bg-zinc-100/80 p-0.5 snap-x snap-mandatory sm:mb-2.5 sm:gap-1 sm:overflow-visible sm:rounded-2xl sm:p-1 sm:snap-none lg:mb-3">
+            <div className="relative mb-1.5 flex gap-0.5 overflow-x-auto scrollbar-none rounded-lg border border-zinc-200/50 bg-zinc-100/70 p-0.5 snap-x snap-mandatory sm:mb-2 sm:gap-0.5 sm:overflow-visible sm:rounded-xl sm:snap-none">
               {MODE_ORDER.map((mode) => {
                 const meta = modeMeta[mode];
                 const active = studioMode === mode;
@@ -661,38 +658,40 @@ export default function TryOnWorkspace({
             </div>
           </LayoutGroup>
 
-          <div className="flex items-end gap-1.5 sm:gap-2">
-            <div className="min-w-0 flex-1">
-              <div
-                className={`group relative rounded-xl border bg-white transition sm:rounded-2xl ${
-                  disabled && !running
-                    ? 'border-zinc-200/60 opacity-60'
-                    : 'border-zinc-200/60 focus-within:border-indigo-500/50 focus-within:ring-4 focus-within:ring-indigo-500/10'
-                }`}
-              >
-                <div className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 sm:left-3.5">
-                  <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                </div>
-                <input
-                  type="text"
-                  value={prompt}
-                  disabled={disabled && !running}
-                  onChange={(e) => onPromptChange(e.target.value)}
-                  enterKeyHint="go"
-                  autoComplete="off"
-                  autoCorrect="off"
-                  placeholder={
-                    studioMode === 'product-to-model'
-                      ? t('studio.productToModelPromptPlaceholder')
-                      : studioMode === 'packshot'
-                        ? t('studio.packshotPromptPlaceholder')
-                        : t('studio.promptPlaceholder')
-                  }
-                  className="w-full rounded-xl bg-transparent py-2.5 pl-8 pr-2.5 text-[15px] text-zinc-900 placeholder:text-zinc-400 outline-none disabled:cursor-not-allowed sm:rounded-2xl sm:py-3 sm:pl-10 sm:pr-3 sm:text-sm md:py-3.5"
-                />
-              </div>
-            </div>
-
+          <div
+            className={`flex items-center gap-0.5 rounded-xl border bg-white p-1 transition sm:gap-1 sm:rounded-2xl sm:p-1.5 ${
+              disabled && !running
+                ? 'border-zinc-200/60 opacity-60'
+                : 'border-zinc-200/60 focus-within:border-zinc-400 focus-within:ring-2 focus-within:ring-zinc-900/5'
+            }`}
+          >
+            <StudioOutputControls
+              settings={outputSettings}
+              disabled={disabled && !running}
+              onChange={(next) => onOutputSettingsChange?.(next)}
+            />
+            <PromptPresetsControl
+              selected={selectedPromptPresets}
+              disabled={disabled && !running}
+              onToggle={togglePromptPreset}
+            />
+            <input
+              type="text"
+              value={prompt}
+              disabled={disabled && !running}
+              onChange={(e) => onPromptChange(e.target.value)}
+              enterKeyHint="go"
+              autoComplete="off"
+              autoCorrect="off"
+              placeholder={
+                studioMode === 'product-to-model'
+                  ? t('studio.productToModelPromptPlaceholder')
+                  : studioMode === 'packshot'
+                    ? t('studio.packshotPromptPlaceholder')
+                    : t('studio.promptPlaceholder')
+              }
+              className="min-w-0 flex-1 bg-transparent px-1.5 py-2 text-[15px] text-zinc-900 placeholder:text-zinc-400 outline-none disabled:cursor-not-allowed sm:px-2 sm:py-2.5 sm:text-sm"
+            />
             <motion.button
               type="button"
               onClick={running ? onCancel : onRun}
@@ -700,10 +699,10 @@ export default function TryOnWorkspace({
               aria-busy={waitingInThisMode}
               aria-label={running ? t('studio.cancel') : runLabel}
               whileTap={running ? undefined : { scale: 0.98 }}
-              className={`run-btn-shimmer relative inline-flex h-10 shrink-0 items-center justify-center overflow-hidden rounded-xl transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/20 disabled:cursor-not-allowed disabled:opacity-40 sm:h-11 sm:w-auto sm:min-w-[7.5rem] sm:gap-2 sm:rounded-2xl sm:px-4 sm:text-sm sm:font-semibold md:h-12 md:min-w-[9rem] md:px-5 ${
+              className={`run-btn-shimmer relative inline-flex h-9 shrink-0 items-center justify-center overflow-hidden rounded-lg transition focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/15 disabled:cursor-not-allowed disabled:opacity-40 sm:h-10 sm:w-auto sm:min-w-[6.5rem] sm:gap-2 sm:rounded-xl sm:px-3.5 sm:text-sm sm:font-semibold md:h-11 md:min-w-[8rem] md:px-4 ${
                 running
-                  ? 'w-10 bg-zinc-100 text-zinc-700 hover:bg-zinc-200 sm:w-auto'
-                  : 'w-10 bg-zinc-900 text-white hover:bg-zinc-800 sm:w-auto'
+                  ? 'w-9 bg-zinc-100 text-zinc-700 hover:bg-zinc-200 sm:w-auto'
+                  : 'w-9 bg-zinc-900 text-white hover:bg-zinc-800 sm:w-auto'
               }`}
             >
               {running ? (
@@ -718,39 +717,6 @@ export default function TryOnWorkspace({
                 </>
               )}
             </motion.button>
-          </div>
-
-          <div className="mt-2 flex flex-wrap items-center gap-1.5 sm:mt-2.5 sm:gap-2">
-            <StudioOutputControls
-              settings={outputSettings}
-              disabled={disabled && !running}
-              onChange={(next) => onOutputSettingsChange?.(next)}
-            />
-          </div>
-
-          <div className="mt-1.5 flex gap-1.5 overflow-x-auto scrollbar-none pb-0.5 sm:mt-2 sm:flex-wrap sm:overflow-visible">
-            {STUDIO_PROMPT_PRESET_KEYS.map((key) => {
-              const label = t(`studio.promptPresets.${key}`);
-              const selected = selectedPromptPresets.includes(key);
-              return (
-                <motion.button
-                  key={key}
-                  type="button"
-                  disabled={disabled && !running}
-                  aria-pressed={selected}
-                  whileTap={{ scale: 0.96 }}
-                  onClick={() => togglePromptPreset(key)}
-                  className={
-                    selected
-                      ? 'inline-flex shrink-0 items-center gap-1 rounded-full border border-zinc-900 bg-zinc-900 px-2.5 py-1 text-[11px] font-medium text-white transition disabled:opacity-50 sm:gap-1.5 sm:px-3 sm:py-1.5 sm:text-xs'
-                      : 'inline-flex shrink-0 items-center gap-1 rounded-full border border-zinc-200/60 bg-zinc-50 px-2.5 py-1 text-[11px] font-medium text-zinc-500 transition hover:border-zinc-300 hover:bg-white hover:text-zinc-900 active:bg-zinc-100 disabled:opacity-50 sm:gap-1.5 sm:px-3 sm:py-1.5 sm:text-xs'
-                  }
-                >
-                  <ImageIcon className="hidden h-3 w-3 opacity-70 sm:inline" />
-                  {label}
-                </motion.button>
-              );
-            })}
           </div>
         </div>
       </div>
@@ -1649,14 +1615,14 @@ function ModeTab({
         type="button"
         disabled={disabled}
         onClick={onClick}
-        className={`relative z-10 flex w-full items-center justify-center gap-1 rounded-lg px-2 py-2 text-[11px] font-semibold transition disabled:opacity-50 sm:gap-2 sm:rounded-xl sm:px-3 sm:py-2.5 sm:text-sm ${
+        className={`relative z-10 flex w-full items-center justify-center gap-1 rounded-md px-1.5 py-1.5 text-[11px] font-semibold transition disabled:opacity-50 sm:gap-1.5 sm:rounded-lg sm:px-2.5 sm:py-2 sm:text-sm ${
           active ? 'text-zinc-900' : 'text-zinc-500 hover:text-zinc-900'
         }`}
       >
         {active ? (
           <motion.span
             layoutId="studio-mode-pill"
-            className="absolute inset-0 rounded-lg border border-zinc-200/50 bg-white shadow-sm sm:rounded-xl"
+            className="absolute inset-0 rounded-md border border-zinc-200/50 bg-white shadow-sm sm:rounded-lg"
             transition={{ type: 'spring', stiffness: 420, damping: 34 }}
           />
         ) : null}
@@ -1748,42 +1714,6 @@ function StudioMenuItem({
   );
 }
 
-function StudioChipButton({
-  disabled,
-  open,
-  onClick,
-  icon,
-  label,
-  ariaLabel,
-}: {
-  disabled?: boolean;
-  open: boolean;
-  onClick: () => void;
-  icon: ReactNode;
-  label: string;
-  ariaLabel: string;
-}) {
-  return (
-    <button
-      type="button"
-      disabled={disabled}
-      aria-haspopup="listbox"
-      aria-expanded={open}
-      aria-label={ariaLabel}
-      onClick={onClick}
-      className={`inline-flex h-8 shrink-0 items-center gap-1 rounded-lg border px-2 text-[11px] font-semibold transition disabled:opacity-50 sm:h-9 sm:gap-1.5 sm:rounded-xl sm:px-2.5 sm:text-xs ${
-        open
-          ? 'border-zinc-300 bg-zinc-100 text-zinc-900'
-          : 'border-zinc-200/70 bg-white text-zinc-600 hover:border-zinc-300 hover:text-zinc-900'
-      }`}
-    >
-      <span className="text-zinc-400">{icon}</span>
-      <span className="whitespace-nowrap">{label}</span>
-      <ChevronDown className={`h-3 w-3 text-zinc-400 transition ${open ? 'rotate-180' : ''}`} />
-    </button>
-  );
-}
-
 function qualityModeLabel(
   mode: StudioQualityMode,
   t: (key: string) => string,
@@ -1849,12 +1779,14 @@ function StudioSettingGroup({
   open,
   onClose,
   align = 'left',
+  wide = false,
   trigger,
   children,
 }: {
   open: boolean;
   onClose: () => void;
   align?: 'left' | 'right';
+  wide?: boolean;
   trigger: ReactNode;
   children: ReactNode;
 }) {
@@ -1875,14 +1807,17 @@ function StudioSettingGroup({
       const rect = triggerEl.getBoundingClientRect();
       const gap = 8;
       const viewportPad = 10;
-      const maxWidth = Math.min(18 * 16, window.innerWidth - viewportPad * 2);
-      const minWidth = Math.min(Math.max(rect.width, 10 * 16), maxWidth);
+      const preferredMax = wide ? 20 * 16 : 18 * 16;
+      const preferredMin = wide ? 16 * 16 : 10 * 16;
+      const maxWidth = Math.min(preferredMax, window.innerWidth - viewportPad * 2);
+      const minWidth = Math.min(Math.max(rect.width, preferredMin), maxWidth);
 
       const spaceAbove = rect.top - viewportPad;
       const spaceBelow = window.innerHeight - rect.bottom - viewportPad;
       const openAbove = spaceAbove >= Math.min(22 * 16, spaceBelow) || spaceAbove > spaceBelow;
       const available = openAbove ? spaceAbove - gap : spaceBelow - gap;
-      const maxHeight = Math.max(8 * 16, Math.min(available, Math.min(50 * (window.innerHeight / 100), 22 * 16)));
+      const heightCap = wide ? 28 * 16 : 22 * 16;
+      const maxHeight = Math.max(8 * 16, Math.min(available, Math.min(55 * (window.innerHeight / 100), heightCap)));
 
       const next: StudioMenuCoords = {
         minWidth,
@@ -1912,7 +1847,7 @@ function StudioSettingGroup({
       window.removeEventListener('resize', updatePosition);
       window.removeEventListener('scroll', updatePosition, true);
     };
-  }, [open, align]);
+  }, [open, align, wide]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -1967,6 +1902,49 @@ function StudioSettingGroup({
   );
 }
 
+function ComposerIconButton({
+  disabled,
+  open,
+  onClick,
+  ariaLabel,
+  children,
+}: {
+  disabled?: boolean;
+  open: boolean;
+  onClick: () => void;
+  ariaLabel: string;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      aria-haspopup="listbox"
+      aria-expanded={open}
+      aria-label={ariaLabel}
+      onClick={onClick}
+      className={`relative inline-flex h-8 shrink-0 items-center justify-center gap-1 rounded-lg px-1.5 text-[11px] font-semibold transition disabled:opacity-50 sm:h-9 sm:gap-1.5 sm:rounded-xl sm:px-2 sm:text-xs ${
+        open
+          ? 'bg-zinc-100 text-zinc-900'
+          : 'text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900'
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function StudioMenuSection({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="py-0.5">
+      <p className="px-2.5 pb-0.5 pt-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-400">
+        {label}
+      </p>
+      {children}
+    </div>
+  );
+}
+
 function StudioOutputControls({
   settings,
   disabled,
@@ -1977,71 +1955,58 @@ function StudioOutputControls({
   onChange: (next: StudioOutputSettings) => void;
 }) {
   const { t } = useTranslation();
-  const [openMenu, setOpenMenu] = useState<'ratio' | 'resolution' | 'mode' | 'variants' | null>(null);
+  const [open, setOpen] = useState(false);
 
   function patch(partial: Partial<StudioOutputSettings>) {
     onChange({ ...settings, ...partial });
-    setOpenMenu(null);
   }
 
-  const closeMenu = () => setOpenMenu(null);
-
-  const modeTriggerLabel = settings.qualityMode === 'auto'
-    ? t('studio.mode')
-    : qualityModeLabel(settings.qualityMode, t);
-
-  const resolutionTriggerLabel = settings.resolution === 'auto'
-    ? t('studio.resolution')
-    : resolutionLabel(settings.resolution);
-
-  const variantsTriggerLabel = settings.numImages === 3
-    ? t('studio.variantsThree')
-    : t('studio.variantsOne');
+  const summaryParts = [
+    settings.aspectRatio,
+    settings.resolution === 'auto' ? null : resolutionLabel(settings.resolution),
+  ].filter(Boolean);
+  const summary = summaryParts.join(' · ');
 
   return (
-    <>
-      <StudioSettingGroup
-        open={openMenu === 'ratio'}
-        onClose={closeMenu}
-        trigger={(
-          <StudioChipButton
-            disabled={disabled}
-            open={openMenu === 'ratio'}
-            onClick={() => setOpenMenu((v) => (v === 'ratio' ? null : 'ratio'))}
-            icon={<AspectRatioGlyph ratio={settings.aspectRatio} />}
-            label={settings.aspectRatio}
-            ariaLabel={t('studio.ratio')}
-          />
-        )}
-      >
-        {STUDIO_ASPECT_RATIOS.map((ratio) => (
-          <StudioMenuItem
-            key={ratio}
-            active={settings.aspectRatio === ratio}
-            onClick={() => patch({ aspectRatio: ratio as StudioAspectRatio })}
-          >
-            <span className="flex items-center gap-2.5">
+    <StudioSettingGroup
+      open={open}
+      onClose={() => setOpen(false)}
+      wide
+      trigger={(
+        <ComposerIconButton
+          disabled={disabled}
+          open={open}
+          onClick={() => setOpen((v) => !v)}
+          ariaLabel={t('studio.outputSettings')}
+        >
+          <SlidersHorizontal className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+          <span className="hidden whitespace-nowrap sm:inline">{summary}</span>
+        </ComposerIconButton>
+      )}
+    >
+      <StudioMenuSection label={t('studio.ratio')}>
+        <div className="grid grid-cols-3 gap-0.5 px-1 pb-1">
+          {STUDIO_ASPECT_RATIOS.map((ratio) => (
+            <button
+              key={ratio}
+              type="button"
+              role="option"
+              aria-selected={settings.aspectRatio === ratio}
+              onClick={() => patch({ aspectRatio: ratio as StudioAspectRatio })}
+              className={`flex items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-xs font-medium transition ${
+                settings.aspectRatio === ratio
+                  ? 'bg-zinc-100 text-zinc-900'
+                  : 'text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900'
+              }`}
+            >
               <AspectRatioGlyph ratio={ratio} />
-              <span className="font-medium text-zinc-900">{ratio}</span>
-            </span>
-          </StudioMenuItem>
-        ))}
-      </StudioSettingGroup>
+              {ratio}
+            </button>
+          ))}
+        </div>
+      </StudioMenuSection>
 
-      <StudioSettingGroup
-        open={openMenu === 'resolution'}
-        onClose={closeMenu}
-        trigger={(
-          <StudioChipButton
-            disabled={disabled}
-            open={openMenu === 'resolution'}
-            onClick={() => setOpenMenu((v) => (v === 'resolution' ? null : 'resolution'))}
-            icon={<Grid2x2 className="h-3.5 w-3.5" />}
-            label={resolutionTriggerLabel}
-            ariaLabel={t('studio.resolution')}
-          />
-        )}
-      >
+      <StudioMenuSection label={t('studio.resolution')}>
         {STUDIO_RESOLUTIONS.map((value) => (
           <StudioMenuItem
             key={value}
@@ -2051,22 +2016,9 @@ function StudioOutputControls({
             <span className="font-medium text-zinc-900">{resolutionMenuLabel(value)}</span>
           </StudioMenuItem>
         ))}
-      </StudioSettingGroup>
+      </StudioMenuSection>
 
-      <StudioSettingGroup
-        open={openMenu === 'variants'}
-        onClose={closeMenu}
-        trigger={(
-          <StudioChipButton
-            disabled={disabled}
-            open={openMenu === 'variants'}
-            onClick={() => setOpenMenu((v) => (v === 'variants' ? null : 'variants'))}
-            icon={<Layers className="h-3.5 w-3.5" />}
-            label={variantsTriggerLabel}
-            ariaLabel={t('studio.variants')}
-          />
-        )}
-      >
+      <StudioMenuSection label={t('studio.variants')}>
         {STUDIO_VARIANT_COUNTS.map((count) => {
           const cost = creditCostForVariantCount(count);
           return (
@@ -2086,51 +2038,81 @@ function StudioOutputControls({
             </StudioMenuItem>
           );
         })}
-      </StudioSettingGroup>
+      </StudioMenuSection>
 
-      <StudioSettingGroup
-        open={openMenu === 'mode'}
-        onClose={closeMenu}
-        align="right"
-        trigger={(
-          <StudioChipButton
-            disabled={disabled}
-            open={openMenu === 'mode'}
-            onClick={() => setOpenMenu((v) => (v === 'mode' ? null : 'mode'))}
-            icon={<SlidersHorizontal className="h-3.5 w-3.5" />}
-            label={modeTriggerLabel}
-            ariaLabel={t('studio.mode')}
-          />
-        )}
-      >
-        <div className="w-full min-w-[min(15rem,calc(100vw-1.5rem))]">
-          {STUDIO_QUALITY_MODES.map((mode) => (
-            <StudioMenuItem
-              key={mode}
-              active={settings.qualityMode === mode}
-              onClick={() => patch({ qualityMode: mode as StudioQualityMode })}
-            >
-              <span className="flex items-start gap-2.5">
-                <span className="mt-0.5">{qualityModeIcon(mode)}</span>
-                <span className="min-w-0">
-                  <span className="flex items-center gap-1.5 font-semibold text-zinc-900">
-                    {qualityModeLabel(mode, t)}
-                    {mode === 'quality' ? (
-                      <span className="rounded bg-zinc-900 px-1 py-px text-[9px] font-bold uppercase tracking-wide text-white">
-                        Pro
-                      </span>
-                    ) : null}
-                  </span>
-                  <span className="mt-0.5 block text-xs font-normal leading-snug text-zinc-500">
-                    {qualityModeDesc(mode, t)}
-                  </span>
+      <StudioMenuSection label={t('studio.mode')}>
+        {STUDIO_QUALITY_MODES.map((mode) => (
+          <StudioMenuItem
+            key={mode}
+            active={settings.qualityMode === mode}
+            onClick={() => patch({ qualityMode: mode as StudioQualityMode })}
+          >
+            <span className="flex items-start gap-2.5">
+              <span className="mt-0.5">{qualityModeIcon(mode)}</span>
+              <span className="min-w-0">
+                <span className="flex items-center gap-1.5 font-semibold text-zinc-900">
+                  {qualityModeLabel(mode, t)}
+                  {mode === 'quality' ? (
+                    <span className="rounded bg-zinc-900 px-1 py-px text-[9px] font-bold uppercase tracking-wide text-white">
+                      Pro
+                    </span>
+                  ) : null}
+                </span>
+                <span className="mt-0.5 block text-xs font-normal leading-snug text-zinc-500">
+                  {qualityModeDesc(mode, t)}
                 </span>
               </span>
+            </span>
+          </StudioMenuItem>
+        ))}
+      </StudioMenuSection>
+    </StudioSettingGroup>
+  );
+}
+
+function PromptPresetsControl({
+  selected,
+  disabled,
+  onToggle,
+}: {
+  selected: StudioPromptPresetKey[];
+  disabled?: boolean;
+  onToggle: (key: StudioPromptPresetKey) => void;
+}) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+
+  return (
+    <StudioSettingGroup
+      open={open}
+      onClose={() => setOpen(false)}
+      trigger={(
+        <ComposerIconButton
+          disabled={disabled}
+          open={open}
+          onClick={() => setOpen((v) => !v)}
+          ariaLabel={t('studio.promptIdeas')}
+        >
+          <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+          {selected.length > 0 ? (
+            <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-md bg-zinc-900 px-1 text-[10px] font-bold text-white">
+              {selected.length}
+            </span>
+          ) : null}
+        </ComposerIconButton>
+      )}
+    >
+      <StudioMenuSection label={t('studio.promptIdeas')}>
+        {STUDIO_PROMPT_PRESET_KEYS.map((key) => {
+          const active = selected.includes(key);
+          return (
+            <StudioMenuItem key={key} active={active} onClick={() => onToggle(key)}>
+              <span className="font-medium text-zinc-900">{t(`studio.promptPresets.${key}`)}</span>
             </StudioMenuItem>
-          ))}
-        </div>
-      </StudioSettingGroup>
-    </>
+          );
+        })}
+      </StudioMenuSection>
+    </StudioSettingGroup>
   );
 }
 

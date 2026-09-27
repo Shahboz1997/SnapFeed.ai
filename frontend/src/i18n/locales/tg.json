@@ -179,6 +179,8 @@
     "uploading": "Боргузорӣ",
     "historyCollapse": "Пӯшидани таърих",
     "historyExpand": "Кушодани таърих",
+    "outputSettings": "Танзимоти натиҷа",
+    "promptIdeas": "Идеяҳои prompt",
     "promptPresets": {
       "studioLight": "нури студия",
       "softShadows": "сояҳои нарм",
@@ -780,6 +782,7 @@
   },
   "referral": {
     "title": "Дӯстонро даъват кунед",
+    "inviteShort": "Даъват",
     "description": "Пайвандро мубодила кунед — ҳар ду {{count}} кредити ройгон мегиред.",
     "codeLabel": "Рамзи шумо",
     "copyLink": "Нусхаи пайванд",
