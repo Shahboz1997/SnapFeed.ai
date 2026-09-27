@@ -18,7 +18,7 @@ const FEATURED_IDS = ['starter', 'pro', 'business'] as const;
 const COMPACT_IDS = ['single', 'monthly'] as const;
 
 interface LandingPricingCardProps {
-  onSelectPlan: () => void;
+  onSelectPlan: (tierId: PricingTierPrices['id']) => void;
 }
 
 function tierById(id: string): PricingTierPrices {
@@ -117,7 +117,7 @@ export default function LandingPricingCard({ onSelectPlan }: LandingPricingCardP
 
               <button
                 type="button"
-                onClick={onSelectPlan}
+                onClick={() => onSelectPlan(tier.id)}
                 className={`mt-6 inline-flex h-11 w-full items-center justify-center rounded-2xl text-sm font-semibold transition ${
                   popular
                     ? 'bg-white text-zinc-900 hover:bg-zinc-100'
@@ -166,7 +166,7 @@ export default function LandingPricingCard({ onSelectPlan }: LandingPricingCardP
               </div>
               <button
                 type="button"
-                onClick={onSelectPlan}
+                onClick={() => onSelectPlan(tier.id)}
                 className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-xl border border-zinc-200 bg-white px-3.5 text-xs font-semibold text-zinc-700 transition hover:border-zinc-300 hover:bg-zinc-50"
               >
                 {t('pricing.selectPlan')}

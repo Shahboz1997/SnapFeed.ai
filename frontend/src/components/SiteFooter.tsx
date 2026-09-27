@@ -35,15 +35,9 @@ export default function SiteFooter() {
               >
                 {COMPANY.brand}
               </a>
-              <a
-                href={COMPANY.siteUrl}
-                className="mt-1 block text-[13px] text-zinc-400 transition-colors hover:text-zinc-700"
-              >
-                snapfeed.help
-              </a>
-                  <p className="mx-auto mt-4 max-w-xs text-sm leading-relaxed text-zinc-500 sm:mx-0">
-                    {t('legal.footer.tagline')}
-                  </p>
+              <p className="mx-auto mt-4 max-w-xs text-sm leading-relaxed text-zinc-500 sm:mx-0">
+                {t('legal.footer.tagline')}
+              </p>
               <a
                 href={`mailto:${supportEmail}`}
                 className="mt-4 inline-flex min-h-10 items-center justify-center rounded-full bg-zinc-900 px-4 text-[13px] font-semibold text-white transition hover:bg-zinc-800"

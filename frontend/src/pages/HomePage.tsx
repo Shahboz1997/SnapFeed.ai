@@ -9,13 +9,14 @@ import LoginModal from '../components/LoginModal';
 import PricingModal from '../components/PricingModal';
 import { useAuth } from '../context/AuthContext';
 import { fetchGuestCredits } from '../api/guestCredits';
-import { POST_AUTH_FIRST_SUCCESS_KEY, POST_AUTH_MODAL_KEY } from '../constants/authFlow';
+import { POST_AUTH_FIRST_SUCCESS_KEY, POST_AUTH_MODAL_KEY, clearPendingCheckoutPlan, writePendingCheckoutPlan } from '../constants/authFlow';
 import {
   GUEST_CREDITS_INITIAL,
   mergeGuestCredits,
   readGuestCreditsFromStorage,
   writeGuestCreditsToStorage,
 } from '../constants/guestCredits';
+import type { PricingTierPrices } from '../constants/depositCurrency';
 
 const PHOTO_TIPS = [
   {
@@ -67,6 +68,7 @@ export default function HomePage() {
   const [guestCreditsLoading, setGuestCreditsLoading] = useState(() => !user && readGuestCreditsFromStorage() === null);
   const [showPricingModal, setShowPricingModal] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [preferredPlan, setPreferredPlan] = useState<PricingTierPrices['id'] | null>(null);
 
   const displayCredits = user ? (profile?.credits ?? 0) : (guestCredits ?? 0);
   const creditsLoading = user ? authLoading || profile === null : guestCreditsLoading;
@@ -104,7 +106,20 @@ export default function HomePage() {
     }
   }, [authLoading, user, profile, navigate]);
 
-  function openCreditsFlow() {
+  function closePricingModal() {
+    setShowPricingModal(false);
+    setPreferredPlan(null);
+    clearPendingCheckoutPlan();
+  }
+
+  function openCreditsFlow(planId?: PricingTierPrices['id']) {
+    if (planId) {
+      setPreferredPlan(planId);
+      if (!user) writePendingCheckoutPlan(planId);
+      setShowPricingModal(true);
+      return;
+    }
+    setPreferredPlan(null);
     if (!user) {
       setShowLoginModal(true);
       return;
@@ -122,24 +137,17 @@ export default function HomePage() {
       <LoginModal open={showLoginModal} onClose={() => setShowLoginModal(false)} />
       <PricingModal
         open={showPricingModal}
-        onClose={() => setShowPricingModal(false)}
+        onClose={closePricingModal}
         credits={displayCredits}
+        preferredPlan={preferredPlan}
       />
 
       <main className="relative mx-auto flex w-full max-w-5xl flex-col px-3 py-8 sm:px-6 sm:py-14 lg:py-20">
         <section className="mx-auto w-full max-w-3xl text-center">
-          <motion.p
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="font-display text-2xl tracking-tight text-zinc-900 sm:text-3xl md:text-4xl"
-          >
-            {t('home.eyebrow')}
-          </motion.p>
           <motion.h2
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.05 }}
-            className="mt-3 font-display text-[1.55rem] leading-[1.12] tracking-tight text-zinc-700 sm:mt-4 sm:text-4xl md:text-5xl"
+            className="font-display text-[1.55rem] leading-[1.12] tracking-tight text-zinc-700 sm:text-4xl md:text-5xl"
           >
             {t('home.title')}
           </motion.h2>

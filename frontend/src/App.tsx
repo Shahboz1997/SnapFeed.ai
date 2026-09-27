@@ -10,7 +10,13 @@ import PricingModal from './components/PricingModal';
 import TryOnWorkspace, { type StudioMode, type TryOnHistoryItem } from './components/TryOnWorkspace';
 import { useAuth } from './context/AuthContext';
 import { useToast } from './context/ToastContext';
-import { POST_AUTH_FIRST_SUCCESS_KEY, POST_AUTH_MODAL_KEY } from './constants/authFlow';
+import {
+  POST_AUTH_FIRST_SUCCESS_KEY,
+  POST_AUTH_MODAL_KEY,
+  clearPendingCheckoutPlan,
+  readPendingCheckoutPlan,
+  type PendingCheckoutPlanId,
+} from './constants/authFlow';
 import {
   GUEST_CREDITS_INITIAL,
   mergeGuestCredits,
@@ -70,6 +76,7 @@ export default function App() {
   const [showPricingModal, setShowPricingModal] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showFirstSuccessHint, setShowFirstSuccessHint] = useState(false);
+  const [preferredPlan, setPreferredPlan] = useState<PendingCheckoutPlanId | null>(null);
 
   const studioModeRef = useRef(studioMode);
   const generationIdRef = useRef(0);
@@ -128,13 +135,23 @@ export default function App() {
       setShowFirstSuccessHint(true);
       showToast(t('studio.firstSuccessToast'), 'success');
     }
+
+    const pendingPlan = readPendingCheckoutPlan();
+    if (pendingPlan) {
+      clearPendingCheckoutPlan();
+      setPreferredPlan(pendingPlan);
+      setShowPricingModal(true);
+    }
   }, [authLoading, user, profile, showToast, t]);
 
   function closePricingModal() {
     setShowPricingModal(false);
+    setPreferredPlan(null);
+    clearPendingCheckoutPlan();
   }
 
   function openCreditsFlow() {
+    setPreferredPlan(null);
     if (!user) {
       setShowLoginModal(true);
       return;
@@ -500,6 +517,7 @@ export default function App() {
         open={showPricingModal}
         onClose={closePricingModal}
         credits={displayCredits}
+        preferredPlan={preferredPlan}
       />
 
       <main className="mobile-sticky-offset relative mx-auto flex h-full w-full max-w-6xl min-h-0 min-w-0 flex-1 flex-col px-2 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4 lg:px-8 lg:py-5">

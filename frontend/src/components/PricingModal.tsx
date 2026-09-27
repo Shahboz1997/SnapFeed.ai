@@ -5,6 +5,7 @@ import { createLemonCheckout, openLemonCheckout } from '../api/billing';
 import { ApiError } from '../api/generateImage';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { clearPendingCheckoutPlan, writePendingCheckoutPlan } from '../constants/authFlow';
 import { GUEST_CREDITS_INITIAL } from '../constants/guestCredits';
 import {
   PRICING_TIERS,
@@ -26,14 +27,18 @@ interface PricingModalProps {
   onClose: () => void;
   credits?: number;
   welcome?: boolean;
+  /** When set, auto-start Lemon checkout for this pack once the user is signed in. */
+  preferredPlan?: PricingTierPrices['id'] | null;
 }
 
 function TiltCard({
   children,
   popular,
+  highlighted,
 }: {
   children: ReactNode;
   popular?: boolean;
+  highlighted?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [style, setStyle] = useState({ transform: 'perspective(800px) rotateX(0deg) rotateY(0deg)' });
@@ -63,7 +68,11 @@ function TiltCard({
       onMouseLeave={handleLeave}
       style={style}
       className={`relative rounded-2xl border p-4 transition-transform duration-150 will-change-transform ${
-        popular ? 'border-zinc-900/30 bg-white shadow-sm' : 'border-zinc-200/80 bg-white'
+        highlighted
+          ? 'border-zinc-900 bg-white shadow-sm ring-2 ring-zinc-900/15'
+          : popular
+            ? 'border-zinc-900/30 bg-white shadow-sm'
+            : 'border-zinc-200/80 bg-white'
       }`}
     >
       <div
@@ -83,6 +92,7 @@ export default function PricingModal({
   onClose,
   credits = 0,
   welcome = false,
+  preferredPlan = null,
 }: PricingModalProps) {
   const { t } = useTranslation();
   const { showToast } = useToast();
@@ -94,6 +104,7 @@ export default function PricingModal({
   const [cardCheckoutUnavailable, setCardCheckoutUnavailable] = useState(false);
   const checkoutInFlight = useRef(false);
   const refreshTimerRef = useRef<number | null>(null);
+  const autoCheckoutKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!open) {
@@ -103,6 +114,7 @@ export default function PricingModal({
       setCheckoutPlan(null);
       setCardCheckoutUnavailable(false);
       checkoutInFlight.current = false;
+      autoCheckoutKeyRef.current = null;
     }
   }, [open]);
 
@@ -122,6 +134,7 @@ export default function PricingModal({
   }, []);
 
   async function handleGoogleSignIn() {
+    if (preferredPlan) writePendingCheckoutPlan(preferredPlan);
     setSigningIn(true);
     setSignInError(null);
     try {
@@ -141,6 +154,7 @@ export default function PricingModal({
     try {
       const redirectUrl = `${window.location.origin}/cabinet?checkout=success`;
       const result = await createLemonCheckout(tier.id, redirectUrl);
+      clearPendingCheckoutPlan();
       openLemonCheckout(result.checkoutUrl);
       showToast(t('pricing.checkoutOpened'), 'success');
       onClose();
@@ -165,6 +179,17 @@ export default function PricingModal({
     }
   }
 
+  useEffect(() => {
+    if (!open || !user || !preferredPlan) return;
+    const key = `${user.id}:${preferredPlan}`;
+    if (autoCheckoutKeyRef.current === key) return;
+    const tier = TIERS.find((item) => item.id === preferredPlan);
+    if (!tier) return;
+    autoCheckoutKeyRef.current = key;
+    void handleSelectPlan(tier);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- start once per open+user+plan
+  }, [open, user, preferredPlan]);
+
   const supportMailto = buildCreditPurchaseMailto({
     subject: t('pricing.mailSubject', { tier: 'credits' }),
     body: t('pricing.mailBody', {
@@ -172,6 +197,13 @@ export default function PricingModal({
       email: user?.email ?? '',
     }),
   });
+
+  const orderedTiers = preferredPlan
+    ? [
+        ...TIERS.filter((tier) => tier.id === preferredPlan),
+        ...TIERS.filter((tier) => tier.id !== preferredPlan),
+      ]
+    : TIERS;
 
   return (
     <BottomSheet
@@ -301,12 +333,13 @@ export default function PricingModal({
                 )}
 
                 <div className="space-y-3">
-                  {TIERS.map((tier) => {
+                  {orderedTiers.map((tier) => {
                     const amount = tier.priceUsd;
                     const perCredit = amount / tier.credits;
                     const busy = checkoutPlan === tier.id;
+                    const highlighted = preferredPlan === tier.id;
                     return (
-                      <TiltCard key={tier.id} popular={tier.popular}>
+                      <TiltCard key={tier.id} popular={tier.popular} highlighted={highlighted}>
                         {tier.popular && (
                           <span className="absolute -top-2.5 left-4 rounded-md border border-zinc-900/20 bg-white px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-zinc-900 backdrop-blur-md">
                             {t('pricing.popular')}
@@ -338,7 +371,7 @@ export default function PricingModal({
                             onClick={() => void handleSelectPlan(tier)}
                             disabled={Boolean(checkoutPlan) || checkoutInFlight.current}
                             className={`inline-flex min-h-11 min-w-[6.5rem] items-center justify-center rounded-xl px-4 py-2 text-xs font-semibold transition disabled:opacity-60 ${
-                              tier.popular
+                              tier.popular || highlighted
                                 ? 'bg-zinc-900 text-white hover:bg-zinc-800'
                                 : 'border border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50'
                             }`}
