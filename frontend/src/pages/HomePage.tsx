@@ -5,13 +5,11 @@ import { motion } from 'framer-motion';
 import { ArrowRight, Images, Sparkles } from 'lucide-react';
 import AppShell from '../components/AppShell';
 import LandingPricingCard from '../components/LandingPricingCard';
-import LandingProofSection from '../components/LandingProofSection';
 import LoginModal from '../components/LoginModal';
 import PricingModal from '../components/PricingModal';
 import { useAuth } from '../context/AuthContext';
 import { fetchGuestCredits } from '../api/guestCredits';
 import { POST_AUTH_FIRST_SUCCESS_KEY, POST_AUTH_MODAL_KEY, clearPendingCheckoutPlan, writePendingCheckoutPlan } from '../constants/authFlow';
-import { COMPANY } from '../constants/company';
 import {
   GUEST_CREDITS_INITIAL,
   mergeGuestCredits,
@@ -159,19 +157,11 @@ export default function HomePage() {
       />
 
       <main className="relative mx-auto flex w-full max-w-5xl flex-col px-3 py-8 sm:px-6 sm:py-14 lg:py-20">
-        <section className="mx-auto w-full max-w-4xl text-center">
-          <motion.p
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="font-display text-3xl leading-none tracking-tight text-zinc-900 sm:text-5xl md:text-6xl"
-          >
-            {COMPANY.brand}
-          </motion.p>
+        <section className="mx-auto w-full max-w-3xl text-center">
           <motion.h2
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.06 }}
-            className="mt-4 font-display text-[1.35rem] leading-[1.15] tracking-tight text-zinc-600 sm:mt-5 sm:text-3xl md:text-4xl"
+            className="font-display text-[1.55rem] leading-[1.12] tracking-tight text-zinc-700 sm:text-4xl md:text-5xl"
           >
             {t('home.title')}
           </motion.h2>
@@ -179,7 +169,7 @@ export default function HomePage() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-zinc-500 sm:mt-4 sm:text-lg"
+            className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-zinc-500 sm:mt-5 sm:text-lg"
           >
             {t('home.subtitle')}
           </motion.p>
@@ -187,33 +177,33 @@ export default function HomePage() {
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.14 }}
-            className="mx-auto mt-6 flex w-full max-w-md flex-col items-center gap-3 sm:mt-8"
+            transition={{ delay: 0.15 }}
+            className="glass-panel luxury-shadow mx-auto mt-6 flex w-full max-w-xl flex-col gap-2.5 rounded-2xl p-2.5 sm:mt-8 sm:gap-3 sm:rounded-3xl sm:p-3 md:flex-row md:items-center"
           >
+            <div className="min-w-0 flex-1 px-2.5 py-2 text-center md:px-3 md:text-left">
+              <p className="text-sm leading-snug text-zinc-500 sm:text-[0.9375rem]">
+                {t('home.promptHint')}
+              </p>
+            </div>
             <Link
               to="/studio"
-              className="relative inline-flex h-12 w-full items-center justify-center gap-2 overflow-hidden rounded-2xl bg-zinc-900 px-6 text-sm font-semibold text-white transition hover:bg-zinc-800 sm:w-auto sm:min-w-[12rem]"
+              className="relative inline-flex h-12 w-full shrink-0 items-center justify-center gap-2 overflow-hidden rounded-2xl bg-zinc-900 px-5 text-sm font-semibold text-white transition hover:bg-zinc-800 md:w-auto md:px-6"
             >
               {t('home.cta')}
               <ArrowRight className="h-4 w-4" />
             </Link>
-            <p className="text-xs text-zinc-400 sm:text-sm">
-              {t('home.freeTrialHint', { count: GUEST_CREDITS_INITIAL })}
-            </p>
-            <p className="text-xs text-zinc-400 sm:text-sm">{t('home.promptHint')}</p>
           </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.18, duration: 0.4 }}
-            className="mx-auto w-full max-w-3xl"
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.22 }}
+            className="mt-4 text-xs text-zinc-400 sm:text-sm"
           >
-            <LandingProofSection />
-          </motion.div>
+            {t('home.freeTrialHint', { count: GUEST_CREDITS_INITIAL })}
+          </motion.p>
         </section>
 
-        <section className="mt-14 sm:mt-20 lg:mt-24">
+        <section className="mt-12 sm:mt-16 lg:mt-20">
           <div className="mx-auto max-w-2xl text-center">
             <h3 className="font-display text-xl tracking-tight text-zinc-900 sm:text-3xl">
               {t('home.photoTipsTitle')}
@@ -228,9 +218,8 @@ export default function HomePage() {
               <motion.article
                 key={tip.key}
                 initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-40px' }}
-                transition={{ delay: index * 0.04 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.18 + index * 0.05 }}
                 className="min-w-0"
               >
                 <div className="aspect-[2/3] overflow-hidden rounded-2xl bg-zinc-100 sm:rounded-3xl">
@@ -268,9 +257,8 @@ export default function HomePage() {
                   <motion.article
                     key={item.key}
                     initial={{ opacity: 0, y: 12 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, margin: '-40px' }}
-                    transition={{ delay: index * 0.04 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.28 + index * 0.04 }}
                     className="flex h-full min-w-0 flex-col"
                   >
                     <div
@@ -310,14 +298,14 @@ export default function HomePage() {
           </p>
         </section>
 
-        <section className="mt-14 sm:mt-20 lg:mt-24">
+        <section className="mt-12 sm:mt-20 lg:mt-24">
           <h3 className="mb-5 font-display text-xl tracking-tight text-zinc-900 sm:mb-6 sm:text-3xl">
             {t('home.shortcutsTitle')}
           </h3>
           <div className="grid gap-3 sm:grid-cols-2 sm:gap-5">
             <Link
               to="/studio"
-              className="group relative min-h-[180px] overflow-hidden rounded-2xl border border-zinc-200/70 shadow-sm shadow-zinc-200/40 transition duration-300 hover:-translate-y-0.5 hover:border-zinc-300 hover:shadow-xl hover:shadow-zinc-200/60 sm:min-h-[240px] sm:rounded-3xl"
+              className="group relative min-h-[200px] overflow-hidden rounded-2xl border border-zinc-200/70 shadow-sm shadow-zinc-200/40 transition duration-300 hover:-translate-y-0.5 hover:border-zinc-300 hover:shadow-xl hover:shadow-zinc-200/60 sm:min-h-[280px] sm:rounded-3xl"
             >
               <img
                 src="/studio-examples/tryon-shortcut-bg.jpg"
@@ -325,7 +313,7 @@ export default function HomePage() {
                 className="absolute inset-0 h-full w-full object-cover object-[center_20%] transition duration-500 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-white via-white/85 to-white/25" />
-              <div className="relative z-10 flex h-full min-h-[180px] flex-col justify-end p-5 sm:min-h-[240px] sm:p-7">
+              <div className="relative z-10 flex h-full min-h-[200px] flex-col justify-end p-5 sm:min-h-[280px] sm:p-7">
                 <span className="mb-auto inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-white/90 text-zinc-800 shadow-sm backdrop-blur-sm transition group-hover:bg-zinc-900 group-hover:text-white">
                   <Sparkles className="h-4 w-4" strokeWidth={1.75} />
                 </span>
@@ -347,7 +335,7 @@ export default function HomePage() {
 
             <Link
               to="/gallery"
-              className="group relative min-h-[180px] overflow-hidden rounded-2xl border border-zinc-200/70 shadow-sm shadow-zinc-200/40 transition duration-300 hover:-translate-y-0.5 hover:border-zinc-300 hover:shadow-xl hover:shadow-zinc-200/60 sm:min-h-[240px] sm:rounded-3xl"
+              className="group relative min-h-[200px] overflow-hidden rounded-2xl border border-zinc-200/70 shadow-sm shadow-zinc-200/40 transition duration-300 hover:-translate-y-0.5 hover:border-zinc-300 hover:shadow-xl hover:shadow-zinc-200/60 sm:min-h-[280px] sm:rounded-3xl"
             >
               <img
                 src="/studio-examples/gallery-shortcut-bg.jpg"
@@ -355,7 +343,7 @@ export default function HomePage() {
                 className="absolute inset-0 h-full w-full object-cover object-center transition duration-500 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-white via-white/85 to-white/25" />
-              <div className="relative z-10 flex h-full min-h-[180px] flex-col justify-end p-5 sm:min-h-[240px] sm:p-7">
+              <div className="relative z-10 flex h-full min-h-[200px] flex-col justify-end p-5 sm:min-h-[280px] sm:p-7">
                 <span className="mb-auto inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-white/90 text-zinc-800 shadow-sm backdrop-blur-sm transition group-hover:bg-zinc-900 group-hover:text-white">
                   <Images className="h-4 w-4" strokeWidth={1.75} />
                 </span>
