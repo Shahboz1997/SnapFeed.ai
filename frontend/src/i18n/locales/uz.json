@@ -9,6 +9,14 @@
     "studio": "Studiya",
     "gallery": "Galereya"
   },
+  "install": {
+    "title": "SnapFeed o‘rnatish",
+    "body": "Ilovani bosh ekranga qo‘shing — tezroq ochiladi, oddiy ilova kabi.",
+    "iosBody": "Bosing",
+    "iosBodyAfterShare": "Ulashish, keyin “Bosh ekranga qo‘shish”.",
+    "cta": "O‘rnatish",
+    "dismiss": "Hozir emas"
+  },
   "home": {
     "eyebrow": "snapfeed.help",
     "title": "Bugun nima kiydirasiz?",

@@ -16,9 +16,18 @@ import PrivacyPage from './pages/PrivacyPage';
 import RefundPage from './pages/RefundPage';
 import TermsPage from './pages/TermsPage';
 import CookieConsent from './components/CookieConsent';
+import InstallPrompt from './components/InstallPrompt';
 import ErrorBoundary from './components/ErrorBoundary';
 import './i18n';
 import './index.css';
+
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {
+      /* install prompt still works next visit after SW is available */
+    });
+  });
+}
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -42,6 +51,7 @@ createRoot(document.getElementById('root')!).render(
               <Route path="/refund" element={<RefundPage />} />
             </Routes>
             <CookieConsent />
+            <InstallPrompt />
           </ToastProvider>
         </AuthProvider>
       </BrowserRouter>

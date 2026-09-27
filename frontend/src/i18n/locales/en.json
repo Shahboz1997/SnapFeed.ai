@@ -9,6 +9,14 @@
     "studio": "Studio",
     "gallery": "Gallery"
   },
+  "install": {
+    "title": "Install SnapFeed",
+    "body": "Add the app to your home screen for faster access — works like a native app.",
+    "iosBody": "Tap",
+    "iosBodyAfterShare": "Share, then “Add to Home Screen”.",
+    "cta": "Install",
+    "dismiss": "Not now"
+  },
   "home": {
     "eyebrow": "snapfeed.help",
     "title": "What will you try on today?",
