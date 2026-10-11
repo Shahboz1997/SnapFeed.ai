@@ -18,6 +18,7 @@ import TermsPage from './pages/TermsPage';
 import CookieConsent from './components/CookieConsent';
 import InstallPrompt from './components/InstallPrompt';
 import ErrorBoundary from './components/ErrorBoundary';
+import { initGoogleAds } from './lib/analytics';
 import './i18n';
 import './index.css';
 
@@ -28,6 +29,9 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
     });
   });
 }
+
+// Resume Ads tag when the user already accepted cookies on a prior visit.
+initGoogleAds();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

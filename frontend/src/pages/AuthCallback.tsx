@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { POST_AUTH_FIRST_SUCCESS_KEY } from '../constants/authFlow';
+import { trackAdsConversion } from '../lib/analytics';
 import { getSupabaseClient } from '../lib/supabase';
 import Spinner from '../components/Spinner';
 
@@ -25,6 +26,7 @@ export default function AuthCallback() {
       if (!active || settled) return;
       settled = true;
       sessionStorage.setItem(POST_AUTH_FIRST_SUCCESS_KEY, '1');
+      trackAdsConversion('signup', { onceKey: 'signup' });
       navigate('/studio', { replace: true });
     }
 

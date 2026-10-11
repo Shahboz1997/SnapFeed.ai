@@ -41,6 +41,7 @@ export default function ReferralModal({ open, onClose }: ReferralModalProps) {
     try {
       await navigator.clipboard.writeText(link);
       showToast(t('referral.linkCopied'), 'success');
+      onClose();
     } catch {
       showToast(t('pricing.copyFailed'), 'error');
     }
@@ -52,16 +53,17 @@ export default function ReferralModal({ open, onClose }: ReferralModalProps) {
       onClose={onClose}
       labelledBy="referral-invite-title"
       closeLabel={t('pricing.close')}
-      maxWidthClass="max-w-md"
+      maxWidthClass="max-w-sm"
+      variant="dialog"
     >
       {loading ? (
-        <div className="flex min-h-[12rem] items-center justify-center py-8">
+        <div className="flex min-h-[8rem] items-center justify-center py-6">
           <Spinner />
         </div>
       ) : referral ? (
         <ReferralInviteCard referral={referral} onCopy={() => void copyReferralLink()} variant="plain" />
       ) : (
-        <div className="py-6 text-center">
+        <div className="py-4 text-center">
           <p className="text-sm text-zinc-500">{t('referral.notReady')}</p>
         </div>
       )}

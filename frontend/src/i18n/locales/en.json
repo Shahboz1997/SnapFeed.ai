@@ -578,7 +578,7 @@
     },
     "cookieBanner": {
       "title": "Cookies & local storage",
-      "body": "We use essential cookies and local storage to run snapfeed.help (sign-in, language, credit limits, and preferences). If we add analytics or advertising tags later, we will only use them according to your choice.",
+      "body": "We use essential cookies and local storage to run snapfeed.help (sign-in, language, credit limits, and preferences). Analytics and Google Ads tags load only if you choose Accept.",
       "accept": "Accept",
       "essential": "Essential only",
       "learnMore": "Cookie Policy"

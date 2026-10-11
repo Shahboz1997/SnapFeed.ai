@@ -6,12 +6,16 @@ import {
   getCookieConsent,
   type CookieConsentValue,
 } from '../constants/company';
+import { initGoogleAds } from '../lib/analytics';
 
 function writeConsent(value: CookieConsentValue) {
   try {
     localStorage.setItem(COOKIE_CONSENT_KEY, value);
   } catch {
     /* ignore */
+  }
+  if (value === 'accepted') {
+    initGoogleAds();
   }
 }
 

@@ -10,6 +10,7 @@ import ReferralInviteCard from '../components/ReferralInviteCard';
 import Spinner from '../components/Spinner';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { trackAdsConversion } from '../lib/analytics';
 
 export default function CabinetPage() {
   const { t } = useTranslation();
@@ -37,6 +38,10 @@ export default function CabinetPage() {
   useEffect(() => {
     if (searchParams.get('checkout') !== 'success' || !user) return;
     showToast(t('pricing.checkoutSuccess'), 'success');
+    // Dedupe StrictMode double-mount; allow a later purchase in the same session.
+    trackAdsConversion('purchase', {
+      onceKey: `purchase:${user.id}:${searchParams.get('checkout')}`,
+    });
     void refreshProfile();
     const next = new URLSearchParams(searchParams);
     next.delete('checkout');
@@ -137,20 +142,6 @@ export default function CabinetPage() {
           ) : null}
 
           <p className="mt-6 text-sm text-zinc-500">{t('auth.cabinetHint')}</p>
-
-          <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-zinc-200/60 bg-zinc-50 px-4 py-4 sm:px-5">
-            <div className="min-w-0">
-              <h2 className="text-sm font-semibold text-zinc-900">{t('pricing.topUpTitle')}</h2>
-              <p className="mt-0.5 text-xs text-zinc-500">{t('pricing.topUpDescription')}</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setShowPricingModal(true)}
-              className="inline-flex shrink-0 items-center justify-center rounded-xl bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-800"
-            >
-              {t('pricing.upgrade')}
-            </button>
-          </div>
 
           <div className="mt-8 border-t border-zinc-200/60 pt-6">
             <h2 className="mb-4 font-display text-lg font-semibold text-zinc-900">

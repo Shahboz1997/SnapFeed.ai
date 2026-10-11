@@ -10,6 +10,7 @@ import PricingModal from './components/PricingModal';
 import TryOnWorkspace, { type StudioMode, type TryOnHistoryItem } from './components/TryOnWorkspace';
 import { useAuth } from './context/AuthContext';
 import { useToast } from './context/ToastContext';
+import { trackAdsConversion } from './lib/analytics';
 import {
   POST_AUTH_FIRST_SUCCESS_KEY,
   POST_AUTH_MODAL_KEY,
@@ -421,6 +422,7 @@ export default function App() {
       });
 
       applyCreditsAndToast(data.creditsRemaining, data.creditsCharged ?? creditCost);
+      trackAdsConversion('generate');
 
       const urls = (data.imageUrls?.length
         ? data.imageUrls

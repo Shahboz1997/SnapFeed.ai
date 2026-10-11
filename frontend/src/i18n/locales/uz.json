@@ -561,7 +561,7 @@
     },
     "cookieBanner": {
       "title": "Cookie va mahalliy saqlash",
-      "body": "snapfeed.help ishlashi uchun zarur cookie va local storage ishlatamiz (kirish, til, kredit limitlari, sozlamalar). Keyinroq analitika yoki reklama teglari qo'shilsa, ular faqat sizning tanlovingizga muvofiq ishlatiladi.",
+      "body": "snapfeed.help ishlashi uchun zarur cookie va local storage ishlatamiz (kirish, til, kredit limitlari, sozlamalar). Analitika va Google Ads teglari faqat «Qabul qilish» ni bosganingizda yuklanadi.",
       "accept": "Qabul qilish",
       "essential": "Faqat zaruriy",
       "learnMore": "Cookie siyosati"

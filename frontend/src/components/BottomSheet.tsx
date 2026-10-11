@@ -11,6 +11,8 @@ type BottomSheetProps = {
   /** Extra class for the panel surface. */
   panelClassName?: string;
   closeLabel?: string;
+  /** `sheet` = mobile bottom sheet; `dialog` = small centered modal. */
+  variant?: 'sheet' | 'dialog';
 };
 
 const DISMISS_OFFSET = 110;
@@ -40,11 +42,14 @@ export default function BottomSheet({
   maxWidthClass = 'max-w-md',
   panelClassName = '',
   closeLabel = 'Close',
+  variant = 'sheet',
 }: BottomSheetProps) {
   const isPhone = useIsPhone();
+  const isDialog = variant === 'dialog';
+  const sheetOnPhone = !isDialog && isPhone;
 
   function handleDragEnd(_: unknown, info: PanInfo) {
-    if (!isPhone) return;
+    if (!sheetOnPhone) return;
     if (info.offset.y > DISMISS_OFFSET || info.velocity.y > DISMISS_VELOCITY) {
       onClose();
     }
@@ -54,7 +59,11 @@ export default function BottomSheet({
     <AnimatePresence>
       {open ? (
         <div
-          className="fixed inset-0 z-[70] flex items-end justify-center sm:items-center sm:p-4"
+          className={
+            isDialog
+              ? 'fixed inset-0 z-[70] flex items-center justify-center p-4'
+              : 'fixed inset-0 z-[70] flex items-end justify-center pb-[calc(var(--tab-bar-height)+0.5rem+env(safe-area-inset-bottom,0px))] sm:items-center sm:p-4 sm:pb-4 lg:pb-4'
+          }
           role="dialog"
           aria-modal="true"
           aria-labelledby={labelledBy}
@@ -71,22 +80,50 @@ export default function BottomSheet({
           />
 
           <motion.div
-            initial={isPhone ? { opacity: 0, y: '100%' } : { opacity: 0, y: 24, scale: 0.98 }}
-            animate={isPhone ? { opacity: 1, y: 0 } : { opacity: 1, y: 0, scale: 1 }}
-            exit={isPhone ? { opacity: 0, y: '100%' } : { opacity: 0, y: 16, scale: 0.98 }}
+            initial={
+              sheetOnPhone
+                ? { opacity: 0, y: '100%' }
+                : { opacity: 0, y: 16, scale: 0.96 }
+            }
+            animate={
+              sheetOnPhone
+                ? { opacity: 1, y: 0 }
+                : { opacity: 1, y: 0, scale: 1 }
+            }
+            exit={
+              sheetOnPhone
+                ? { opacity: 0, y: '100%' }
+                : { opacity: 0, y: 12, scale: 0.96 }
+            }
             transition={{ type: 'spring', stiffness: 420, damping: 36 }}
-            drag={isPhone ? 'y' : false}
+            drag={sheetOnPhone ? 'y' : false}
             dragConstraints={{ top: 0, bottom: 0 }}
             dragElastic={{ top: 0.04, bottom: 0.55 }}
             onDragEnd={handleDragEnd}
-            className={`glass-panel luxury-shadow relative z-10 mb-5 flex max-h-[85dvh] w-full ${maxWidthClass} flex-col overflow-hidden rounded-t-[1.75rem] border-zinc-200/70 bg-white/95 sm:mb-0 sm:max-h-[min(92dvh,40rem)] sm:rounded-3xl ${panelClassName}`}
-            style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom, 0px))' }}
+            className={
+              isDialog
+                ? `glass-panel luxury-shadow relative z-10 flex h-auto max-h-[min(80dvh,28rem)] w-full ${maxWidthClass} flex-col overflow-hidden rounded-3xl border-zinc-200/70 bg-white/95 ${panelClassName}`
+                : `glass-panel luxury-shadow relative z-10 mx-2 mb-1 flex h-auto max-h-[min(78dvh,100%)] w-full ${maxWidthClass} flex-col overflow-hidden rounded-[1.75rem] border-zinc-200/70 bg-white/95 sm:mx-0 sm:mb-0 sm:max-h-[min(92dvh,40rem)] sm:rounded-3xl ${panelClassName}`
+            }
+            style={
+              isDialog
+                ? undefined
+                : { paddingBottom: 'max(0.75rem, 0.5rem)' }
+            }
           >
-            <div className="flex shrink-0 justify-center pb-1 pt-2.5 sm:hidden" aria-hidden="true">
-              <span className="h-1 w-10 rounded-full bg-zinc-300/90" />
-            </div>
+            {sheetOnPhone ? (
+              <div className="flex shrink-0 justify-center pb-1 pt-2.5 sm:hidden" aria-hidden="true">
+                <span className="h-1 w-10 rounded-full bg-zinc-300/90" />
+              </div>
+            ) : null}
 
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-3 pt-1 sm:px-8 sm:pb-6 sm:pt-6">
+            <div
+              className={
+                isDialog
+                  ? 'min-h-0 overflow-y-auto overscroll-contain px-5 py-5 sm:px-6 sm:py-6'
+                  : 'min-h-0 overflow-y-auto overscroll-contain px-5 pb-4 pt-1 sm:px-8 sm:pb-6 sm:pt-6'
+              }
+            >
               {children}
             </div>
           </motion.div>
