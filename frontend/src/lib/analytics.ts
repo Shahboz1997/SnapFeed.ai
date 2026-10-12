@@ -6,10 +6,13 @@ declare global {
   interface Window {
     dataLayer: unknown[];
     gtag?: (...args: unknown[]) => void;
+    __snapfeedPageViewSent?: boolean;
   }
 }
 
 const GOOGLE_TAG_ID = 'GT-KFGFRXD2';
+const ADS_DESTINATION_ID = 'AW-18107551498';
+const PAGE_VIEW_SEND_TO = 'AW-18107551498/LgTqCKDJoJgdEIqerbpD';
 const ADS_ID = (import.meta.env.VITE_GOOGLE_ADS_ID as string | undefined)?.trim() || '';
 
 const CONSENT_GRANTED = {
@@ -51,19 +54,38 @@ export function initGoogleAds(): void {
       document.querySelector('script[src*="googletagmanager.com/gtag/js"]'),
   );
   if (alreadyLoaded) {
-    if (ADS_ID && ADS_ID !== GOOGLE_TAG_ID) window.gtag!('config', ADS_ID);
+    if (ADS_ID && ADS_ID !== GOOGLE_TAG_ID && ADS_ID !== ADS_DESTINATION_ID) {
+      window.gtag!('config', ADS_ID);
+    }
+    trackPageViewConversion();
     return;
   }
 
   window.gtag!('js', new Date());
   window.gtag!('config', GOOGLE_TAG_ID);
-  if (ADS_ID && ADS_ID !== GOOGLE_TAG_ID) window.gtag!('config', ADS_ID);
+  window.gtag!('config', ADS_DESTINATION_ID);
+  if (ADS_ID && ADS_ID !== GOOGLE_TAG_ID && ADS_ID !== ADS_DESTINATION_ID) {
+    window.gtag!('config', ADS_ID);
+  }
+  trackPageViewConversion();
 
   const script = document.createElement('script');
   script.id = 'google-ads-gtag';
   script.async = true;
   script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(GOOGLE_TAG_ID)}`;
   document.head.appendChild(script);
+}
+
+/** Page-view conversion. The head snippet already sends it when consent was granted on load. */
+function trackPageViewConversion(): void {
+  if (window.__snapfeedPageViewSent) return;
+  if (!markDedupe('page_view')) return;
+  window.gtag!('event', 'conversion', {
+    send_to: PAGE_VIEW_SEND_TO,
+    value: 1.0,
+    currency: 'USD',
+  });
+  window.__snapfeedPageViewSent = true;
 }
 
 function markDedupe(key: string): boolean {
