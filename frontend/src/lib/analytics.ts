@@ -9,7 +9,15 @@ declare global {
   }
 }
 
+const GOOGLE_TAG_ID = 'GT-KFGFRXD2';
 const ADS_ID = (import.meta.env.VITE_GOOGLE_ADS_ID as string | undefined)?.trim() || '';
+
+const CONSENT_GRANTED = {
+  ad_storage: 'granted',
+  ad_user_data: 'granted',
+  ad_personalization: 'granted',
+  analytics_storage: 'granted',
+};
 
 const CONVERSION_SEND_TO: Record<AdsConversion, string> = {
   signup: (import.meta.env.VITE_GOOGLE_ADS_CONVERSION_SIGNUP as string | undefined)?.trim() || '',
@@ -20,26 +28,41 @@ const CONVERSION_SEND_TO: Record<AdsConversion, string> = {
 const DEDUPE_PREFIX = 'snapfeed_ads_conv_';
 
 function canTrack(): boolean {
-  return Boolean(ADS_ID) && hasAnalyticsConsent() && typeof window !== 'undefined';
+  return hasAnalyticsConsent() && typeof window !== 'undefined';
 }
 
-/** Load gtag only after analytics consent. Safe to call repeatedly. */
+function ensureGtag(): void {
+  window.dataLayer = window.dataLayer || [];
+  if (!window.gtag) {
+    window.gtag = (...args: unknown[]) => {
+      window.dataLayer.push(args);
+    };
+  }
+}
+
+/** Grant Ads/analytics consent on the Google tag. Safe to call repeatedly. */
 export function initGoogleAds(): void {
   if (!canTrack()) return;
-  if (document.getElementById('google-ads-gtag')) return;
+  ensureGtag();
+  window.gtag!('consent', 'update', CONSENT_GRANTED);
 
-  window.dataLayer = window.dataLayer || [];
-  window.gtag = (...args: unknown[]) => {
-    window.dataLayer.push(args);
-  };
+  const alreadyLoaded = Boolean(
+    document.getElementById('google-ads-gtag') ||
+      document.querySelector('script[src*="googletagmanager.com/gtag/js"]'),
+  );
+  if (alreadyLoaded) {
+    if (ADS_ID && ADS_ID !== GOOGLE_TAG_ID) window.gtag!('config', ADS_ID);
+    return;
+  }
 
-  window.gtag('js', new Date());
-  window.gtag('config', ADS_ID);
+  window.gtag!('js', new Date());
+  window.gtag!('config', GOOGLE_TAG_ID);
+  if (ADS_ID && ADS_ID !== GOOGLE_TAG_ID) window.gtag!('config', ADS_ID);
 
   const script = document.createElement('script');
   script.id = 'google-ads-gtag';
   script.async = true;
-  script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(ADS_ID)}`;
+  script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(GOOGLE_TAG_ID)}`;
   document.head.appendChild(script);
 }
 
@@ -86,5 +109,5 @@ export function trackAdsConversion(
 }
 
 export function isGoogleAdsConfigured(): boolean {
-  return Boolean(ADS_ID);
+  return Boolean(GOOGLE_TAG_ID);
 }
