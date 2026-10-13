@@ -48,8 +48,16 @@ async function sendViaSmtp({ to, subject, text, html, replyTo }) {
   });
 }
 
+function resendFromAddress() {
+  const configured = process.env.RESEND_FROM?.trim() || '';
+  if (!configured || configured.includes('onboarding@resend.dev')) {
+    return 'SnapFeed <noreply@snapfeed.help>';
+  }
+  return configured;
+}
+
 async function sendViaResend({ to, subject, text, html, replyTo }) {
-  const from = process.env.RESEND_FROM?.trim() || 'SnapFeed <noreply@snapfeed.help>';
+  const from = resendFromAddress();
   const payload = { from, to: [to], subject, text, html };
   if (replyTo) payload.reply_to = replyTo;
 
