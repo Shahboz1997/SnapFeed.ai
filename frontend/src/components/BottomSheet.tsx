@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { AnimatePresence, motion, type PanInfo } from 'framer-motion';
 
 type BottomSheetProps = {
@@ -55,14 +56,14 @@ export default function BottomSheet({
     }
   }
 
-  return (
+  const sheet = (
     <AnimatePresence>
       {open ? (
         <div
           className={
             isDialog
-              ? 'fixed inset-0 z-[70] flex items-center justify-center p-4'
-              : 'fixed inset-0 z-[70] flex items-end justify-center pb-[calc(var(--tab-bar-height)+0.5rem+env(safe-area-inset-bottom,0px))] sm:items-center sm:p-4 sm:pb-4 lg:pb-4'
+              ? 'fixed inset-0 z-[100] flex items-center justify-center p-4'
+              : 'fixed inset-0 z-[100] flex items-end justify-center pb-[calc(var(--tab-bar-height)+0.5rem+env(safe-area-inset-bottom,0px))] sm:items-center sm:p-4 sm:pb-4 lg:pb-4'
           }
           role="dialog"
           aria-modal="true"
@@ -74,7 +75,7 @@ export default function BottomSheet({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="absolute inset-0 bg-zinc-900/30 backdrop-blur-sm"
+            className="absolute inset-0 bg-zinc-950/45"
             aria-label={closeLabel}
             onClick={onClose}
           />
@@ -102,7 +103,7 @@ export default function BottomSheet({
             onDragEnd={handleDragEnd}
             className={
               isDialog
-                ? `glass-panel luxury-shadow relative z-10 flex h-auto max-h-[min(80dvh,28rem)] w-full ${maxWidthClass} flex-col overflow-hidden rounded-3xl border-zinc-200/70 bg-white/95 ${panelClassName}`
+                ? `luxury-shadow relative z-10 flex h-auto max-h-[min(80dvh,28rem)] w-full ${maxWidthClass} flex-col overflow-hidden rounded-3xl border border-zinc-200/70 bg-white ${panelClassName}`
                 : `glass-panel luxury-shadow relative z-10 mx-2 mb-1 flex h-auto max-h-[min(78dvh,100%)] w-full ${maxWidthClass} flex-col overflow-hidden rounded-[1.75rem] border-zinc-200/70 bg-white/95 sm:mx-0 sm:mb-0 sm:max-h-[min(92dvh,40rem)] sm:rounded-3xl ${panelClassName}`
             }
             style={
@@ -131,4 +132,7 @@ export default function BottomSheet({
       ) : null}
     </AnimatePresence>
   );
+
+  if (typeof document === 'undefined') return sheet;
+  return createPortal(sheet, document.body);
 }
