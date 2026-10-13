@@ -5,8 +5,8 @@ import { fetchGuestCredits } from './api/guestCredits';
 import { generateProductImage, isAbortError } from './api/generateProductImage';
 import AlertBanner, { type AlertType } from './components/AlertBanner';
 import AppShell from './components/AppShell';
+import CreditRequestModal from './components/CreditRequestModal';
 import LoginModal from './components/LoginModal';
-import PricingModal from './components/PricingModal';
 import TryOnWorkspace, { type StudioMode, type TryOnHistoryItem } from './components/TryOnWorkspace';
 import { useAuth } from './context/AuthContext';
 import { useToast } from './context/ToastContext';
@@ -14,9 +14,6 @@ import { trackAdsConversion } from './lib/analytics';
 import {
   POST_AUTH_FIRST_SUCCESS_KEY,
   POST_AUTH_MODAL_KEY,
-  clearPendingCheckoutPlan,
-  readPendingCheckoutPlan,
-  type PendingCheckoutPlanId,
 } from './constants/authFlow';
 import {
   GUEST_CREDITS_INITIAL,
@@ -74,10 +71,9 @@ export default function App() {
   const [historyItems, setHistoryItems] = useState<TryOnHistoryItem[]>(() => listGalleryItems());
   const [guestCredits, setGuestCredits] = useState<number | null>(() => readGuestCreditsFromStorage());
   const [guestCreditsLoading, setGuestCreditsLoading] = useState(() => !user && readGuestCreditsFromStorage() === null);
-  const [showPricingModal, setShowPricingModal] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showCreditForm, setShowCreditForm] = useState(false);
   const [showFirstSuccessHint, setShowFirstSuccessHint] = useState(false);
-  const [preferredPlan, setPreferredPlan] = useState<PendingCheckoutPlanId | null>(null);
 
   const studioModeRef = useRef(studioMode);
   const generationIdRef = useRef(0);
@@ -136,28 +132,10 @@ export default function App() {
       setShowFirstSuccessHint(true);
       showToast(t('studio.firstSuccessToast'), 'success');
     }
-
-    const pendingPlan = readPendingCheckoutPlan();
-    if (pendingPlan) {
-      clearPendingCheckoutPlan();
-      setPreferredPlan(pendingPlan);
-      setShowPricingModal(true);
-    }
   }, [authLoading, user, profile, showToast, t]);
 
-  function closePricingModal() {
-    setShowPricingModal(false);
-    setPreferredPlan(null);
-    clearPendingCheckoutPlan();
-  }
-
   function openCreditsFlow() {
-    setPreferredPlan(null);
-    if (!user) {
-      setShowLoginModal(true);
-      return;
-    }
-    setShowPricingModal(true);
+    setShowCreditForm(true);
   }
 
   async function handleShareResult() {
@@ -374,8 +352,7 @@ export default function App() {
     if (loading) return;
 
     if (!hasCredits) {
-      if (!user) setShowLoginModal(true);
-      else setShowPricingModal(true);
+      setShowCreditForm(true);
       return;
     }
 
@@ -462,10 +439,8 @@ export default function App() {
         if (!user) {
           setGuestCredits(0);
           writeGuestCreditsToStorage(0);
-          setShowLoginModal(true);
-        } else {
-          setShowPricingModal(true);
         }
+        setShowCreditForm(true);
         return;
       }
       if (jobId === generationIdRef.current && studioModeRef.current === jobMode) {
@@ -500,11 +475,9 @@ export default function App() {
     showToast,
   ]);
 
-  const generateButtonLabel = !hasCredits
-    ? t('pricing.buyCredits')
-    : generationCreditCost > 1
-      ? t('studio.runWithCredits', { count: generationCreditCost })
-      : t('studio.run');
+  const generateButtonLabel = generationCreditCost > 1
+    ? t('studio.runWithCredits', { count: generationCreditCost })
+    : t('studio.run');
 
   return (
     <AppShell
@@ -515,12 +488,7 @@ export default function App() {
       onSignInClick={() => setShowLoginModal(true)}
     >
       <LoginModal open={showLoginModal} onClose={() => setShowLoginModal(false)} />
-      <PricingModal
-        open={showPricingModal}
-        onClose={closePricingModal}
-        credits={displayCredits}
-        preferredPlan={preferredPlan}
-      />
+      <CreditRequestModal open={showCreditForm} onClose={() => setShowCreditForm(false)} />
 
       <main className="mobile-sticky-offset relative mx-auto flex h-full w-full max-w-6xl min-h-0 min-w-0 flex-1 flex-col px-2 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4 lg:px-8 lg:py-5">
         {alert && (

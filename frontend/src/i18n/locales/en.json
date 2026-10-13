@@ -558,6 +558,23 @@
     "hybridHint": "The scene description stays in English (for AI quality); the on-image text and hashtags use your selected language.",
     "error": "Could not generate a prompt. Please try again."
   },
+  "creditRequest": {
+    "title": "Request credits",
+    "description": "Tell us how many credits you need. We reply by email.",
+    "name": "Name",
+    "email": "Email",
+    "credits": "Credits needed",
+    "message": "Message",
+    "submit": "Send request",
+    "sending": "Sending…",
+    "success": "Request sent. We will reply to your email.",
+    "error": "Could not send the request. Try again or email us.",
+    "required": "Fill in your name, email, and message.",
+    "emailInvalid": "Enter a valid email.",
+    "creditsInvalid": "Enter a number of credits greater than zero.",
+    "emailUnavailable": "Email delivery is not set up yet. Your mail app will open instead.",
+    "close": "Close"
+  },
   "legal": {
     "lastUpdated": "Last updated: {{date}}",
     "footer": {
@@ -592,11 +609,11 @@
       "sections": [
         {
           "title": "Who we are",
-          "body": "snapfeed.help is operated by ESD Media LLC, a limited liability company registered in Wyoming, USA. Mailing address: 30 N Gould St Ste N, Sheridan, WY 82801, USA."
+          "body": "snapfeed.help is operated by STRATUM TECHNOLOGIES LLC, a limited liability company registered in Wyoming, USA. Mailing address: 30 N Gould St Ste N, Sheridan, WY 82801, USA."
         },
         {
           "title": "Merchant of Record",
-          "body": "Paid credit packs and related digital purchases on snapfeed.help are sold by Lemon Squeezy, Inc. (“Lemon Squeezy”), which acts as the official Merchant of Record. Lemon Squeezy handles checkout, payment processing, invoicing, and applicable sales tax / VAT collection and remittance. ESD Media LLC operates the snapfeed.help software and fulfills digital access to credits and AI features after a successful purchase. For payment-method questions, charge disputes related to Lemon Squeezy checkout, or tax invoices, Lemon Squeezy’s terms and customer support also apply."
+          "body": "Paid credit packs and related digital purchases on snapfeed.help are sold by Lemon Squeezy, Inc. (“Lemon Squeezy”), which acts as the official Merchant of Record. Lemon Squeezy handles checkout, payment processing, invoicing, and applicable sales tax / VAT collection and remittance. STRATUM TECHNOLOGIES LLC operates the snapfeed.help software and fulfills digital access to credits and AI features after a successful purchase. For payment-method questions, charge disputes related to Lemon Squeezy checkout, or tax invoices, Lemon Squeezy’s terms and customer support also apply."
         },
         {
           "title": "The service",
@@ -632,7 +649,7 @@
         },
         {
           "title": "Indemnity",
-          "body": "You agree to indemnify and hold harmless ESD Media LLC from claims arising out of your uploads, prompts, generated images, or misuse of the service."
+          "body": "You agree to indemnify and hold harmless STRATUM TECHNOLOGIES LLC from claims arising out of your uploads, prompts, generated images, or misuse of the service."
         },
         {
           "title": "Termination",
@@ -657,7 +674,7 @@
       "sections": [
         {
           "title": "Controller",
-          "body": "ESD Media LLC, registered in Wyoming, USA.\n30 N Gould St Ste N, Sheridan, WY 82801, USA."
+          "body": "STRATUM TECHNOLOGIES LLC, registered in Wyoming, USA.\n30 N Gould St Ste N, Sheridan, WY 82801, USA."
         },
         {
           "title": "Information we collect",
@@ -727,7 +744,7 @@
         },
         {
           "title": "Who operates snapfeed.help",
-          "body": "snapfeed.help is a product of ESD Media LLC, a Wyoming limited liability company. Paid purchases are processed by Lemon Squeezy, Inc. as Merchant of Record. We serve customers online and provide support by email."
+          "body": "snapfeed.help is a product of STRATUM TECHNOLOGIES LLC, a Wyoming limited liability company. Paid purchases are processed by Lemon Squeezy, Inc. as Merchant of Record. We serve customers online and provide support by email."
         }
       ]
     },

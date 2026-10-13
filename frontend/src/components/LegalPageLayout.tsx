@@ -13,7 +13,6 @@ import { useAuth } from '../context/AuthContext';
 import Header from './Header';
 import LoginModal from './LoginModal';
 import Logo from './Logo';
-import PricingModal from './PricingModal';
 import SiteFooter from './SiteFooter';
 
 type LegalPageLayoutProps = {
@@ -38,7 +37,6 @@ export default function LegalPageLayout({
   const [guestCreditsLoading, setGuestCreditsLoading] = useState(
     () => !user && readGuestCreditsFromStorage() === null,
   );
-  const [showPricingModal, setShowPricingModal] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
 
   const displayCredits = user ? (profile?.credits ?? 0) : (guestCredits ?? 0);
@@ -92,11 +90,7 @@ export default function LegalPageLayout({
   }, [pathname, hash, title]);
 
   function openCreditsFlow() {
-    if (!user) {
-      setShowLoginModal(true);
-      return;
-    }
-    setShowPricingModal(true);
+    navigate('/contact#credits');
   }
 
   return (
@@ -112,11 +106,6 @@ export default function LegalPageLayout({
       />
 
       <LoginModal open={showLoginModal} onClose={() => setShowLoginModal(false)} />
-      <PricingModal
-        open={showPricingModal}
-        onClose={() => setShowPricingModal(false)}
-        credits={displayCredits}
-      />
 
       <main className="mx-auto w-full max-w-2xl flex-1 px-4 pt-24 pb-12 sm:px-6">
         <div className="mb-8 flex items-center gap-3">

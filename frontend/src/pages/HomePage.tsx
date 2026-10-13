@@ -4,19 +4,16 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, Images, Sparkles } from 'lucide-react';
 import AppShell from '../components/AppShell';
-import LandingPricingCard from '../components/LandingPricingCard';
 import LoginModal from '../components/LoginModal';
-import PricingModal from '../components/PricingModal';
 import { useAuth } from '../context/AuthContext';
 import { fetchGuestCredits } from '../api/guestCredits';
-import { POST_AUTH_FIRST_SUCCESS_KEY, POST_AUTH_MODAL_KEY, clearPendingCheckoutPlan, writePendingCheckoutPlan } from '../constants/authFlow';
+import { POST_AUTH_FIRST_SUCCESS_KEY, POST_AUTH_MODAL_KEY } from '../constants/authFlow';
 import {
   GUEST_CREDITS_INITIAL,
   mergeGuestCredits,
   readGuestCreditsFromStorage,
   writeGuestCreditsToStorage,
 } from '../constants/guestCredits';
-import type { PricingTierPrices } from '../constants/depositCurrency';
 
 const PHOTO_TIPS = [
   {
@@ -66,9 +63,7 @@ export default function HomePage() {
   const { user, profile, loading: authLoading } = useAuth();
   const [guestCredits, setGuestCredits] = useState<number | null>(() => readGuestCreditsFromStorage());
   const [guestCreditsLoading, setGuestCreditsLoading] = useState(() => !user && readGuestCreditsFromStorage() === null);
-  const [showPricingModal, setShowPricingModal] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [preferredPlan, setPreferredPlan] = useState<PricingTierPrices['id'] | null>(null);
 
   const displayCredits = user ? (profile?.credits ?? 0) : (guestCredits ?? 0);
   const creditsLoading = user ? authLoading || profile === null : guestCreditsLoading;
@@ -106,39 +101,12 @@ export default function HomePage() {
     }
   }, [authLoading, user, profile, navigate]);
 
-  function closePricingModal() {
-    setShowPricingModal(false);
-    setPreferredPlan(null);
-    clearPendingCheckoutPlan();
-  }
-
   function closeLoginModal() {
     setShowLoginModal(false);
-    // Guest abandoned pack → login; don't resume checkout later by accident.
-    if (!user) {
-      setPreferredPlan(null);
-      clearPendingCheckoutPlan();
-    }
   }
 
-  function openCreditsFlow(planId?: PricingTierPrices['id']) {
-    if (planId) {
-      setPreferredPlan(planId);
-      if (!user) {
-        // Remember pack → LoginModal → after OAuth Studio resumes Lemon checkout.
-        writePendingCheckoutPlan(planId);
-        setShowLoginModal(true);
-        return;
-      }
-      setShowPricingModal(true);
-      return;
-    }
-    setPreferredPlan(null);
-    if (!user) {
-      setShowLoginModal(true);
-      return;
-    }
-    setShowPricingModal(true);
+  function openCreditsFlow() {
+    navigate('/contact#credits');
   }
 
   return (
@@ -149,12 +117,6 @@ export default function HomePage() {
       onSignInClick={() => setShowLoginModal(true)}
     >
       <LoginModal open={showLoginModal} onClose={closeLoginModal} />
-      <PricingModal
-        open={showPricingModal}
-        onClose={closePricingModal}
-        credits={displayCredits}
-        preferredPlan={preferredPlan}
-      />
 
       <main className="relative mx-auto flex w-full max-w-5xl flex-col px-3 py-8 sm:px-6 sm:py-14 lg:py-20">
         <section className="mx-auto w-full max-w-3xl text-center">
@@ -364,8 +326,6 @@ export default function HomePage() {
             </Link>
           </div>
         </section>
-
-        <LandingPricingCard onSelectPlan={openCreditsFlow} />
       </main>
     </AppShell>
   );

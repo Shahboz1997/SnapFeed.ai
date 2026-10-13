@@ -541,6 +541,23 @@
     "hybridHint": "Sahna tavsifi ingliz tilida (AI sifati uchun), rasm ustidagi yozuv va xeshteglar — siz tanlagan tilde.",
     "error": "Prompt yaratib bo'lmadi. Qayta urinib ko'ring."
   },
+  "creditRequest": {
+    "title": "Kredit so'rovi",
+    "description": "Qancha kredit kerakligini yozing. Javobni pochtaga yuboramiz.",
+    "name": "Ism",
+    "email": "Email",
+    "credits": "Nechta kredit",
+    "message": "Xabar",
+    "submit": "So'rov yuborish",
+    "sending": "Yuborilmoqda…",
+    "success": "So'rov yuborildi. Javobni pochtangizga yozamiz.",
+    "error": "So'rov yuborilmadi. Qayta urinib ko'ring yoki pochtaga yozing.",
+    "required": "Ism, email va xabarni to'ldiring.",
+    "emailInvalid": "To'g'ri email kiriting.",
+    "creditsInvalid": "Noldan katta kredit sonini kiriting.",
+    "emailUnavailable": "Serverda pochta hali sozlanmagan. Pochta dasturingiz ochiladi.",
+    "close": "Yopish"
+  },
   "legal": {
     "lastUpdated": "Yangilangan: {{date}}",
     "footer": {
@@ -575,11 +592,11 @@
       "sections": [
         {
           "title": "Biz kimimiz",
-          "body": "snapfeed.help ni ESD Media LLC boshqaradi — Wyoming, USA da ro'yxatdan o'tgan MChJ. Manzil: 30 N Gould St Ste N, Sheridan, WY 82801, USA."
+          "body": "snapfeed.help ni STRATUM TECHNOLOGIES LLC boshqaradi — Wyoming, USA da ro'yxatdan o'tgan MChJ. Manzil: 30 N Gould St Ste N, Sheridan, WY 82801, USA."
         },
         {
           "title": "Merchant of Record",
-          "body": "snapfeed.help dagi pullik kredit paketlari Lemon Squeezy, Inc. tomonidan sotiladi — rasmiy Merchant of Record. Lemon Squeezy checkout, to'lov, hisob-faktura va soliqni (sales tax / VAT) boshqaradi. ESD Media LLC snapfeed.help dasturini ishlatadi va muvaffaqiyatli to'lovdan keyin kreditlar va AI funksiyalariga kirishni ta'minlaydi."
+          "body": "snapfeed.help dagi pullik kredit paketlari Lemon Squeezy, Inc. tomonidan sotiladi — rasmiy Merchant of Record. Lemon Squeezy checkout, to'lov, hisob-faktura va soliqni (sales tax / VAT) boshqaradi. STRATUM TECHNOLOGIES LLC snapfeed.help dasturini ishlatadi va muvaffaqiyatli to'lovdan keyin kreditlar va AI funksiyalariga kirishni ta'minlaydi."
         },
         {
           "title": "Xizmat",
@@ -611,11 +628,11 @@
         },
         {
           "title": "Javobgarlikni cheklash",
-          "body": "Qonun ruxsat bergan darajada ESD Media LLC bilvosita zararlarga javobgar emas. Umumiy javobgarlik da'vodan oldingi uch (3) oy ichida kreditlar uchun to'lagan summadan oshmaydi."
+          "body": "Qonun ruxsat bergan darajada STRATUM TECHNOLOGIES LLC bilvosita zararlarga javobgar emas. Umumiy javobgarlik da'vodan oldingi uch (3) oy ichida kreditlar uchun to'lagan summadan oshmaydi."
         },
         {
           "title": "Zararni qoplash",
-          "body": "Yuklamalar, promptlar, generatsiya qilingan rasmlar yoki xizmatni noto'g'ri ishlatishdan kelib chiqqan da'volar bo'yicha ESD Media LLC ni himoya qilishga rozisiz."
+          "body": "Yuklamalar, promptlar, generatsiya qilingan rasmlar yoki xizmatni noto'g'ri ishlatishdan kelib chiqqan da'volar bo'yicha STRATUM TECHNOLOGIES LLC ni himoya qilishga rozisiz."
         },
         {
           "title": "To'xtatish",
@@ -640,7 +657,7 @@
       "sections": [
         {
           "title": "Ma'lumotlar nazoratchisi",
-          "body": "ESD Media LLC, Wyoming, USA.\n30 N Gould St Ste N, Sheridan, WY 82801, USA."
+          "body": "STRATUM TECHNOLOGIES LLC, Wyoming, USA.\n30 N Gould St Ste N, Sheridan, WY 82801, USA."
         },
         {
           "title": "Qanday ma'lumot yig'amiz",
@@ -710,7 +727,7 @@
         },
         {
           "title": "Kim boshqaradi",
-          "body": "snapfeed.help — Wyoming MChJ ESD Media LLC mahsuloti. Pullik xaridlar Lemon Squeezy, Inc. tomonidan Merchant of Record sifatida qayta ishlanadi. Mijozlarga onlayn xizmat ko'rsatamiz va email orqali yordam beramiz."
+          "body": "snapfeed.help — Wyoming MChJ STRATUM TECHNOLOGIES LLC mahsuloti. Pullik xaridlar Lemon Squeezy, Inc. tomonidan Merchant of Record sifatida qayta ishlanadi. Mijozlarga onlayn xizmat ko'rsatamiz va email orqali yordam beramiz."
         }
       ]
     },

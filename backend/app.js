@@ -6,6 +6,7 @@ import imageRoutes from './routes/imageRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import billingRoutes, { lemonWebhookHandler } from './routes/billingRoutes.js';
+import supportRoutes from './routes/supportRoutes.js';
 import galleryRoutes from './routes/galleryRoutes.js';
 import { isSupabaseConfigured } from './config/supabase.js';
 import {
@@ -169,6 +170,7 @@ app.get('/', (_req, res) => {
       'POST /api/billing/checkout',
       'POST /api/billing/webhook',
       'GET /api/billing/status',
+      'POST /api/support/credits',
       'GET /api/auth/referral',
       'POST /api/auth/referral/redeem',
       'POST /api/auth/welcome-email',
@@ -180,6 +182,7 @@ app.get('/', (_req, res) => {
 
 app.use('/api', authRoutes);
 app.use('/api', billingRoutes);
+app.use('/api', supportRoutes);
 app.use('/api', galleryRoutes);
 app.use('/api', imageRoutes);
 app.use('/api', chatRoutes);

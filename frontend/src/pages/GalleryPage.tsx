@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -10,7 +10,6 @@ import { downloadImageBlob, triggerBlobDownload } from '../api/downloadImage';
 import { fetchGuestCredits } from '../api/guestCredits';
 import AppShell from '../components/AppShell';
 import LoginModal from '../components/LoginModal';
-import PricingModal from '../components/PricingModal';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import {
@@ -36,13 +35,13 @@ type FilterKey = 'all' | GalleryCollection;
 
 export default function GalleryPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { user, profile, loading: authLoading } = useAuth();
   const { showToast } = useToast();
   const [items, setItems] = useState<GalleryItem[]>([]);
   const [galleryLoading, setGalleryLoading] = useState(true);
   const [guestCredits, setGuestCredits] = useState<number | null>(() => readGuestCreditsFromStorage());
   const [guestCreditsLoading, setGuestCreditsLoading] = useState(() => !user && readGuestCreditsFromStorage() === null);
-  const [showPricingModal, setShowPricingModal] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
@@ -125,11 +124,7 @@ export default function GalleryPage() {
   }, [user]);
 
   function openCreditsFlow() {
-    if (!user) {
-      setShowLoginModal(true);
-      return;
-    }
-    setShowPricingModal(true);
+    navigate('/contact#credits');
   }
 
   async function handleRemove(id: string) {
@@ -196,11 +191,6 @@ export default function GalleryPage() {
       onSignInClick={() => setShowLoginModal(true)}
     >
       <LoginModal open={showLoginModal} onClose={() => setShowLoginModal(false)} />
-      <PricingModal
-        open={showPricingModal}
-        onClose={() => setShowPricingModal(false)}
-        credits={displayCredits}
-      />
 
       <main className="mx-auto w-full max-w-6xl px-3 py-6 sm:px-6 sm:py-8 lg:py-10">
         <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">

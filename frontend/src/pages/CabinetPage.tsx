@@ -5,7 +5,6 @@ import { Zap } from 'lucide-react';
 import { fetchReferralSummary, type ReferralSummary } from '../api/referral';
 import AppShell from '../components/AppShell';
 import LoginModal from '../components/LoginModal';
-import PricingModal from '../components/PricingModal';
 import ReferralInviteCard from '../components/ReferralInviteCard';
 import Spinner from '../components/Spinner';
 import { useAuth } from '../context/AuthContext';
@@ -18,7 +17,6 @@ export default function CabinetPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { showToast } = useToast();
   const { authEnabled, user, profile, loading, signOut, refreshProfile } = useAuth();
-  const [showPricingModal, setShowPricingModal] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [referral, setReferral] = useState<ReferralSummary | null>(null);
 
@@ -75,15 +73,10 @@ export default function CabinetPage() {
     <AppShell
       credits={profile?.credits ?? 0}
       creditsLoading={loading || profile === null}
-      onCreditsClick={() => setShowPricingModal(true)}
+      onCreditsClick={() => navigate('/contact#credits')}
       onSignInClick={() => setShowLoginModal(true)}
     >
       <LoginModal open={showLoginModal} onClose={() => setShowLoginModal(false)} />
-      <PricingModal
-        open={showPricingModal}
-        onClose={() => setShowPricingModal(false)}
-        credits={profile?.credits ?? 0}
-      />
 
       <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
@@ -142,15 +135,6 @@ export default function CabinetPage() {
           ) : null}
 
           <p className="mt-6 text-sm text-zinc-500">{t('auth.cabinetHint')}</p>
-
-          <div className="mt-8 border-t border-zinc-200/60 pt-6">
-            <h2 className="mb-4 font-display text-lg font-semibold text-zinc-900">
-              {t('pricing.billingHistory')}
-            </h2>
-            <p className="rounded-xl border border-zinc-200/60 bg-zinc-50 px-4 py-6 text-center text-sm text-zinc-500">
-              {t('pricing.billingEmpty')}
-            </p>
-          </div>
         </section>
       </div>
     </AppShell>

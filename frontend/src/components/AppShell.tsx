@@ -133,13 +133,6 @@ export default function AppShell({
             </div>
 
             <div className="flex min-w-0 shrink-0 items-center gap-1.5 sm:gap-2 lg:gap-3">
-              <button
-                type="button"
-                onClick={onCreditsClick}
-                className="hidden h-9 items-center rounded-xl bg-zinc-900 px-3 text-xs font-semibold text-white shadow-sm shadow-zinc-300/50 transition hover:bg-zinc-800 lg:inline-flex"
-              >
-                {t('pricing.upgrade')}
-              </button>
               <HeaderRightSection
                 credits={credits}
                 creditsLoading={creditsLoading}

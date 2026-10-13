@@ -1,7 +1,7 @@
 export const COMPANY = {
   brand: 'snapfeed.help',
   siteUrl: 'https://snapfeed.help',
-  legalName: 'ESD Media LLC',
+  legalName: 'STRATUM TECHNOLOGIES LLC',
   jurisdiction: 'Wyoming, USA',
   addressLine1: '30 N Gould St Ste N',
   addressLine2: 'Sheridan, WY 82801, USA',

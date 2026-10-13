@@ -22,7 +22,7 @@ export function isAdminEmailConfigured() {
   return isSmtpConfigured() || isResendConfigured();
 }
 
-async function sendViaSmtp({ to, subject, text, html }) {
+async function sendViaSmtp({ to, subject, text, html, replyTo }) {
   const port = Number(process.env.SMTP_PORT || 587);
   const secure = process.env.SMTP_SECURE === 'true' || port === 465;
   const from = process.env.SMTP_FROM?.trim()
@@ -38,18 +38,28 @@ async function sendViaSmtp({ to, subject, text, html }) {
     },
   });
 
-  await transporter.sendMail({ from, to, subject, text, html });
+  await transporter.sendMail({
+    from,
+    to,
+    subject,
+    text,
+    html,
+    replyTo: replyTo || undefined,
+  });
 }
 
-async function sendViaResend({ to, subject, text, html }) {
-  const from = process.env.RESEND_FROM?.trim() || 'SnapFeed <onboarding@resend.dev>';
+async function sendViaResend({ to, subject, text, html, replyTo }) {
+  const from = process.env.RESEND_FROM?.trim() || 'SnapFeed <noreply@snapfeed.help>';
+  const payload = { from, to: [to], subject, text, html };
+  if (replyTo) payload.reply_to = replyTo;
+
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${process.env.RESEND_API_KEY.trim()}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ from, to: [to], subject, text, html }),
+    body: JSON.stringify(payload),
   });
 
   if (!response.ok) {
@@ -58,19 +68,31 @@ async function sendViaResend({ to, subject, text, html }) {
   }
 }
 
-/** Send any transactional email via SMTP (preferred) or Resend. */
-export async function sendViaConfiguredProvider({ to, subject, text, html }) {
+/**
+ * Send mail through Resend when RESEND_API_KEY is set.
+ * `prefer: 'resend'` skips SMTP so credit requests use Resend even if SMTP is also configured.
+ */
+export async function sendViaConfiguredProvider({ to, subject, text, html, replyTo, prefer = 'auto' }) {
   if (!isAdminEmailConfigured()) {
     const err = new Error('Email is not configured.');
     err.code = 'EMAIL_NOT_CONFIGURED';
     throw err;
   }
 
+  const useResend = prefer === 'resend'
+    ? isResendConfigured()
+    : !isSmtpConfigured() && isResendConfigured();
+
+  if (useResend) {
+    await sendViaResend({ to, subject, text, html, replyTo });
+    return { to, provider: 'resend' };
+  }
+
   if (isSmtpConfigured()) {
-    await sendViaSmtp({ to, subject, text, html });
+    await sendViaSmtp({ to, subject, text, html, replyTo });
     return { to, provider: 'smtp' };
   }
 
-  await sendViaResend({ to, subject, text, html });
+  await sendViaResend({ to, subject, text, html, replyTo });
   return { to, provider: 'resend' };
 }
