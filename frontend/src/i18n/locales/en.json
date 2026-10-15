@@ -178,6 +178,7 @@
     "running": "Running",
     "cancel": "Cancel",
     "readyInGallery": "Ready — saved to Gallery",
+    "downloadReminder": "Download this photo to your device. The gallery only keeps recent images.",
     "waitTips": {
       "fitting": "Fitting the garment on the model…",
       "lighting": "Matching studio lighting…",
@@ -454,6 +455,8 @@
     "downloadWarning": "Could not download the image. Right-click the image and choose \"Save image as…\".",
     "galleryLoadFailed": "Failed to load gallery.",
     "galleryRemoveFailed": "Failed to remove image.",
+    "galleryPruned": "Gallery storage was full. Removed {{count}} older image(s) so this one could be saved.",
+    "gallerySaveFailed": "Couldn't save this image to the gallery.",
     "textExtractSuccess": "Text extracted successfully!",
     "tryOnFallbackNotClothing": "Try-on is not available for this item (not clothing). A standard product photo was created instead.",
     "tryOnFallbackVerification": "Could not verify the product type. A standard product photo was created instead of try-on."

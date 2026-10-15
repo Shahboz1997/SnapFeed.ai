@@ -1216,7 +1216,10 @@ function SessionLayout({
                 onHdUpsell={onHdUpsell}
               />
             ) : (
-              <div className="absolute bottom-3 right-3 z-10">
+              <div className="absolute inset-x-3 bottom-3 z-10 flex flex-col items-end gap-1.5">
+                <p className="w-full rounded-xl border border-zinc-200/80 bg-white/95 px-3 py-2 text-center text-[11px] leading-snug text-zinc-700 shadow-sm backdrop-blur-md sm:text-xs">
+                  {t('studio.downloadReminder')}
+                </p>
                 <IconButton
                   disabled={downloading || locked}
                   onClick={() => onDownload(resultImageUrl)}
@@ -1231,7 +1234,7 @@ function SessionLayout({
               </div>
             )}
             {variantUrls.length > 0 ? (
-              <div className="absolute bottom-[5.75rem] left-3 z-10 flex gap-1.5 rounded-2xl border border-zinc-200/70 bg-white/90 p-1.5 shadow-sm backdrop-blur-md sm:bottom-16">
+              <div className="absolute bottom-36 left-3 z-10 flex gap-1.5 rounded-2xl border border-zinc-200/70 bg-white/90 p-1.5 shadow-sm backdrop-blur-md sm:bottom-32">
                 {variantUrls.map((url, index) => {
                   const thumb = resolveImageUrl(url);
                   const active = url === activeResultUrl || resolveImageUrl(url) === resultImageUrl;

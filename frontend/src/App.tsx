@@ -408,30 +408,42 @@ export default function App() {
           : []
       ).filter(Boolean);
 
-      // Guests keep a browser gallery; logged-in users get cloud persistence on the server.
-      if (!user) {
-        for (const url of urls) {
-          addGalleryItem({
-            imageUrl: url,
-            originalImageUrl: previewSource,
-            hashtags: data.hashtags,
-          });
-        }
-      }
-      if (urls.length) {
-        void refreshHistory();
-      }
-
-      // Only bind result to UI if this job is still current and user is on the same mode.
+      // Bind the result before gallery persistence. A full browser gallery must not
+      // hide an image that was already generated and charged.
       if (jobId !== generationIdRef.current) {
         if (urls.length) showToast(t('studio.readyInGallery'), 'success');
-        return;
-      }
-      if (studioModeRef.current === jobMode) {
+      } else if (studioModeRef.current === jobMode) {
         setResultVariantUrls(urls);
         setImageUrl(urls[0] ?? null);
       } else if (urls.length) {
         showToast(t('studio.readyInGallery'), 'success');
+      }
+
+      if (urls.length) {
+        showToast(t('studio.downloadReminder'), 'info');
+      }
+
+      // Guests keep a browser gallery; logged-in users get cloud persistence on the server.
+      if (!user && urls.length) {
+        let removedCount = 0;
+        try {
+          for (const url of urls) {
+            const saved = addGalleryItem({
+              imageUrl: url,
+              originalImageUrl: previewSource,
+              hashtags: data.hashtags,
+            });
+            removedCount += saved.removedCount;
+          }
+        } catch {
+          showToast(t('alerts.gallerySaveFailed'), 'error');
+        }
+        if (removedCount > 0) {
+          showToast(t('alerts.galleryPruned', { count: removedCount }), 'info');
+        }
+      }
+      if (urls.length) {
+        void refreshHistory();
       }
     } catch (err) {
       if (isAbortError(err)) return;

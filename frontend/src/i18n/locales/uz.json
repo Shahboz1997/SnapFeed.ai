@@ -148,6 +148,7 @@
     "running": "Yaratilmoqda…",
     "cancel": "Bekor qilish",
     "readyInGallery": "Tayyor — Galereyaga saqlandi",
+    "downloadReminder": "Rasmni qurilmangizga yuklab oling. Galereyada faqat so‘nggi rasmlar saqlanadi.",
     "waitTips": {
       "fitting": "Kiyim modelga kiydirilmoqda…",
       "lighting": "Studiya yorug‘ligi moslashtirilmoqda…",
@@ -437,6 +438,8 @@
     "downloadWarning": "Rasmni yuklab bo'lmadi. Rasmga o'ng tugma bilan bosing va \"Rasmni saqlash…\" ni tanlang.",
     "galleryLoadFailed": "Galereyani yuklab bo‘lmadi.",
     "galleryRemoveFailed": "Rasmni o‘chirib bo‘lmadi.",
+    "galleryPruned": "Galereya to‘lgan edi. Yangisini saqlash uchun {{count}} ta eski rasm o‘chirildi.",
+    "gallerySaveFailed": "Rasmni galereyaga saqlab bo‘lmadi.",
     "textExtractSuccess": "Matn muvaffaqiyatli ajratildi!",
     "tryOnFallbackNotClothing": "Bu mahsulot uchun kiydirish mavjud emas (kiyim emas). Oddiy mahsulot fotosi yaratildi.",
     "tryOnFallbackVerification": "Mahsulot turini tekshirib bo'lmadi. Kiydirish o'rniga oddiy mahsulot fotosi yaratildi."

@@ -37,7 +37,10 @@ export default function ResultEngageBar({
   }
 
   return (
-    <div className="absolute inset-x-2 bottom-2 z-20 sm:inset-x-3 sm:bottom-3">
+    <div className="absolute inset-x-2 bottom-2 z-20 flex flex-col gap-1.5 sm:inset-x-3 sm:bottom-3">
+      <p className="rounded-xl border border-zinc-200/80 bg-white/95 px-3 py-2 text-center text-[11px] leading-snug text-zinc-700 shadow-sm backdrop-blur-md sm:text-xs">
+        {t('studio.downloadReminder')}
+      </p>
       <div className="flex gap-1.5 overflow-x-auto scrollbar-none pb-0.5 sm:flex-wrap sm:overflow-visible">
         {canCompare && onToggleCompare ? (
           <button
