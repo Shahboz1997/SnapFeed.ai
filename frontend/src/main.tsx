@@ -1,6 +1,6 @@
-import { StrictMode } from 'react';
+import { StrictMode, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import App from './App';
 import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
@@ -18,7 +18,7 @@ import TermsPage from './pages/TermsPage';
 import CookieConsent from './components/CookieConsent';
 import InstallPrompt from './components/InstallPrompt';
 import ErrorBoundary from './components/ErrorBoundary';
-import { initGoogleAds } from './lib/analytics';
+import { initGoogleAds, trackGaPageView } from './lib/analytics';
 import './i18n';
 import './index.css';
 
@@ -30,6 +30,21 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   });
 }
 
+function AnalyticsRouteListener() {
+  const location = useLocation();
+  const skipFirst = useRef(true);
+
+  useEffect(() => {
+    if (skipFirst.current) {
+      skipFirst.current = false;
+      return;
+    }
+    trackGaPageView(`${location.pathname}${location.search}`);
+  }, [location.pathname, location.search]);
+
+  return null;
+}
+
 // Resume Ads tag when the user already accepted cookies on a prior visit.
 initGoogleAds();
 
@@ -37,6 +52,7 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>
       <BrowserRouter>
+        <AnalyticsRouteListener />
         <AuthProvider>
           <ToastProvider>
             <Routes>

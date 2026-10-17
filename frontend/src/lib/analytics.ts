@@ -7,10 +7,12 @@ declare global {
     dataLayer: unknown[];
     gtag?: (...args: unknown[]) => void;
     __snapfeedPageViewSent?: boolean;
+    __snapfeedGa4Configured?: boolean;
   }
 }
 
 const GOOGLE_TAG_ID = 'GT-KFGFRXD2';
+const GA_MEASUREMENT_ID = 'G-81ZS44W03R';
 const ADS_DESTINATION_ID = 'AW-18107551498';
 const PAGE_VIEW_SEND_TO = 'AW-18107551498/LgTqCKDJoJgdEIqerbpD';
 const ADS_ID = (import.meta.env.VITE_GOOGLE_ADS_ID as string | undefined)?.trim() || '';
@@ -43,6 +45,12 @@ function ensureGtag(): void {
   }
 }
 
+function configGa4(): void {
+  if (window.__snapfeedGa4Configured) return;
+  window.gtag!('config', GA_MEASUREMENT_ID);
+  window.__snapfeedGa4Configured = true;
+}
+
 /** Grant Ads/analytics consent on the Google tag. Safe to call repeatedly. */
 export function initGoogleAds(): void {
   if (!canTrack()) return;
@@ -54,6 +62,7 @@ export function initGoogleAds(): void {
       document.querySelector('script[src*="googletagmanager.com/gtag/js"]'),
   );
   if (alreadyLoaded) {
+    configGa4();
     if (ADS_ID && ADS_ID !== GOOGLE_TAG_ID && ADS_ID !== ADS_DESTINATION_ID) {
       window.gtag!('config', ADS_ID);
     }
@@ -64,6 +73,7 @@ export function initGoogleAds(): void {
   window.gtag!('js', new Date());
   window.gtag!('config', GOOGLE_TAG_ID);
   window.gtag!('config', ADS_DESTINATION_ID);
+  configGa4();
   if (ADS_ID && ADS_ID !== GOOGLE_TAG_ID && ADS_ID !== ADS_DESTINATION_ID) {
     window.gtag!('config', ADS_ID);
   }
@@ -74,6 +84,18 @@ export function initGoogleAds(): void {
   script.async = true;
   script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(GOOGLE_TAG_ID)}`;
   document.head.appendChild(script);
+}
+
+/** SPA navigations. The first view is sent by gtag config. */
+export function trackGaPageView(pagePath: string): void {
+  if (!canTrack()) return;
+  initGoogleAds();
+  if (!window.gtag) return;
+  window.gtag('event', 'page_view', {
+    send_to: GA_MEASUREMENT_ID,
+    page_path: pagePath,
+    page_location: `${window.location.origin}${pagePath}`,
+  });
 }
 
 /** Page-view conversion. The head snippet already sends it when consent was granted on load. */

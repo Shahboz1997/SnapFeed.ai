@@ -27,6 +27,7 @@
       gtag('js', new Date());
       gtag('config', 'GT-KFGFRXD2');
       gtag('config', 'AW-18107551498');
+      gtag('config', 'G-81ZS44W03R');
     </script>
     <!-- Event snippet for Просмотр страницы conversion page -->
     <script>
@@ -36,9 +37,12 @@
           'currency': 'USD'
       });
       try {
-        window.__snapfeedPageViewSent = localStorage.getItem('snapfeed_cookie_consent') === 'accepted';
+        var analyticsGranted = localStorage.getItem('snapfeed_cookie_consent') === 'accepted';
+        window.__snapfeedPageViewSent = analyticsGranted;
+        window.__snapfeedGa4Configured = analyticsGranted;
       } catch (e) {
         window.__snapfeedPageViewSent = false;
+        window.__snapfeedGa4Configured = false;
       }
     </script>
     <meta charset="UTF-8" />
