@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import CreditRequestForm from '../components/CreditRequestForm';
+import PricingPlans from '../components/PricingPlans';
 import LegalPageLayout, { LegalSections } from '../components/LegalPageLayout';
 import { COMPANY, COMPANY_FULL_ADDRESS } from '../constants/company';
 import { getLegalSections } from '../utils/legalSections';
@@ -16,10 +16,8 @@ export default function ContactPage() {
       lastUpdated={t('legal.contact.updated')}
     >
       <p>{t('legal.contact.intro', { brand: COMPANY.brand })}</p>
-      <section className="not-prose space-y-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 sm:p-5">
-        <h2 className="text-base font-semibold text-zinc-900">{t('creditRequest.title')}</h2>
-        <p className="text-sm text-zinc-500">{t('creditRequest.description')}</p>
-        <CreditRequestForm />
+      <section className="not-prose rounded-2xl border border-zinc-200 bg-zinc-50 p-4 sm:p-5">
+        <PricingPlans id="credits" />
       </section>
       <section className="space-y-2">
         <h2 className="text-base font-semibold text-slate-900">

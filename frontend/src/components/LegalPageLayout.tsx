@@ -13,6 +13,7 @@ import { useAuth } from '../context/AuthContext';
 import Header from './Header';
 import LoginModal from './LoginModal';
 import Logo from './Logo';
+import PricingModal from './PricingModal';
 import SiteFooter from './SiteFooter';
 
 type LegalPageLayoutProps = {
@@ -38,6 +39,7 @@ export default function LegalPageLayout({
     () => !user && readGuestCreditsFromStorage() === null,
   );
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showPricing, setShowPricing] = useState(false);
 
   const displayCredits = user ? (profile?.credits ?? 0) : (guestCredits ?? 0);
   const creditsLoading = user ? authLoading || profile === null : guestCreditsLoading;
@@ -90,7 +92,12 @@ export default function LegalPageLayout({
   }, [pathname, hash, title]);
 
   function openCreditsFlow() {
-    navigate('/contact#credits');
+    if (pathname === '/contact' || pathname === '/pricing') {
+      const el = scrollRef.current?.querySelector<HTMLElement>('#credits, #pricing');
+      el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+    setShowPricing(true);
   }
 
   return (
@@ -106,6 +113,14 @@ export default function LegalPageLayout({
       />
 
       <LoginModal open={showLoginModal} onClose={() => setShowLoginModal(false)} />
+      <PricingModal
+        open={showPricing}
+        onClose={() => setShowPricing(false)}
+        onRequireAuth={() => {
+          setShowPricing(false);
+          setShowLoginModal(true);
+        }}
+      />
 
       <main className="mx-auto w-full max-w-2xl flex-1 px-4 pt-24 pb-12 sm:px-6">
         <div className="mb-8 flex items-center gap-3">

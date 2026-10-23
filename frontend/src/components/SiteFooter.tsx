@@ -11,6 +11,7 @@ export default function SiteFooter() {
   const supportEmail = getSupportEmail();
 
   const companyLinks = [
+    { to: '/pricing', label: t('legal.footer.pricing') },
     { to: '/about', label: t('legal.footer.about') },
     { to: '/contact', label: t('legal.footer.contact') },
   ];

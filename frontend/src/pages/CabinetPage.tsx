@@ -5,6 +5,7 @@ import { Zap } from 'lucide-react';
 import { fetchReferralSummary, type ReferralSummary } from '../api/referral';
 import AppShell from '../components/AppShell';
 import LoginModal from '../components/LoginModal';
+import PricingPlans from '../components/PricingPlans';
 import ReferralInviteCard from '../components/ReferralInviteCard';
 import Spinner from '../components/Spinner';
 import { useAuth } from '../context/AuthContext';
@@ -73,7 +74,9 @@ export default function CabinetPage() {
     <AppShell
       credits={profile?.credits ?? 0}
       creditsLoading={loading || profile === null}
-      onCreditsClick={() => navigate('/contact#credits')}
+      onCreditsClick={() => {
+        document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }}
       onSignInClick={() => setShowLoginModal(true)}
     >
       <LoginModal open={showLoginModal} onClose={() => setShowLoginModal(false)} />
@@ -135,6 +138,10 @@ export default function CabinetPage() {
           ) : null}
 
           <p className="mt-6 text-sm text-zinc-500">{t('auth.cabinetHint')}</p>
+        </section>
+
+        <section className="mt-6 rounded-[1.5rem] border border-zinc-200/70 bg-white/90 p-5 shadow-[0_16px_40px_-32px_rgba(24,24,27,0.45)] sm:p-8">
+          <PricingPlans />
         </section>
       </div>
     </AppShell>

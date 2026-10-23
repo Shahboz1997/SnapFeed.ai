@@ -534,7 +534,18 @@
     "checkoutOpened": "Открываем безопасную оплату…",
     "checkoutFailed": "Не удалось открыть оплату. Попробуйте ещё раз.",
     "lemonNotConfigured": "Оплата картой ещё подключается. Напишите в поддержку, если кредиты нужны сейчас.",
-    "checkoutSuccess": "Оплата получена — обновляем баланс."
+    "checkoutSuccess": "Оплата получена — обновляем баланс.",
+    "oneTime": "Разовая покупка",
+    "subscription": "Подписка",
+    "creditEquals": "1 кредит = 1 генерация.",
+    "nonTransferable": "Кредиты тратятся только внутри snapfeed.help. Их нельзя передать или перепродать.",
+    "currencyNote": "Оплата картой в USD.",
+    "pricePerMonth": "{{price}} / месяц",
+    "planSingle": "Single",
+    "planStarter": "Starter",
+    "planPro": "Pro",
+    "planBusiness": "Business",
+    "planMonthly": "Monthly"
   },
   "chat": {
     "title": "✨ AI Помощник (Пишите на своем языке)",
@@ -569,6 +580,7 @@
       "product": "Продукт",
       "company": "Компания",
       "legal": "Юридическое",
+      "pricing": "Цены",
       "about": "О нас",
       "contact": "Контакты",
       "terms": "Условия использования",
@@ -597,11 +609,11 @@
       "sections": [
         {
           "title": "Кто мы",
-          "body": "snapfeed.help управляется STRATUM TECHNOLOGIES LLC — компанией с ограниченной ответственностью, зарегистрированной в штате Вайоминг, США. Почтовый адрес: 30 N Gould St Ste N, Sheridan, WY 82801, USA."
+          "body": "snapfeed.help управляется ESD Media LLC — компанией с ограниченной ответственностью, зарегистрированной в штате Вайоминг, США. Почтовый адрес: 30 N Gould St Ste N, Sheridan, WY 82801, USA."
         },
         {
           "title": "Merchant of Record",
-          "body": "Платные пакеты кредитов и связанные цифровые покупки на snapfeed.help продаёт Lemon Squeezy, Inc. («Lemon Squeezy»), официальный Merchant of Record. Lemon Squeezy обрабатывает checkout, платежи, счета и применимые налоги (sales tax / VAT). STRATUM TECHNOLOGIES LLC управляет ПО snapfeed.help и предоставляет доступ к кредитам и ИИ-функциям после успешной оплаты. Вопросы по способу оплаты, спорам по checkout Lemon Squeezy или налоговым счетам также регулируются условиями Lemon Squeezy."
+          "body": "Платные пакеты кредитов и связанные цифровые покупки на snapfeed.help продаёт Lemon Squeezy, Inc. («Lemon Squeezy»), официальный Merchant of Record. Lemon Squeezy обрабатывает checkout, платежи, счета и применимые налоги (sales tax / VAT). ESD Media LLC управляет ПО snapfeed.help и предоставляет доступ к кредитам и ИИ-функциям после успешной оплаты. Вопросы по способу оплаты, спорам по checkout Lemon Squeezy или налоговым счетам также регулируются условиями Lemon Squeezy."
         },
         {
           "title": "Сервис",
@@ -637,7 +649,7 @@
         },
         {
           "title": "Возмещение убытков",
-          "body": "Вы соглашаетесь возмещать убытки STRATUM TECHNOLOGIES LLC в связи с претензиями, возникшими из ваших загрузок, промптов, сгенерированных изображений или неправомерного использования сервиса."
+          "body": "Вы соглашаетесь возмещать убытки ESD Media LLC в связи с претензиями, возникшими из ваших загрузок, промптов, сгенерированных изображений или неправомерного использования сервиса."
         },
         {
           "title": "Прекращение доступа",
@@ -662,7 +674,7 @@
       "sections": [
         {
           "title": "Контролёр данных",
-          "body": "STRATUM TECHNOLOGIES LLC, зарегистрирована в Вайоминге, США.\n30 N Gould St Ste N, Sheridan, WY 82801, USA."
+          "body": "ESD Media LLC, зарегистрирована в Вайоминге, США.\n30 N Gould St Ste N, Sheridan, WY 82801, USA."
         },
         {
           "title": "Какие данные мы собираем",
@@ -732,7 +744,7 @@
         },
         {
           "title": "Кто управляет snapfeed.help",
-          "body": "snapfeed.help — продукт STRATUM TECHNOLOGIES LLC, компании с ограниченной ответственностью штата Вайоминг. Платные покупки обрабатывает Lemon Squeezy, Inc. как Merchant of Record. Мы обслуживаем клиентов онлайн и оказываем поддержку по email."
+          "body": "snapfeed.help — продукт ESD Media LLC, компании с ограниченной ответственностью штата Вайоминг. Платные покупки обрабатывает Lemon Squeezy, Inc. как Merchant of Record. Мы обслуживаем клиентов онлайн и оказываем поддержку по email."
         }
       ]
     },

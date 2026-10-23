@@ -51,6 +51,9 @@ export type PricingTierPrices = {
   subscription?: boolean;
 };
 
+/** Public checkout order — keep aligned with the Lemon Squeezy store. */
+export const CHECKOUT_PLAN_ORDER = ['single', 'starter', 'pro', 'business', 'monthly'] as const;
+
 export const PRICING_TIERS: PricingTierPrices[] = [
   { id: 'single', credits: 1, priceRub: 20, priceUsd: 0.25, priceUzs: 3000, priceTjs: 3 },
   { id: 'starter', credits: 10, priceRub: 200, priceUsd: 2.49, priceUzs: 30000, priceTjs: 25 },
@@ -119,4 +122,10 @@ export function formatPerCredit(amount: number, currency: DepositCurrency): stri
 
 export function tierLabel(tierId: PricingTierPrices['id']): string {
   return tierId.charAt(0).toUpperCase() + tierId.slice(1);
+}
+
+export function orderedPricingTiers(): PricingTierPrices[] {
+  return CHECKOUT_PLAN_ORDER.map((id) => PRICING_TIERS.find((tier) => tier.id === id)).filter(
+    (tier): tier is PricingTierPrices => Boolean(tier),
+  );
 }

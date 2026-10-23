@@ -532,7 +532,18 @@
     "checkoutOpened": "Пардохти бехатар кушода мешавад…",
     "checkoutFailed": "Пардохтро оғоз карда нашуд. Дубора кӯшиш кунед.",
     "lemonNotConfigured": "Пардохти корт ҳанӯз пайваст мешавад. Агар ҳоло кредит лозим бошад, ба дастгирӣ нависед.",
-    "checkoutSuccess": "Пардохт қабул шуд — тавозун нав мешавад."
+    "checkoutSuccess": "Пардохт қабул шуд — тавозун нав мешавад.",
+    "oneTime": "Хариди якдафъаина",
+    "subscription": "Обуна",
+    "creditEquals": "1 кредит = 1 генератсия.",
+    "nonTransferable": "Кредитҳо танҳо дар snapfeed.help сарф мешаванд. Онҳоро додан ё дубора фурӯхтан мумкин нест.",
+    "currencyNote": "Пардохти корт бо USD.",
+    "pricePerMonth": "{{price}} / моҳ",
+    "planSingle": "Single",
+    "planStarter": "Starter",
+    "planPro": "Pro",
+    "planBusiness": "Business",
+    "planMonthly": "Monthly"
   },
   "chat": {
     "title": "✨ AI Ёрдамчи (Бо забони худ нависед)",
@@ -567,6 +578,7 @@
       "product": "Маҳсулот",
       "company": "Ширкат",
       "legal": "Ҳуқуқӣ",
+      "pricing": "Нархҳо",
       "about": "Дар бораи мо",
       "contact": "Тамос",
       "terms": "Шартҳои истифода",
@@ -595,11 +607,11 @@
       "sections": [
         {
           "title": "Мо кӣ ҳастем",
-          "body": "snapfeed.help-ро STRATUM TECHNOLOGIES LLC идора мекунад — ширкати маҳдуди масъулият дар Wyoming, USA. Суроға: 30 N Gould St Ste N, Sheridan, WY 82801, USA."
+          "body": "snapfeed.help-ро ESD Media LLC идора мекунад — ширкати маҳдуди масъулият дар Wyoming, USA. Суроға: 30 N Gould St Ste N, Sheridan, WY 82801, USA."
         },
         {
           "title": "Merchant of Record",
-          "body": "Пакетҳои пулакии кредит дар snapfeed.help аз ҷониби Lemon Squeezy, Inc. фурӯхта мешаванд — Merchant of Record-и расмӣ. Lemon Squeezy checkout, пардохт, ҳисобнома ва андозҳоро (sales tax / VAT) идора мекунад. STRATUM TECHNOLOGIES LLC нармафзори snapfeed.help-ро идора мекунад ва пас аз пардохти бомуваффақият дастрасӣ ба кредитҳо ва функсияҳои AI медиҳад."
+          "body": "Пакетҳои пулакии кредит дар snapfeed.help аз ҷониби Lemon Squeezy, Inc. фурӯхта мешаванд — Merchant of Record-и расмӣ. Lemon Squeezy checkout, пардохт, ҳисобнома ва андозҳоро (sales tax / VAT) идора мекунад. ESD Media LLC нармафзори snapfeed.help-ро идора мекунад ва пас аз пардохти бомуваффақият дастрасӣ ба кредитҳо ва функсияҳои AI медиҳад."
         },
         {
           "title": "Хизмат",
@@ -631,11 +643,11 @@
         },
         {
           "title": "Маҳдудияти масъулият",
-          "body": "То ҳадди иҷозатдодаи қонун STRATUM TECHNOLOGIES LLC барои зарарҳои ғайримустақим масъул нест. Масъулияти умумӣ аз маблағи пардохтшуда барои кредитҳо дар се (3) моҳи пеш аз даъво зиёд нест."
+          "body": "То ҳадди иҷозатдодаи қонун ESD Media LLC барои зарарҳои ғайримустақим масъул нест. Масъулияти умумӣ аз маблағи пардохтшуда барои кредитҳо дар се (3) моҳи пеш аз даъво зиёд нест."
         },
         {
           "title": "Ҷуброн",
-          "body": "Шумо розӣ мешавед STRATUM TECHNOLOGIES LLC-ро аз даъвоҳои марбут ба боркуниҳо, promptҳо, тасвирҳои тавлидшуда ё сӯистифода ҳимоя кунед."
+          "body": "Шумо розӣ мешавед ESD Media LLC-ро аз даъвоҳои марбут ба боркуниҳо, promptҳо, тасвирҳои тавлидшуда ё сӯистифода ҳимоя кунед."
         },
         {
           "title": "Қатъ",
@@ -660,7 +672,7 @@
       "sections": [
         {
           "title": "Назоратгари маълумот",
-          "body": "STRATUM TECHNOLOGIES LLC, Wyoming, USA.\n30 N Gould St Ste N, Sheridan, WY 82801, USA."
+          "body": "ESD Media LLC, Wyoming, USA.\n30 N Gould St Ste N, Sheridan, WY 82801, USA."
         },
         {
           "title": "Чӣ ҷамъ мекунем",
@@ -730,7 +742,7 @@
         },
         {
           "title": "Кӣ идора мекунад",
-          "body": "snapfeed.help маҳсулоти STRATUM TECHNOLOGIES LLC (Wyoming) аст. Харидҳои пулакӣ аз ҷониби Lemon Squeezy, Inc. ҳамчун Merchant of Record коркард мешаванд. Ба мизоҷон онлайн хизмат мерасонем ва тавассути email дастгирӣ медиҳем."
+          "body": "snapfeed.help маҳсулоти ESD Media LLC (Wyoming) аст. Харидҳои пулакӣ аз ҷониби Lemon Squeezy, Inc. ҳамчун Merchant of Record коркард мешаванд. Ба мизоҷон онлайн хизмат мерасонем ва тавассути email дастгирӣ медиҳем."
         }
       ]
     },

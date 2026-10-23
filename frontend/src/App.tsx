@@ -5,15 +5,18 @@ import { fetchGuestCredits } from './api/guestCredits';
 import { generateProductImage, isAbortError } from './api/generateProductImage';
 import AlertBanner, { type AlertType } from './components/AlertBanner';
 import AppShell from './components/AppShell';
-import CreditRequestModal from './components/CreditRequestModal';
 import LoginModal from './components/LoginModal';
+import PricingModal from './components/PricingModal';
 import TryOnWorkspace, { type StudioMode, type TryOnHistoryItem } from './components/TryOnWorkspace';
 import { useAuth } from './context/AuthContext';
 import { useToast } from './context/ToastContext';
 import { trackAdsConversion } from './lib/analytics';
 import {
+  clearPendingCheckoutPlan,
   POST_AUTH_FIRST_SUCCESS_KEY,
   POST_AUTH_MODAL_KEY,
+  readPendingCheckoutPlan,
+  type PendingCheckoutPlanId,
 } from './constants/authFlow';
 import {
   GUEST_CREDITS_INITIAL,
@@ -73,6 +76,7 @@ export default function App() {
   const [guestCreditsLoading, setGuestCreditsLoading] = useState(() => !user && readGuestCreditsFromStorage() === null);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showCreditForm, setShowCreditForm] = useState(false);
+  const [resumePlan, setResumePlan] = useState<PendingCheckoutPlanId | null>(null);
   const [showFirstSuccessHint, setShowFirstSuccessHint] = useState(false);
 
   const studioModeRef = useRef(studioMode);
@@ -123,6 +127,12 @@ export default function App() {
 
   useEffect(() => {
     if (authLoading || !user || !profile) return;
+    const pendingPlan = readPendingCheckoutPlan();
+    if (pendingPlan) {
+      clearPendingCheckoutPlan();
+      setResumePlan(pendingPlan);
+      setShowCreditForm(true);
+    }
     if (
       sessionStorage.getItem(POST_AUTH_FIRST_SUCCESS_KEY)
       || sessionStorage.getItem(POST_AUTH_MODAL_KEY)
@@ -500,7 +510,18 @@ export default function App() {
       onSignInClick={() => setShowLoginModal(true)}
     >
       <LoginModal open={showLoginModal} onClose={() => setShowLoginModal(false)} />
-      <CreditRequestModal open={showCreditForm} onClose={() => setShowCreditForm(false)} />
+      <PricingModal
+        open={showCreditForm}
+        onClose={() => {
+          setShowCreditForm(false);
+          setResumePlan(null);
+        }}
+        autoStartPlan={resumePlan}
+        onRequireAuth={() => {
+          setShowCreditForm(false);
+          setShowLoginModal(true);
+        }}
+      />
 
       <main className="mobile-sticky-offset relative mx-auto flex h-full w-full max-w-6xl min-h-0 min-w-0 flex-1 flex-col px-2 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4 lg:px-8 lg:py-5">
         {alert && (

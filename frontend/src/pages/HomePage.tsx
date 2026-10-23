@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { ArrowRight, Images, Sparkles } from 'lucide-react';
 import AppShell from '../components/AppShell';
 import LoginModal from '../components/LoginModal';
+import PricingPlans from '../components/PricingPlans';
 import { useAuth } from '../context/AuthContext';
 import { fetchGuestCredits } from '../api/guestCredits';
 import { POST_AUTH_FIRST_SUCCESS_KEY, POST_AUTH_MODAL_KEY } from '../constants/authFlow';
@@ -106,7 +107,7 @@ export default function HomePage() {
   }
 
   function openCreditsFlow() {
-    navigate('/contact#credits');
+    document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   return (
@@ -325,6 +326,10 @@ export default function HomePage() {
               </div>
             </Link>
           </div>
+        </section>
+
+        <section className="mx-auto mt-12 w-full max-w-3xl sm:mt-16 lg:mt-20">
+          <PricingPlans onRequireAuth={() => setShowLoginModal(true)} />
         </section>
       </main>
     </AppShell>
