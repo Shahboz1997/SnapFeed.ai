@@ -3,10 +3,15 @@ import { getSupabaseAdmin, isSupabaseConfigured } from '../config/supabase.js';
 import { createError } from '../utils/errors.js';
 import { getClientIp } from '../utils/clientIp.js';
 
-export const GUEST_MAX_GENERATIONS = Number.parseInt(
-  process.env.GUEST_MAX_GENERATIONS || '3',
-  10,
-) || 3;
+/** One free generation for guests. Do not read GUEST_MAX_GENERATIONS: the host may still have the old value 3. */
+export const GUEST_MAX_GENERATIONS = 1;
+
+/** Stored rows may still say 3. Guests never get more than the current allowance. */
+function effectiveGuestMax(storedMax) {
+  const stored = Number(storedMax);
+  if (!Number.isFinite(stored) || stored <= 0) return GUEST_MAX_GENERATIONS;
+  return Math.min(stored, GUEST_MAX_GENERATIONS);
+}
 
 const FINGERPRINT_PATTERN = /^[a-f0-9]{64}$/i;
 
@@ -57,7 +62,7 @@ function getMemoryGuestCreditsRemaining(guestKey) {
   return Math.max(0, GUEST_MAX_GENERATIONS - used);
 }
 
-/** Prefer the stricter of DB and in-memory usage (avoids reset-to-3 after memory-only consume). */
+/** Prefer the stricter of DB and in-memory usage (avoids a reset after memory-only consume). */
 function mergeWithMemoryRemaining(guestKey, dbRemaining) {
   if (!memoryGuestUsage.has(guestKey)) {
     return dbRemaining;
@@ -144,10 +149,10 @@ export async function getGuestCreditsRemaining(guestKey, ipAddress = null) {
   }
 
   const used = data?.generations_used ?? 0;
-  const max = data?.max_generations ?? GUEST_MAX_GENERATIONS;
+  const max = effectiveGuestMax(data?.max_generations);
   let remaining = mergeWithMemoryRemaining(guestKey, Math.max(0, max - used));
 
-  // Same IP must not get a fresh 3 free gens by clearing fingerprint / localStorage.
+  // Same IP must not get a fresh allowance by clearing fingerprint / localStorage.
   if (ipAddress) {
     const ipUsed = await getIpGenerationsUsed(supabase, ipAddress);
     const ipRemaining = Math.max(0, GUEST_MAX_GENERATIONS - ipUsed);
@@ -217,7 +222,7 @@ export async function consumeGuestCredit(guestKey, ipAddress = null, amount = 1)
     return getGuestCreditsRemaining(guestKey, ipAddress);
   }
 
-  if (existing.generations_used + cost > existing.max_generations) {
+  if (existing.generations_used + cost > effectiveGuestMax(existing.max_generations)) {
     throw createError('Insufficient credits.', 402);
   }
 

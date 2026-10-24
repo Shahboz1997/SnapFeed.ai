@@ -23,7 +23,7 @@
     "subtitle": "Upload a garment and a photo — see a realistic virtual try-on in seconds.",
     "promptHint": "Clothing photo + person photo → try-on result",
     "cta": "Open Studio",
-    "freeTrialHint": "{{count}} free generations — no sign-in required",
+    "freeTrialHint": "{{count}} free generation — no sign-in required",
     "pricingTitle": "Credit packs",
     "pricingSubtitle": "Pay once, generate when you need — no commitment required.",
     "pricingLegalNote": "By purchasing you agree to our",
